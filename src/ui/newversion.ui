@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>NewVersionDialog</class>
+ <widget class="QDialog" name="NewVersionDialog">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>448</width>
+    <height>287</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>New Version Available</string>
+  </property>
+  <layout class="QGridLayout" name="gridLayout">
+   <item row="0" column="0">
+    <layout class="QVBoxLayout" name="verticalLayout">
+     <item>
+      <widget class="QLabel" name="messageLabel">
+       <property name="text">
+        <string/>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignCenter</set>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QTextBrowser" name="textBrowser"/>
+     </item>
+    </layout>
+   </item>
+   <item row="1" column="0">
+    <layout class="QHBoxLayout" name="horizontalLayout">
+     <item>
+      <widget class="QPushButton" name="skipVersionButton">
+       <property name="text">
+        <string>Skip Version</string>
+       </property>
+       <property name="autoDefault">
+        <bool>false</bool>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="visitDownloadPageButton">
+       <property name="text">
+        <string>Visit Download Page</string>
+       </property>
+       <property name="autoDefault">
+        <bool>false</bool>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="dismissButton">
+       <property name="text">
+        <string>Dismiss</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections>
+  <connection>
+   <sender>skipVersionButton</sender>
+   <signal>clicked()</signal>
+   <receiver>NewVersionDialog</receiver>
+   <slot>skipVersion()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>58</x>
+     <y>260</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>5</x>
+     <y>212</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>visitDownloadPageButton</sender>
+   <signal>clicked()</signal>
+   <receiver>NewVersionDialog</receiver>
+   <slot>visitDownloadPage()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>248</x>
+     <y>254</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>6</x>
+     <y>100</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>dismissButton</sender>
+   <signal>clicked()</signal>
+   <receiver>NewVersionDialog</receiver>
+   <slot>reject()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>394</x>
+     <y>257</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>9</x>
+     <y>10</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
+ <slots>
+  <slot>skipVersion()</slot>
+  <slot>visitDownloadPage()</slot>
+ </slots>
+</ui>
