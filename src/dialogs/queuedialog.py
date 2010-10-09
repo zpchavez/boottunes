@@ -313,9 +313,8 @@ class QueueDialog(QDialog, Ui_QueueDialog):
             listItem = self.queueItemData[path]['item']
         else:
             listItem = QListWidgetItem()
-            self.queueListWidget.addItem(listItem)
-        icon = QIcon()        
-        icon.addFile(metadata['cover'])
+            self.queueListWidget.addItem(listItem)        
+        icon = QIcon(CoverArtRetriever.imagePathToPixmap(metadata['cover']))        
         listItem.setIcon(icon)
         self.queueItemData[path] = {'item': listItem, 'metadata':metadata, 'valid':True}
         listItem.setData(32, path)        

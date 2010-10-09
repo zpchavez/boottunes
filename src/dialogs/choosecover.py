@@ -21,21 +21,22 @@ class ChooseCoverDialog(QDialog, Ui_ChooseCoverDialog):
         self.setupUi(self)
         self.setWindowFlags(Qt.Window)
         self.metadata = metadata                
+        self.coverImageChoices = CoverArtRetriever().getCoverImageChoices(metadata)
 
-        for fileTuple in CoverArtRetriever().getCoverImageChoices(metadata):
-            self.chooseCoverComboBox.addItem(fileTuple[1], fileTuple[0])
+        for index, fileTuple in enumerate(self.coverImageChoices):
+            self.chooseCoverComboBox.addItem(os.path.basename(fileTuple[0]), index)
 
     def chooseCover(self, index):
         """
         Slot for currentIndexChanges(int) on self.chooseCoverComboBox
-        """
-        imagePath = self.chooseCoverComboBox.itemData(index).toString()        
-        image = QImage(imagePath).scaledToWidth(384)
-        self.imageLabel.setPixmap(QPixmap.fromImage(image))
+        """        
+        image = self.coverImageChoices[index][1]
+        image = image.scaledToWidth(384)
+        self.imageLabel.setPixmap(image)
 
     def accept(self):
         index = self.chooseCoverComboBox.currentIndex()
-        self.metadata['cover'] = unicode(self.chooseCoverComboBox.itemData(index).toString())        
+        self.metadata['cover'] = self.coverImageChoices[index][0]
         self.parentWidget().addToQueue(self.metadata)
         self.parentWidget().refreshQueue()        
         self.close()
