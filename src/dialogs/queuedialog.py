@@ -252,8 +252,18 @@ class QueueDialog(QDialog, Ui_QueueDialog):
                     raise QueueDialogError("Directory does not contain any supported audio files (FLAC or SHN)");
                 elif len(metadata['tracklist']) != len(filePaths):
                     raise QueueDialogError("Number of audio files does not match tracklist")
-                
+
                 metadata['audioFiles'] = filePaths
+
+                try:
+                    # Assume that an artist name found in the actual file metadata is more accurate
+                    audioFile = audiotools.open(filePaths[0])                    
+                    audioFileMetadata = audioFile.get_metadata()                    
+                    if audioFileMetadata and audioFileMetadata.artist_name:
+                        metadata['artist'] = audioFileMetadata.artist_name
+                except audiotools.UnsupportedFile as e:
+                    raise QueueDialogError(os.path.basename(filepaths[0]) + " is an unsupported file: ")
+
                 metadata['dir'] = qDir
                 # Hash used for identicons and temp directory names
                 metadata['hash'] = hashlib.md5(metadata['comments'].encode('utf_8')).hexdigest()
