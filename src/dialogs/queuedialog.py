@@ -413,7 +413,7 @@ class QueueDialog(QDialog, Ui_QueueDialog):
             self.progressDialog.setValue(value)
             if value < self.progressDialog.maximum():
                 self.progressBarLabel.setText(
-                    'Converting "' + currentRecording['metadata']['tracklist'][self.currentTrack] + '"'
+                    'Converting "' + currentRecording['metadata']['tracklist'][value - 1] + '"'
                 )
 
     def conversionComplete(self):

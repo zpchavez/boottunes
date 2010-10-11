@@ -11,9 +11,6 @@ from ui.ui_settings import Ui_SettingsDialog
 
 class SettingsDialog(QDialog, Ui_SettingsDialog):
 
-    settings = {}
-    """Settings to be saved on accept()"""
-
     dateOptions = {datetime.date.today().strftime('%Y-%m-%d (YYYY-MM-DD)') : '%Y-%m-%d',
                    datetime.date.today().strftime('%Y-%d-%m (YYYY-DD-MM)') : '%Y-%d-%m',
                    datetime.date.today().strftime('%B %d, %Y'): '%B %d, %Y',
