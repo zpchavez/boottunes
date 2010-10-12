@@ -11,7 +11,9 @@ import codecs
 import hashlib
 import urllib
 import chardet
+import platform
 import audiotools
+from multiprocessing import Process
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 from ui.ui_queuedialog import Ui_QueueDialog
@@ -447,23 +449,20 @@ class QueueDialog(QDialog, Ui_QueueDialog):
     def cancelProcess(self):
         """
         Cancel the conversion process.  Called when "Cancel" is pressed in the progress bar dialog.
-        """
+        """        
+        self.processThread.stop()
         self.processThread.terminate()
 
-    def processError(self, exceptionType, filename):
+    def processError(self, heading, message):
         """
         Cancel the conversion process and display an error dialog.
 
-        @type exceptionType string
+        @type heading string
         
-        @type filename string
+        @type message string
         """
-        if exceptionType == 'Unsupported':
-            msg = filename + ' is an unsupported filetype'
-        else:
-            msg = 'Cannot open file: ' + filename
         self.progressDialog.reject()
-        MessageBox.critical(self, 'Error Processing File', msg)
+        MessageBox.critical(self, heading, message)
         self.removeCompletedRecordings()
 
     def event(self, event):
@@ -507,15 +506,18 @@ class ProcessThread(QThread):
             tempDirPath = metadata['tempDir'].absolutePath()
 
             filePath = metadata['audioFiles'][parent.currentTrack]
+            self.currentFile = filePath
 
-            try:
+            try:                
                 audioFile = audiotools.open(filePath)
-            except audiotools.UnsupportedFile:                
-                self.emit(SIGNAL("error(QString, QString)"), 'UnsupportedFile', os.path.basename(filePath))
+            except audiotools.UnsupportedFile:
+                message = '"' + os.path.basename(filePath) + '" is an unsupported file type.'
+                self.emit(SIGNAL("error(QString, QString)"), 'UnsupportedFile', message)
                 self.stop()
                 return
             except IOError:
-                self.emit(SIGNAL("error(QString, QString)"), 'IOError', os.path.basename(filePath))
+                message = "Error opening file: " + os.path.basename(filePath)
+                self.emit(SIGNAL("error(QString, QString)"), 'IOError', message)
                 self.stop()
                 return
             
@@ -538,8 +540,15 @@ class ProcessThread(QThread):
             sourcePcm = audioFile.to_pcm()
             targetFile = tempDirPath + os.sep + unicode(parent.currentTrack) + u'.m4a'
 
-            self.encodeProcess(targetFile, sourcePcm, alacMetadata)
-
+            # If on Mac, run as a separate process
+            if platform.system() == 'Darwin':
+                self.process = Process(target=self.encodeProcess, args=(targetFile, sourcePcm, alacMetadata))                
+                self.process.start()                
+                while self.process.is_alive() and not self.isStopped():
+                    pass                
+            else:
+                self.encodeProcess(targetFile, sourcePcm, alacMetadata)
+                
             if self.isStopped():                
                 return            
 
@@ -573,9 +582,9 @@ class ProcessThread(QThread):
         @type targetFile: unicode
         @type sourcePcm: audiotool.PCMReader
         @type alacMetadata: audiotools.MetaData
-        """
+        """        
         alacFile = audiotools.ALACAudio.from_pcm(targetFile, sourcePcm)
-        alacFile.set_metadata(alacMetadata)        
+        alacFile.set_metadata(alacMetadata)
 
     def stop(self):        
         with QMutexLocker(self.mutex):
