@@ -389,6 +389,28 @@ class QueueDialog(QDialog, Ui_QueueDialog):
             MessageBox.warning(self, 'Notice', 'Nothing to add')
             return
 
+        # Prepare a lsit of PcmReader
+        for validRecording in self.validRecordings:
+            validRecording['pcmReaders'] = []
+            for audioFile in validRecording['metadata']['audioFiles']:
+                try:
+                    audiofileObj = audiotools.open(audioFile)
+                except audiotools.UnsupportedFile:
+                    MessageBox.critical(
+                        self,
+                        'Error opening file',
+                        os.path.basename(audioFile) + ' is an unsupported type'
+                    )
+                    return
+                except IOError:
+                    MessageBox.critical(
+                        self,
+                        'Error opening file',
+                        'Could not open file ' + os.path.basename(audioFile)
+                    )
+                    return
+                validRecording['pcmReaders'].append(audiofileObj.to_pcm())
+
         self.progressBarLabel = progressBarLabel = QLabel()
         self.progressDialog = progressDialog = QProgressDialog("Loading", "Cancel", 1, trackCount + 1, self)
         self.connect(self.progressDialog, SIGNAL("canceled()"), self.cancelProcess)
@@ -403,7 +425,6 @@ class QueueDialog(QDialog, Ui_QueueDialog):
         self.processThread = ProcessThread(self.lock, self)
         self.connect(self.processThread, SIGNAL("progress(int)"), self.updateProgress)        
         self.connect(self.processThread, SIGNAL("finished()"), self.conversionComplete)
-        self.connect(self.processThread, SIGNAL('error(QString, QString)'), self.processError)
         self.processThread.start()
 
     def updateProgress(self, value):
@@ -453,18 +474,6 @@ class QueueDialog(QDialog, Ui_QueueDialog):
         self.processThread.stop()
         self.processThread.terminate()
 
-    def processError(self, heading, message):
-        """
-        Cancel the conversion process and display an error dialog.
-
-        @type heading string
-        
-        @type message string
-        """
-        self.progressDialog.reject()
-        MessageBox.critical(self, heading, message)
-        self.removeCompletedRecordings()
-
     def event(self, event):
         """
         Map enter key to self.addToITunes()
@@ -507,19 +516,6 @@ class ProcessThread(QThread):
 
             filePath = metadata['audioFiles'][parent.currentTrack]
             self.currentFile = filePath
-
-            try:                
-                audioFile = audiotools.open(filePath)
-            except audiotools.UnsupportedFile:
-                message = '"' + os.path.basename(filePath) + '" is an unsupported file type.'
-                self.emit(SIGNAL("error(QString, QString)"), 'UnsupportedFile', message)
-                self.stop()
-                return
-            except IOError:
-                message = "Error opening file: " + os.path.basename(filePath)
-                self.emit(SIGNAL("error(QString, QString)"), 'IOError', message)
-                self.stop()
-                return
             
             if 'defaults' in metadata:
                 artistName = metadata['defaults']['preferred_name'].decode('utf_8')
@@ -537,7 +533,7 @@ class ProcessThread(QThread):
                 comment      = metadata['comments']
             )
             alacMetadata.add_image(audiotools.Image.new(currentRecording['imageData'], 'cover', 0))
-            sourcePcm = audioFile.to_pcm()
+            sourcePcm = currentRecording['pcmReaders'][parent.currentTrack - 1]
             targetFile = tempDirPath + os.sep + unicode(parent.currentTrack) + u'.m4a'
 
             # If on Mac, run as a separate process
