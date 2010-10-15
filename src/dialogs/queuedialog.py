@@ -433,10 +433,10 @@ class QueueDialog(QDialog, Ui_QueueDialog):
         """
         with ReadLocker(self.lock):
             currentRecording = self.validRecordings[self.currentRecording]            
-            self.progressDialog.setValue(value)
-            if value < self.progressDialog.maximum():
+            self.progressDialog.setValue(value + 1)
+            if value < self.progressDialog.maximum():                
                 self.progressBarLabel.setText(
-                    'Converting "' + currentRecording['metadata']['tracklist'][value - 1] + '"'
+                    'Converting "' + self.currentTrackName + '"'
                 )
 
     def conversionComplete(self):
@@ -502,7 +502,7 @@ class ProcessThread(QThread):
 
     def run(self):
         parent = self.parent()
-        progressCounter = 1
+        progressCounter = 0
         while progressCounter <= parent.trackCount and not self.isStopped():            
             currentRecording = parent.validRecordings[parent.currentRecording]
             metadata = currentRecording['metadata']
@@ -521,9 +521,11 @@ class ProcessThread(QThread):
                 artistName = metadata['defaults']['preferred_name'].decode('utf_8')
             else:
                 artistName = metadata['artist']
-            
+
+            parent.currentTrackName = metadata['tracklist'][parent.currentTrack]
+
             alacMetadata = audiotools.MetaData(
-                track_name   = metadata['tracklist'][parent.currentTrack],
+                track_name   = parent.currentTrackName,
                 track_number = parent.currentTrack + 1,
                 track_total  = len(metadata['tracklist']),
                 album_name   = metadata['albumTitle'],
@@ -532,6 +534,8 @@ class ProcessThread(QThread):
                 date         = unicode(metadata['date'].isoformat()),
                 comment      = metadata['comments']
             )
+            self.emit(SIGNAL("progress(int)"), progressCounter)
+
             alacMetadata.add_image(audiotools.Image.new(currentRecording['imageData'], 'cover', 0))
             sourcePcm = currentRecording['pcmReaders'][parent.currentTrack - 1]
             targetFile = tempDirPath + os.sep + unicode(parent.currentTrack) + u'.m4a'
@@ -548,8 +552,7 @@ class ProcessThread(QThread):
             if self.isStopped():                
                 return            
 
-            progressCounter += 1
-            self.emit(SIGNAL("progress(int)"), progressCounter)                                
+            progressCounter += 1            
 
             with ReadLocker(self.lock):
                 currentTrack = parent.currentTrack            
