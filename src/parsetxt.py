@@ -361,9 +361,10 @@ class TxtParser(object):
         lineTxt = ''        
         for match in matches:
             # Don't mistake the date as the location
-            if match != self._findDate():
+            if self._findDate() not in match:
                 lineTxt = match
-        
+                break
+
         labelMatch = re.match('Location:(.*)', lineTxt, re.IGNORECASE)
         if labelMatch:
             lineTxt = labelMatch.group(1)        
@@ -450,7 +451,7 @@ class TxtParser(object):
                 dateObj = None
         else:
             dateObj = None
-            
+
         return {'artist'    : unicode(self._findArtist()),
                 'date'      : dateObj,
                 'location'  : unicode(self._findLocation()),
