@@ -472,6 +472,7 @@ class QueueDialog(QDialog, Ui_QueueDialog):
         """        
         self.processThread.stop()        
         self.processThread.terminate()
+        self.removeCompletedRecordings()
 
     def event(self, event):
         """
