@@ -222,8 +222,8 @@ class QueueDialog(QDialog, Ui_QueueDialog):
                 fileHandle.close()
                 fileHandle = codecs.open(textFilePath, 'r', encoding)
                 
-                metadata = TxtParser(fileHandle.read()).parseTxt()
-                
+                metadata = TxtParser(fileHandle.read()).parseTxt()                
+
                 foundCount = 0
                 for k, v in metadata.iteritems():                    
                     if v:
@@ -431,8 +431,7 @@ class QueueDialog(QDialog, Ui_QueueDialog):
         """
         Updates the progress bar.  Slot for ProcessThread.SIGNAL(progress(int)).
         """
-        with ReadLocker(self.lock):
-            currentRecording = self.validRecordings[self.currentRecording]            
+        with ReadLocker(self.lock):            
             self.progressDialog.setValue(value + 1)
             if value < self.progressDialog.maximum():                
                 self.progressBarLabel.setText(
@@ -471,7 +470,7 @@ class QueueDialog(QDialog, Ui_QueueDialog):
         """
         Cancel the conversion process.  Called when "Cancel" is pressed in the progress bar dialog.
         """        
-        self.processThread.stop()
+        self.processThread.stop()        
         self.processThread.terminate()
 
     def event(self, event):
@@ -503,7 +502,7 @@ class ProcessThread(QThread):
     def run(self):
         parent = self.parent()
         progressCounter = 0
-        while progressCounter <= parent.trackCount and not self.isStopped():            
+        while progressCounter < parent.trackCount and not self.isStopped():
             currentRecording = parent.validRecordings[parent.currentRecording]
             metadata = currentRecording['metadata']
 
@@ -570,6 +569,7 @@ class ProcessThread(QThread):
             else:
                 parent.currentTrack += 1
 
+        self.emit(SIGNAL("progress(int)"), progressCounter)
         self.completed = True
         self.emit(SIGNAL('finished'))
         self.stop()        
@@ -587,7 +587,9 @@ class ProcessThread(QThread):
 
     def stop(self):        
         with QMutexLocker(self.mutex):
-            self.stopped = True
+            self.stopped = True        
+        if platform.system() == 'Darwin' and self.process.is_alive():
+            self.process.terminate()
 
     def isStopped(self):
         with QMutexLocker(self.mutex):
