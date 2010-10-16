@@ -371,7 +371,7 @@ class QueueDialog(QDialog, Ui_QueueDialog):
         self.validRecordings = []
         """A list containing the values from self.queueItemData, but only for recordings with all the
            required metadata
-        """    
+        """
         self.currentRecording = 0
         """The index of self.validRecordings that is currently being converted and copied to iTunes"""        
         self.currentTrack = 0
@@ -381,7 +381,7 @@ class QueueDialog(QDialog, Ui_QueueDialog):
         trackCount = 0
         for dir, data in self.queueItemData.iteritems():
             if data['valid'] == True:
-                self.validRecordings.append(data)
+                self.validRecordings.append(data.copy())
                 trackCount += len(data['metadata']['tracklist'])
                 self.trackCount = trackCount
 
