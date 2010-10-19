@@ -537,7 +537,7 @@ class ProcessThread(QThread):
             self.emit(SIGNAL("progress(int)"), progressCounter)
 
             alacMetadata.add_image(audiotools.Image.new(currentRecording['imageData'], 'cover', 0))
-            sourcePcm = currentRecording['pcmReaders'][parent.currentTrack - 1]
+            sourcePcm = currentRecording['pcmReaders'][parent.currentTrack]
             targetFile = tempDirPath + os.sep + unicode(parent.currentTrack) + u'.m4a'
 
             # If on Mac, run as a separate process
