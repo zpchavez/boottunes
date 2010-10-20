@@ -38,7 +38,7 @@ class Settings:
             return key in self.defaults
         return key in self.settings
 
-    def __init__(self, file='settings'):
+    def __init__(self, file='settings'):                
         userDir = QDir(os.path.expanduser('~'))
 
         userDir.cd('Library') or userDir.cd('Application Data') or userDir.cd('AppData')
@@ -206,4 +206,4 @@ class Settings:
             settingsQDir.rmdir(self.settingsDir + os.sep + dir)
 
 settings = Settings()
-"""To share settings between modules, use this instance instead of created new instances of Settings"""
+"""To share settings between modules, use this instance instead of creating new instances of Settings"""

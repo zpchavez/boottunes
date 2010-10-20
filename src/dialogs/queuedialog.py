@@ -375,7 +375,7 @@ class QueueDialog(QDialog, Ui_QueueDialog):
         self.currentRecording = 0
         """The index of self.validRecordings that is currently being converted and copied to iTunes"""        
         self.currentTrack = 0
-        """The track from the current recording currengly being processed"""        
+        """The track from the current recording currently being processed"""
         
         # Count all tracks for the progress bar
         trackCount = 0
@@ -389,7 +389,7 @@ class QueueDialog(QDialog, Ui_QueueDialog):
             MessageBox.warning(self, 'Notice', 'Nothing to add')
             return
 
-        # Prepare a lsit of PcmReader
+        # Prepare a list of PcmReader objects
         for validRecording in self.validRecordings:
             validRecording['pcmReaders'] = []
             for audioFile in validRecording['metadata']['audioFiles']:
