@@ -561,8 +561,12 @@ class ProcessThread(QThread):
                     parent.currentTrack = 0
                 # Move files to addToITunesPath
                 metadata['tempDir'].setNameFilters(['*.m4a'])
+                QDir(settings['addToITunesPath']).mkdir(metadata['hash'])
                 for audioFile in metadata['tempDir'].entryList():
-                    metadata['tempDir'].rename(audioFile, settings['addToITunesPath'] + os.sep + audioFile)
+                    metadata['tempDir'].rename(
+                        audioFile,
+                        settings['addToITunesPath'] + os.sep + metadata['hash'] + os.sep + audioFile
+                    )
                 if not settings.isCompleted(metadata['hash']):
                     settings.addCompleted(metadata['hash'])
                 with WriteLocker(self.lock):
