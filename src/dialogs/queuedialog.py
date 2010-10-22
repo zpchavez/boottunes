@@ -367,16 +367,22 @@ class QueueDialog(QDialog, Ui_QueueDialog):
         """
         Begin the conversion process of all the valid items in the queue.
         """
-
         self.validRecordings = []
         """A list containing the values from self.queueItemData, but only for recordings with all the
            required metadata
         """
         self.currentRecording = 0
-        """The index of self.validRecordings that is currently being converted and copied to iTunes"""        
+        """The index of self.validRecordings that is currently being converted and copied to iTunes"""
         self.currentTrack = 0
         """The track from the current recording currently being processed"""
-        
+
+        if not hasattr(self, 'antiCrashBin'):
+            self.antiCrashBin = []
+            """For reasons unknown, Windows 7 crashes when PCMReader objects go out of scope.
+               My inelegant solution is to keep those objects in this antiCrashBin so that
+               if the user converts multiple batches in one session the program won't crash.
+            """
+
         # Count all tracks for the progress bar
         trackCount = 0
         for dir, data in self.queueItemData.iteritems():
@@ -409,8 +415,10 @@ class QueueDialog(QDialog, Ui_QueueDialog):
                         'Could not open file ' + os.path.basename(audioFile)
                     )
                     return
-                validRecording['pcmReaders'].append(audiofileObj.to_pcm())
-
+                pcmReader = audiofileObj.to_pcm()
+                validRecording['pcmReaders'].append(pcmReader)
+                self.antiCrashBin.append(pcmReader)
+                
         self.progressBarLabel = progressBarLabel = QLabel()
         self.progressDialog = progressDialog = QProgressDialog("Loading", "Cancel", 1, trackCount + 1, self)
         self.connect(self.progressDialog, SIGNAL("canceled()"), self.cancelProcess)
@@ -577,7 +585,7 @@ class ProcessThread(QThread):
         self.emit(SIGNAL("progress(int)"), progressCounter)
         self.completed = True
         self.emit(SIGNAL('finished'))
-        self.stop()        
+        self.stop()
 
     def encodeProcess(self, targetFile, sourcePcm, alacMetadata):
         """
@@ -587,7 +595,7 @@ class ProcessThread(QThread):
         @type sourcePcm: audiotool.PCMReader
         @type alacMetadata: audiotools.MetaData
         """        
-        alacFile = audiotools.ALACAudio.from_pcm(targetFile, sourcePcm)
+        alacFile = audiotools.AiffAudio.from_pcm(targetFile, sourcePcm)
         alacFile.set_metadata(alacMetadata)
 
     def stop(self):        
