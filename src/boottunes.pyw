@@ -13,7 +13,7 @@ from PyQt4.QtCore import *
 from dialogs.queuedialog import QueueDialog
 from dialogs.messagebox import MessageBox
 from dialogs.newversion import NewVersionDialog
-from settings import settings
+from settings import settings, SettingsError
 import data
 
 __version__ = "0.1.3"
@@ -21,35 +21,10 @@ __version__ = "0.1.3"
 class MainWindow(QMainWindow):
     def __init__(self, parent=None):        
         super(MainWindow, self).__init__(parent)
-        self.initAddToITunesPath()
-        menuBar = QMenuBar()
-        helpMenu = menuBar.addMenu('&Help')
-        aboutAction = helpMenu.addAction('about')
-        self.connect(aboutAction, SIGNAL("triggered()"), self.about)
-        self.setMenuBar(menuBar)
-        self.setWindowTitle('BootTunes')
-        self.setCentralWidget(QueueDialog())
 
-    def initAddToITunesPath(self):
-        """
-        Check that the "Automatically Add to iTunes" path is set and that the directory
-        actually exists.  If it does not, check all the standard locations.  If still
-        not found, prompt the user to locate it.
-        """
-        if 'addToITunesPath' not in settings or not os.path.exists(settings['addToITunesPath']):
-            possibilities = [
-                'Music' + os.sep + 'iTunes' + os.sep + 'iTunes Media',
-                'Music' + os.sep + 'iTunes' + os.sep + 'iTunes Music',
-                'My Documents' + os.sep + 'My Music' + os.sep + 'iTunes' + os.sep + 'iTunes Media',
-                'My Documents' + os.sep + 'My Music' + os.sep + 'iTunes' + os.sep + 'iTunes Music'
-            ]
-            userDir = os.path.expanduser('~')
-            for possibility in possibilities:
-                possiblePath = userDir + os.sep + possibility + os.sep + 'Automatically Add to iTunes'
-                if os.path.exists(possiblePath):
-                    settings['addToITunesPath'] = possiblePath
-
-        if 'addToITunesPath' not in settings or not os.path.exists(settings['addToITunesPath']):
+        try:
+            settings.initAddToITunesPath()
+        except SettingsError:
             dir = QFileDialog.getExistingDirectory(
                 None,
                 'Please Locate your "Automatically Add to iTunes" folder'
@@ -57,6 +32,14 @@ class MainWindow(QMainWindow):
             if not dir:
                 sys.exit()
             settings['addToITunesPath'] = dir
+
+        menuBar = QMenuBar()
+        helpMenu = menuBar.addMenu('&Help')
+        aboutAction = helpMenu.addAction('about')
+        self.connect(aboutAction, SIGNAL("triggered()"), self.about)
+        self.setMenuBar(menuBar)
+        self.setWindowTitle('BootTunes')
+        self.setCentralWidget(QueueDialog())
 
     def event(self, event):
         """

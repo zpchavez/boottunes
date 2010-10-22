@@ -82,6 +82,30 @@ class Settings:
         else:
             self.completed = {0:[]}
 
+    def initAddToITunesPath(self):
+        """
+        Check that the "Automatically Add to iTunes" path is set and that the directory
+        actually exists.  If it does not, check all the standard locations.
+
+        Raises SettingsError if the folder isn't set and could not be found.
+
+        """
+        if 'addToITunesPath' not in self.settings or not os.path.exists(self.settings['addToITunesPath']):
+            possibilities = [
+                'Music' + os.sep + 'iTunes' + os.sep + 'iTunes Media',
+                'Music' + os.sep + 'iTunes' + os.sep + 'iTunes Music',
+                'My Documents' + os.sep + 'My Music' + os.sep + 'iTunes' + os.sep + 'iTunes Media',
+                'My Documents' + os.sep + 'My Music' + os.sep + 'iTunes' + os.sep + 'iTunes Music'
+            ]
+            userDir = os.path.expanduser('~')
+            for possibility in possibilities:
+                possiblePath = userDir + os.sep + possibility + os.sep + 'Automatically Add to iTunes'
+                if os.path.exists(possiblePath):
+                    settings['addToITunesPath'] = possiblePath
+
+        if 'addToITunesPath' not in self.settings or not os.path.exists(self.settings['addToITunesPath']):
+            raise SettingsError('Could not find Automatically Add to iTunes path')
+
     def getArtistDefaults(self, artist):
         """
         @type  artist: unicode
