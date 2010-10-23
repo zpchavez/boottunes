@@ -252,8 +252,11 @@ class QueueDialog(QDialog, Ui_QueueDialog):
 
                 if len(filePaths) == 0:
                     raise QueueDialogError("Directory does not contain any supported audio files (FLAC or SHN)");
-                elif len(metadata['tracklist']) != len(filePaths):
+                elif len(metadata['tracklist']) < len(filePaths):
                     raise QueueDialogError("Number of audio files does not match tracklist")
+
+                # If more tracks detected than files exist, assume the extra tracks are an error
+                del metadata['tracklist'][len(filePaths):]                
 
                 metadata['audioFiles'] = filePaths
 
