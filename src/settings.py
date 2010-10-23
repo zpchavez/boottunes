@@ -91,20 +91,30 @@ class Settings:
 
         """
         if 'addToITunesPath' not in self.settings or not os.path.exists(self.settings['addToITunesPath']):
-            possibilities = [
-                'Music' + os.sep + 'iTunes' + os.sep + 'iTunes Media',
-                'Music' + os.sep + 'iTunes' + os.sep + 'iTunes Music',
-                'My Documents' + os.sep + 'My Music' + os.sep + 'iTunes' + os.sep + 'iTunes Media',
-                'My Documents' + os.sep + 'My Music' + os.sep + 'iTunes' + os.sep + 'iTunes Music'
-            ]
-            userDir = os.path.expanduser('~')
-            for possibility in possibilities:
-                possiblePath = userDir + os.sep + possibility + os.sep + 'Automatically Add to iTunes'
-                if os.path.exists(possiblePath):
-                    settings['addToITunesPath'] = possiblePath
+            settings['addToITunesPath'] = self.getDetectedAddToITunesPath()
 
-        if 'addToITunesPath' not in self.settings or not os.path.exists(self.settings['addToITunesPath']):
+        if not self.settings['addToITunesPath']:
             raise SettingsError('Could not find Automatically Add to iTunes path')
+
+    def getDetectedAddToITunesPath(self):
+        """
+        Check the usual locations for the Automatically Add to iTunes folder and return it
+        if found, or None if not.
+
+        @rtype: unicode
+        """
+        possibilities = [
+            'Music' + os.sep + 'iTunes' + os.sep + 'iTunes Media',
+            'Music' + os.sep + 'iTunes' + os.sep + 'iTunes Music',
+            'My Documents' + os.sep + 'My Music' + os.sep + 'iTunes' + os.sep + 'iTunes Media',
+            'My Documents' + os.sep + 'My Music' + os.sep + 'iTunes' + os.sep + 'iTunes Music'
+        ]
+        userDir = os.path.expanduser('~')
+        for possibility in possibilities:
+            possiblePath = userDir + os.sep + possibility + os.sep + 'Automatically Add to iTunes'
+            if os.path.exists(possiblePath):
+                return unicode(possiblePath)
+        return None
 
     def getArtistDefaults(self, artist):
         """

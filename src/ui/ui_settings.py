@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'settings.ui'
 #
-# Created: Thu Oct  7 22:23:29 2010
+# Created: Fri Oct 22 19:34:55 2010
 #      by: PyQt4 UI code generator 4.7.6
 #
 # WARNING! All changes made in this file will be lost!
@@ -18,7 +18,7 @@ class Ui_SettingsDialog(object):
     def setupUi(self, SettingsDialog):
         SettingsDialog.setObjectName(_fromUtf8("SettingsDialog"))
         SettingsDialog.setWindowModality(QtCore.Qt.WindowModal)
-        SettingsDialog.resize(494, 280)
+        SettingsDialog.resize(504, 280)
         sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Preferred, QtGui.QSizePolicy.Preferred)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -29,6 +29,7 @@ class Ui_SettingsDialog(object):
         self.gridLayout_2 = QtGui.QGridLayout()
         self.gridLayout_2.setObjectName(_fromUtf8("gridLayout_2"))
         self.label_4 = QtGui.QLabel(SettingsDialog)
+        self.label_4.setToolTip(_fromUtf8(""))
         self.label_4.setObjectName(_fromUtf8("label_4"))
         self.gridLayout_2.addWidget(self.label_4, 0, 0, 1, 1)
         self.addToITunesPathTextEdit = QtGui.QTextEdit(SettingsDialog)
@@ -105,6 +106,9 @@ class Ui_SettingsDialog(object):
         self.horizontalLayout_2.setObjectName(_fromUtf8("horizontalLayout_2"))
         spacerItem3 = QtGui.QSpacerItem(88, 20, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Minimum)
         self.horizontalLayout_2.addItem(spacerItem3)
+        self.pushButton = QtGui.QPushButton(SettingsDialog)
+        self.pushButton.setObjectName(_fromUtf8("pushButton"))
+        self.horizontalLayout_2.addWidget(self.pushButton)
         self.buttonBox = QtGui.QDialogButtonBox(SettingsDialog)
         self.buttonBox.setStandardButtons(QtGui.QDialogButtonBox.Cancel|QtGui.QDialogButtonBox.Ok)
         self.buttonBox.setObjectName(_fromUtf8("buttonBox"))
@@ -117,11 +121,12 @@ class Ui_SettingsDialog(object):
         QtCore.QObject.connect(self.buttonBox, QtCore.SIGNAL(_fromUtf8("accepted()")), SettingsDialog.accept)
         QtCore.QObject.connect(self.buttonBox, QtCore.SIGNAL(_fromUtf8("rejected()")), SettingsDialog.reject)
         QtCore.QObject.connect(self.changeAddToITunesPathButton, QtCore.SIGNAL(_fromUtf8("clicked()")), SettingsDialog.changeAddToITunesPath)
+        QtCore.QObject.connect(self.pushButton, QtCore.SIGNAL(_fromUtf8("clicked()")), SettingsDialog.restoreDefaults)
         QtCore.QMetaObject.connectSlotsByName(SettingsDialog)
 
     def retranslateUi(self, SettingsDialog):
         SettingsDialog.setWindowTitle(QtGui.QApplication.translate("SettingsDialog", "Settings", None, QtGui.QApplication.UnicodeUTF8))
-        self.label_4.setText(QtGui.QApplication.translate("SettingsDialog", "Add to iTunes Path", None, QtGui.QApplication.UnicodeUTF8))
+        self.label_4.setText(QtGui.QApplication.translate("SettingsDialog", "\"Add to iTunes\" Path", None, QtGui.QApplication.UnicodeUTF8))
         self.label_2.setText(QtGui.QApplication.translate("SettingsDialog", "Album Title Format", None, QtGui.QApplication.UnicodeUTF8))
         self.label_3.setText(QtGui.QApplication.translate("SettingsDialog", "Date Format", None, QtGui.QApplication.UnicodeUTF8))
         self.label.setText(QtGui.QApplication.translate("SettingsDialog", "Default Cover Art", None, QtGui.QApplication.UnicodeUTF8))
@@ -133,4 +138,5 @@ class Ui_SettingsDialog(object):
         self.defaultArtRadioButtonImageFileVisicon.setText(QtGui.QApplication.translate("SettingsDialog", "Image File (fallback to Visicon)", None, QtGui.QApplication.UnicodeUTF8))
         self.changeAddToITunesPathButton.setText(QtGui.QApplication.translate("SettingsDialog", "Change Path", None, QtGui.QApplication.UnicodeUTF8))
         self.checkForUpdatesCheckBox.setText(QtGui.QApplication.translate("SettingsDialog", "Check For Updates On Startup", None, QtGui.QApplication.UnicodeUTF8))
+        self.pushButton.setText(QtGui.QApplication.translate("SettingsDialog", "Restore Defaults", None, QtGui.QApplication.UnicodeUTF8))
 

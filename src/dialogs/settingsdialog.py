@@ -22,18 +22,20 @@ class SettingsDialog(QDialog, Ui_SettingsDialog):
         self.setupUi(self)
         self.setWindowFlags(Qt.Window)
         self.resize(0, 0) # fixes problem of the window being too big on Windows
+
         self.albumTitleFormatLineEdit.setText(settings['albumTitleFormat'])
+
         if settings['defaultArt'] == 'Image File => Identicon':
-            self.defaultArtRadioButtonImageFileIdenticon.click()
+            self.defaultArtRadioButtonImageFileIdenticon.setChecked(True)
         elif settings['defaultArt'] == 'Image File => Visicon':
-            self.defaultArtRadioButtonImageFileVisicon.click()
+            self.defaultArtRadioButtonImageFileVisicon.setChecked(True)
         elif settings['defaultArt'] == 'Visicon':
-            self.defaultArtRadioButtonVisicon.click()
+            self.defaultArtRadioButtonVisicon.setChecked(True)
         else:
-            self.defaultArtRadioButtonIdenticon.click()
+            self.defaultArtRadioButtonIdenticon.setChecked(True)
 
         if settings['checkForUpdates']:
-            self.checkForUpdatesCheckBox.click()
+            self.checkForUpdatesCheckBox.setChecked(True)
 
         self.addToITunesPathTextEdit.setText(settings['addToITunesPath'])
 
@@ -60,11 +62,35 @@ class SettingsDialog(QDialog, Ui_SettingsDialog):
 
         settings['checkForUpdates'] = self.checkForUpdatesCheckBox.isChecked()        
 
+        settings['addToITunesPath'] = unicode(self.addToITunesPathTextEdit.toPlainText())
+
         self.parentWidget().refreshQueue()
         self.close()
 
+    def restoreDefaults(self):
+        self.albumTitleFormatLineEdit.setText(settings.defaults['albumTitleFormat'])
+        
+        if settings.defaults['defaultArt'] == 'Image File => Identicon':
+            self.defaultArtRadioButtonImageFileIdenticon.setChecked(True)
+        elif settings.defaults['defaultArt'] == 'Image File => Visicon':
+            self.defaultArtRadioButtonImageFileVisicon.setChecked(True)
+        elif settings.defaults['defaultArt'] == 'Visicon':
+            self.defaultArtRadioButtonVisicon.setChecked(True)
+        else:
+            self.defaultArtRadioButtonIdenticon.setChecked(True)
+    
+        self.checkForUpdatesCheckBox.setChecked(settings.defaults['checkForUpdates'])
+
+        defaultAddToITunesPath = settings.getDetectedAddToITunesPath()
+        if defaultAddToITunesPath:
+            self.addToITunesPathTextEdit.setText(defaultAddToITunesPath)
+
+        # Select the value saved in settings
+        self.dateFormatComboBox.setCurrentIndex(
+            self.dateFormatComboBox.findData(settings.defaults['dateFormat'])
+        )
+        
     def changeAddToITunesPath(self):
         dirName = QFileDialog.getExistingDirectory(self, 'Locate Directory', settings['addToITunesPath'])
-        if dirName:
-            settings['addToITunesPath'] = unicode(dirName)
-            self.addToITunesPathTextEdit.setText(settings['addToITunesPath'])
+        if dirName:            
+            self.addToITunesPathTextEdit.setText(dirName)

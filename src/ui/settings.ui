@@ -9,7 +9,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>494</width>
+    <width>504</width>
     <height>280</height>
    </rect>
   </property>
@@ -27,8 +27,11 @@
     <layout class="QGridLayout" name="gridLayout_2">
      <item row="0" column="0">
       <widget class="QLabel" name="label_4">
+       <property name="toolTip">
+        <string/>
+       </property>
        <property name="text">
-        <string>Add to iTunes Path</string>
+        <string>&quot;Add to iTunes&quot; Path</string>
        </property>
       </widget>
      </item>
@@ -237,6 +240,13 @@
       </spacer>
      </item>
      <item>
+      <widget class="QPushButton" name="pushButton">
+       <property name="text">
+        <string>Restore Defaults</string>
+       </property>
+      </widget>
+     </item>
+     <item>
       <widget class="QDialogButtonBox" name="buttonBox">
        <property name="standardButtons">
         <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
@@ -301,12 +311,28 @@
    <slot>changeAddToITunesPath()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>411</x>
-     <y>29</y>
+     <x>154</x>
+     <y>78</y>
     </hint>
     <hint type="destinationlabel">
      <x>437</x>
      <y>67</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>pushButton</sender>
+   <signal>clicked()</signal>
+   <receiver>SettingsDialog</receiver>
+   <slot>restoreDefaults()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>130</x>
+     <y>256</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>52</x>
+     <y>196</y>
     </hint>
    </hints>
   </connection>
@@ -315,5 +341,6 @@
   <slot>openFileDialog()</slot>
   <slot>changeDateFormat(QString)</slot>
   <slot>changeAddToITunesPath()</slot>
+  <slot>restoreDefaults()</slot>
  </slots>
 </ui>
