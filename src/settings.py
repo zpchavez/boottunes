@@ -41,7 +41,7 @@ class Settings:
     def __init__(self, file='settings'):                
         userDir = QDir(os.path.expanduser('~'))
 
-        userDir.cd('Library') or userDir.cd('Application Data') or userDir.cd('AppData')
+        userDir.cd('Application Data') or userDir.cd('AppData') or userDir.cd('Library')
         if not userDir.cd('BootTunes'):
             userDir.mkdir('BootTunes')
             userDir.cd('BootTunes')
