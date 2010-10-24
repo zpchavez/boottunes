@@ -481,7 +481,7 @@ class QueueDialog(QDialog, Ui_QueueDialog):
         """
         Cancel the conversion process.  Called when "Cancel" is pressed in the progress bar dialog.
         """        
-        self.processThread.stop()        
+        self.processThread.stop()
         self.processThread.terminate()
         self.removeCompletedRecordings()
 
@@ -598,7 +598,7 @@ class ProcessThread(QThread):
         @type sourcePcm: audiotool.PCMReader
         @type alacMetadata: audiotools.MetaData
         """        
-        alacFile = audiotools.AiffAudio.from_pcm(targetFile, sourcePcm)
+        alacFile = audiotools.ALACAudio.from_pcm(targetFile, sourcePcm)
         alacFile.set_metadata(alacMetadata)
 
     def stop(self):        
