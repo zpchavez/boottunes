@@ -13,7 +13,7 @@ import json
 import data
 
 # Load JSON files with city, state, and country names into global variables
-jsonPath = data.path + os.sep + 'json' + os.sep
+jsonPath = data.path + '/' + 'json' + '/'
 fileCities = open(jsonPath + 'common-cities.json')
 fileStates = open(jsonPath + 'states.json')
 fileProvinces = open(jsonPath + 'provinces.json')

@@ -25,7 +25,7 @@ class MessageBox(QMessageBox):
     @staticmethod
     def general(*args):
         Box = QMessageBox(0, args[1], args[2], QMessageBox.Ok, args[0])
-        pixmap = QPixmap(data.path + os.sep + 'media' + os.sep + 'logo.png')
+        pixmap = QPixmap(data.path + '/' + 'media' + '/' + 'logo.png')
         pixmap = pixmap.scaledToHeight(64)
         Box.setIconPixmap(pixmap)
         Box.exec_()

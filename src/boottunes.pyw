@@ -134,7 +134,7 @@ app.setApplicationName('BootTunes')
 window = MainWindow()
 window.show()
 
-logoPixmap = QPixmap(data.path + os.sep + 'media' + os.sep + 'logo.png')
+logoPixmap = QPixmap(data.path + '/' + 'media' + '/' + 'logo.png')
 icon = QIcon(logoPixmap)
 app.setWindowIcon(icon)
 

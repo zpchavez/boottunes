@@ -10,8 +10,8 @@ from settings import *
 
 class QueueDialogTestCase(unittest.TestCase):
 
-    testPath = os.path.dirname(__file__)
-    showPath = testPath + os.sep + 'test-shows'
+    testPath = unicode(QDir.fromNativeSeparators(os.path.dirname(__file__)))
+    showPath = testPath + '/' + 'test-shows'
 
     def setUp(self):
         self.settings = Settings('test')
@@ -26,19 +26,19 @@ class QueueDialogTestCase(unittest.TestCase):
         settings.clearTempFiles()
 
     def testGetMetadataFromDirGetsMetadataFromTheSpecifiedDirectory(self):
-        showPath = self.showPath + os.sep + 'show1'
+        showPath = self.showPath + '/' + 'show1'
         metadata = self.queuedialog.getMetadataFromDir(showPath)        
 
         self.assertEquals('576ef998d942f9ce90395321d5ae01a5', metadata['hash'])
         expectedAudioFiles = [
-            showPath + os.sep + '1.flac',
-            showPath + os.sep + '2.flac',
-            showPath + os.sep + '3.flac'
+            showPath + '/' + '1.flac',
+            showPath + '/' + '2.flac',
+            showPath + '/' + '3.flac'
         ]
-        expectedTempPath = settings.settingsDir + os.sep + metadata['hash']
+        expectedTempPath = settings.settingsDir + '/' + metadata['hash']
         self.assertEquals(expectedAudioFiles, metadata['audioFiles'])
         self.assertEquals('The Foo Bars', metadata['artist'])
-        self.assertEquals(expectedTempPath + os.sep + 'visicon.png', metadata['cover'])
+        self.assertEquals(expectedTempPath + '/' + 'visicon.png', metadata['cover'])
         self.assertEquals('Venue', metadata['venue'])
         self.assertEquals(datetime.date(1970, 7, 7), metadata['date'])
         self.assertEquals(
@@ -51,20 +51,20 @@ class QueueDialogTestCase(unittest.TestCase):
         self.assertEquals(showPath, metadata['dir'].absolutePath())
 
     def testGetMetadataFromDirWorksWhenAudioFilesAreSplitUpInSeparateSubFolders(self):
-        showPath = self.showPath + os.sep + 'show2'
+        showPath = self.showPath + '/' + 'show2'
         metadata = self.queuedialog.getMetadataFromDir(showPath)        
 
         self.assertEquals('78a7e838cef92aec7c4cf189864c58c6', metadata['hash'])
         expectedAudioFiles = [
-            showPath + os.sep + 'CD1' + os.sep + '1.shn',
-            showPath + os.sep + 'CD1' + os.sep + '2.shn',
-            showPath + os.sep + 'CD2' + os.sep + '1.shn',
-            showPath + os.sep + 'CD2' + os.sep + '2.shn'
+            showPath + '/' + 'CD1' + '/' + '1.shn',
+            showPath + '/' + 'CD1' + '/' + '2.shn',
+            showPath + '/' + 'CD2' + '/' + '1.shn',
+            showPath + '/' + 'CD2' + '/' + '2.shn'
         ]
-        expectedTempPath = settings.settingsDir + os.sep + metadata['hash']
+        expectedTempPath = settings.settingsDir + '/' + metadata['hash']
         self.assertEquals(expectedAudioFiles, metadata['audioFiles'])
         self.assertEquals('The Foo Bars', metadata['artist'])
-        self.assertEquals(expectedTempPath + os.sep + 'visicon.png', metadata['cover'])
+        self.assertEquals(expectedTempPath + '/' + 'visicon.png', metadata['cover'])
         self.assertEquals('Venue', metadata['venue'])
         self.assertEquals(datetime.date(1970, 7, 8), metadata['date'])
         self.assertEquals(
@@ -79,19 +79,19 @@ class QueueDialogTestCase(unittest.TestCase):
 
     def testIfMoreTracksCountedInTextFileThanThereAreAudioFilesIgnoreTheApparentExtraTracks(self):
         # The extra tracks are probably something else being listed in the text file
-        showPath = self.showPath + os.sep + 'show3'
+        showPath = self.showPath + '/' + 'show3'
         metadata = self.queuedialog.getMetadataFromDir(showPath)
 
         self.assertEquals('082225a633ead0ce383409370ba1fec3', metadata['hash'])
         expectedAudioFiles = [
-            showPath + os.sep + '1.flac',
-            showPath + os.sep + '2.flac',
-            showPath + os.sep + '3.flac'
+            showPath + '/' + '1.flac',
+            showPath + '/' + '2.flac',
+            showPath + '/' + '3.flac'
         ]
-        expectedTempPath = settings.settingsDir + os.sep + metadata['hash']
+        expectedTempPath = settings.settingsDir + '/' + metadata['hash']
         self.assertEquals(expectedAudioFiles, metadata['audioFiles'])
         self.assertEquals('The Foo Bars', metadata['artist'])
-        self.assertEquals(expectedTempPath + os.sep + 'visicon.png', metadata['cover'])
+        self.assertEquals(expectedTempPath + '/' + 'visicon.png', metadata['cover'])
         self.assertEquals('Venue', metadata['venue'])
         self.assertEquals(datetime.date(1970, 7, 7), metadata['date'])
 
@@ -101,7 +101,7 @@ class QueueDialogTestCase(unittest.TestCase):
         self.assertEquals(showPath, metadata['dir'].absolutePath())
         
     def testIfThereAreMoreAudioFilesThanThereAreTracksInTheTextFileRaiseQueueDialogError(self):
-        showPath = self.showPath + os.sep + 'show4'
+        showPath = self.showPath + '/' + 'show4'
         self.assertRaises(QueueDialogError, self.queuedialog.getMetadataFromDir, showPath)
         # Make sure the exception has the correct message
         try:

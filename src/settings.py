@@ -49,10 +49,10 @@ class Settings:
         self.settingsDir = unicode(userDir.absolutePath())
 
         basePath = unicode(userDir.absolutePath())
-        self.settingsPath = settingsPath = basePath + os.sep + file + '-settings'
-        self.defaultsPath = defaultsPath = basePath + os.sep + file + '-defaults'
-        self.namesPath = namesPath = basePath + os.sep + file + '-names'
-        self.completedPath = completedPath = basePath + os.sep + file + '-completed'
+        self.settingsPath = settingsPath = basePath + '/' + file + '-settings'
+        self.defaultsPath = defaultsPath = basePath + '/' + file + '-defaults'
+        self.namesPath = namesPath = basePath + '/' + file + '-names'
+        self.completedPath = completedPath = basePath + '/' + file + '-completed'
             
         if os.path.exists(settingsPath):
             fileSettings = codecs.open(settingsPath, 'r')
@@ -104,14 +104,14 @@ class Settings:
         @rtype: unicode
         """
         possibilities = [
-            'Music' + os.sep + 'iTunes' + os.sep + 'iTunes Media',
-            'Music' + os.sep + 'iTunes' + os.sep + 'iTunes Music',
-            'My Documents' + os.sep + 'My Music' + os.sep + 'iTunes' + os.sep + 'iTunes Media',
-            'My Documents' + os.sep + 'My Music' + os.sep + 'iTunes' + os.sep + 'iTunes Music'
+            'Music' + '/' + 'iTunes' + '/' + 'iTunes Media',
+            'Music' + '/' + 'iTunes' + '/' + 'iTunes Music',
+            'My Documents' + '/' + 'My Music' + '/' + 'iTunes' + '/' + 'iTunes Media',
+            'My Documents' + '/' + 'My Music' + '/' + 'iTunes' + '/' + 'iTunes Music'
         ]
         userDir = os.path.expanduser('~')
         for possibility in possibilities:
-            possiblePath = userDir + os.sep + possibility + os.sep + 'Automatically Add to iTunes'
+            possiblePath = userDir + '/' + possibility + '/' + 'Automatically Add to iTunes'
             if os.path.exists(possiblePath):
                 return unicode(possiblePath)
         return None
@@ -233,11 +233,11 @@ class Settings:
         settingsQDir = QDir(self.settingsDir)
         settingsQDir.setFilter(QDir.Dirs | QDir.NoDotAndDotDot)
         for dir in settingsQDir.entryList():
-            tempQDir = QDir(self.settingsDir + os.sep + dir)
+            tempQDir = QDir(self.settingsDir + '/' + dir)
             tempQDir.setFilter(QDir.Files)
             for tempFile in tempQDir.entryList():
                 tempQDir.remove(tempFile)
-            settingsQDir.rmdir(self.settingsDir + os.sep + dir)
+            settingsQDir.rmdir(self.settingsDir + '/' + dir)
 
 settings = Settings()
 """To share settings between modules, use this instance instead of creating new instances of Settings"""

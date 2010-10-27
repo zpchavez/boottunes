@@ -180,7 +180,7 @@ class QueueDialog(QDialog, Ui_QueueDialog):
                     if progress.wasCanceled():
                         raise LoadCanceledException
                     try:
-                        metadataList.append(self.getMetadataFromDir(qDir.absolutePath() + os.sep + dir))
+                        metadataList.append(self.getMetadataFromDir(qDir.absolutePath() + '/' + dir))
                     except QueueDialogError as e:
                         errorCount += 1
                     progress.setValue(index + 1)
@@ -238,17 +238,17 @@ class QueueDialog(QDialog, Ui_QueueDialog):
                 qDir.setNameFilters(['*.flac', '*.shn'])
                 filePaths = []
                 for file in qDir.entryList():
-                    filePath = (unicode(qDir.absolutePath() + os.sep + file))
+                    filePath = (unicode(qDir.absolutePath() + '/' + file))
                     filePaths.append(filePath)
                 # The show could be split up between folders, e.g. CD1 and CD2
                 if len(filePaths) == 0:
                     qDir.setNameFilters('*')
                     qDir.setFilter(QDir.Dirs | QDir.NoDotAndDotDot)
                     for subdirStr in qDir.entryList():
-                        qSubdir = QDir(qDir.absolutePath() + os.sep + subdirStr)
+                        qSubdir = QDir(qDir.absolutePath() + '/' + subdirStr)
                         qSubdir.setNameFilters(['*.flac', '*.shn'])
                         for file in qSubdir.entryList():
-                            filePaths.append(unicode(qSubdir.absolutePath()) + os.sep + unicode(file))
+                            filePaths.append(unicode(qSubdir.absolutePath()) + '/' + unicode(file))
 
                 if len(filePaths) == 0:
                     raise QueueDialogError("Directory does not contain any supported audio files (FLAC or SHN)");
@@ -273,7 +273,7 @@ class QueueDialog(QDialog, Ui_QueueDialog):
                 # Hash used for identicons and temp directory names
                 metadata['hash'] = hashlib.md5(metadata['comments'].encode('utf_8')).hexdigest()
                 # The dir where all temporary files for this recording will be stored
-                metadata['tempDir'] = QDir(settings.settingsDir + os.sep + metadata['hash'])
+                metadata['tempDir'] = QDir(settings.settingsDir + '/' + metadata['hash'])
                 if not metadata['tempDir'].exists():
                     metadata['tempDir'].mkpath(metadata['tempDir'].absolutePath())
                 metadata['cover'] = CoverArtRetriever.getCoverImageChoices(metadata)[0][0]                
@@ -454,7 +454,7 @@ class QueueDialog(QDialog, Ui_QueueDialog):
         Called on completion of ProcessThread.
         """
         if self.processThread.completed:
-            soundPath = data.path + os.sep + 'media' + os.sep + 'complete.wav'
+            soundPath = data.path + '/' + 'media' + '/' + 'complete.wav'
             QSound.play(soundPath)
             # Make the plurality of the words match the counts in the conversion summary message
             trackStr = ' track' if self.trackCount == 1 else ' tracks'
@@ -549,7 +549,7 @@ class ProcessThread(QThread):
 
             alacMetadata.add_image(audiotools.Image.new(currentRecording['imageData'], 'cover', 0))
             sourcePcm = currentRecording['pcmReaders'][parent.currentTrack]
-            targetFile = tempDirPath + os.sep + unicode(parent.currentTrack) + u'.m4a'
+            targetFile = tempDirPath + '/' + unicode(parent.currentTrack) + u'.m4a'
 
             # If on Mac, run as a separate process
             if platform.system() == 'Darwin':
@@ -576,7 +576,7 @@ class ProcessThread(QThread):
                 for audioFile in metadata['tempDir'].entryList():
                     metadata['tempDir'].rename(
                         audioFile,
-                        settings['addToITunesPath'] + os.sep + metadata['hash'] + os.sep + audioFile
+                        settings['addToITunesPath'] + '/' + metadata['hash'] + '/' + audioFile
                     )
                 if not settings.isCompleted(metadata['hash']):
                     settings.addCompleted(metadata['hash'])
