@@ -32,8 +32,8 @@ class AudiotoolsTestCase(unittest.TestCase):
         audioFile = audiotools.open(self.showPath + '/show2/CD1/1.shn')
         pcmReader = audioFile.to_pcm()
         self.antiCrashBin.append(pcmReader)
-        alacFile = audiotools.ALACAudio.from_pcm(self.testPath + '/output/2.m4a')
-        self.assertTrue(os.path.exists(self.testPath + '/output/2.m4a', pcmReader))
+        alacFile = audiotools.ALACAudio.from_pcm(self.testPath + '/output/2.m4a', pcmReader)
+        self.assertTrue(os.path.exists(self.testPath + '/output/2.m4a'))
         pass
     
 if __name__ == '__main__':
