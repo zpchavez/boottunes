@@ -56,28 +56,40 @@ class Settings:
             
         if os.path.exists(settingsPath):
             fileSettings = codecs.open(settingsPath, 'r')
-            self.settings = cPickle.load(fileSettings) or {}
+            try:
+                self.settings = cPickle.load(fileSettings) or {}
+            except EOFError:
+                self.settings = {}
             fileSettings.close()
         else:
             self.settings = {}
 
         if os.path.exists(defaultsPath):
             fileDefaults = codecs.open(defaultsPath, 'r')
-            self.artist_defaults = cPickle.load(fileDefaults) or {}
+            try:
+                self.artist_defaults = cPickle.load(fileDefaults) or {}
+            except EOFError:
+                self.artist_defaults = {}
             fileDefaults.close()            
         else:
             self.artist_defaults = {}
 
         if os.path.exists(namesPath):
             fileNames = codecs.open(namesPath, 'r')
-            self.artist_names = cPickle.load(fileNames) or {}
+            try:
+                self.artist_names = cPickle.load(fileNames) or {}
+            except EOFError:
+                self.artist_names = {}
             fileNames.close()
         else:
             self.artist_names = {}
 
         if os.path.exists(completedPath):
             completed = codecs.open(completedPath, 'r')
-            self.completed = cPickle.load(completed) or {}
+            try:
+                self.completed = cPickle.load(completed) or {}
+            except EOFError:
+                self.completed = {}
             completed.close()            
         else:
             self.completed = {0:[]}
