@@ -17,23 +17,30 @@
 #along with this program; if not, write to the Free Software
 #Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 
+"""The TOC file handling module."""
+
 import re
-from audiotools import SheetException,parse_timestamp,build_timestamp
+from audiotools import SheetException, parse_timestamp, build_timestamp
 import gettext
 
-gettext.install("audiotools",unicode=True)
+gettext.install("audiotools", unicode=True)
 
 ###################
 #TOC Parsing
 ###################
 
-class TOCException(SheetException): pass
 
-#takes an iterator of lines
-#parses the TOCFile lines
-#returns a TOCFile object
-#or raises TOCException if we hit a parsing error
+class TOCException(SheetException):
+    """Raised by TOC file parsing errors."""
+
+    pass
+
+
 def parse(lines):
+    """Returns a TOCFile object from an iterator of lines.
+
+    Raises TOCException if some problem occurs parsing the file."""
+
     TRACKLINE = re.compile(r'TRACK AUDIO')
 
     lines = list(lines)
@@ -66,13 +73,15 @@ def parse(lines):
                     if (line.startswith('FILE') or
                         line.startswith('AUDIOFILE')):
                         if ('"' in line):
-                            track.indexes = map(parse_timestamp,
-                                                re.findall(r'\d+:\d+:\d+|\d+',
-                                                           line[line.rindex('"') + 1:]))
+                            track.indexes = map(
+                                parse_timestamp,
+                                re.findall(r'\d+:\d+:\d+|\d+',
+                                           line[line.rindex('"') + 1:]))
                         else:
-                            track.indexes = map(parse_timestamp,
-                                                re.findall(r'\d+:\d+:\d+|\d+',
-                                                           line))
+                            track.indexes = map(
+                                parse_timestamp,
+                                re.findall(r'\d+:\d+:\d+|\d+',
+                                           line))
                     elif (line.startswith('START')):
                         track.start = parse_timestamp(line[len('START '):])
                 else:
@@ -82,7 +91,10 @@ def parse(lines):
             toc.tracks[track.number] = track
         return toc
 
+
 class TOCFile:
+    """An object representing a TOC file."""
+
     def __init__(self):
         self.lines = []
         self.tracks = {}
@@ -92,9 +104,13 @@ class TOCFile:
                                                 repr(self.tracks))
 
     def catalog(self):
+        """Returns the cuesheet's CATALOG number as a plain string, or None.
+
+        If present, this value is typically a CD's UPC code."""
+
         for line in self.lines:
             if (line.startswith('CATALOG')):
-                result = re.search(r'"(.+)"',line)
+                result = re.search(r'"(.+)"', line)
                 if (result is not None):
                     return result.group(1)
                 else:
@@ -103,13 +119,19 @@ class TOCFile:
             return None
 
     def indexes(self):
+        """Yields a set of index lists, one for each track in the file."""
+
         for track in sorted(self.tracks.values()):
             if (track.start != 0):
-                yield (track.indexes[0],track.indexes[0] + track.start)
+                yield (track.indexes[0], track.indexes[0] + track.start)
             else:
                 yield (track.indexes[0],)
 
     def pcm_lengths(self, total_length):
+        """Yields a list of PCM lengths for all audio tracks within the file.
+
+        total_length is the length of the entire file in PCM frames."""
+
         previous = None
 
         for current in self.indexes():
@@ -123,23 +145,27 @@ class TOCFile:
 
         yield total_length
 
-    #returns a track_number->ISRC dict
-    #of all tracks whose ISRC is not empty
     def ISRCs(self):
-        return dict([(track.number,track.ISRC()) for track in
+        """Returns a track_number->ISRC dict of all non-empty tracks."""
+
+        return dict([(track.number, track.ISRC()) for track in
                      self.tracks.values() if track.ISRC() is not None])
 
-    #takes a sheet-compatible object with
-    #catalog(), indexes() and ISRCs() methods
-    #along with a filename string
-    #returns a string of a newly-generated TOC file
     @classmethod
-    def file(cls,sheet,filename):
+    def file(cls, sheet, filename):
+        """Constructs a new TOC file string from a compatible object.
+
+        sheet must have catalog(), indexes() and ISRCs() methods.
+        filename is a string to the filename the TOC file is created for.
+        Although we don't care whether the filename points to a real file,
+        other tools sometimes do.
+        """
+
         import cStringIO
 
-        catalog = sheet.catalog()       #a catalog string, or None
-        indexes = list(sheet.indexes()) #a list of index tuples
-        ISRCs = sheet.ISRCs()           #a track_number->ISRC dict
+        catalog = sheet.catalog()        # a catalog string, or None
+        indexes = list(sheet.indexes())  # a list of index tuples
+        ISRCs = sheet.ISRCs()            # a track_number->ISRC dict
 
         data = cStringIO.StringIO()
         data.write("CD_DA\n\n")
@@ -147,7 +173,8 @@ class TOCFile:
         if ((catalog is not None) and (len(catalog) > 0)):
             data.write("CATALOG \"%s\"\n\n" % (catalog))
 
-        for (i,(current,next)) in enumerate(zip(indexes,indexes[1:] + [None])):
+        for (i, (current, next)) in enumerate(zip(indexes,
+                                                  indexes[1:] + [None])):
             tracknum = i + 1
 
             data.write("TRACK AUDIO\n")
@@ -173,35 +200,45 @@ class TOCFile:
 
         return data.getvalue()
 
+
 class Track:
+    """A track inside a TOCFile object."""
+
     def __init__(self, number):
         self.number = number
         self.lines = []
         self.indexes = []
         self.start = 0
 
-    def __cmp__(self,t):
-        return cmp(self.number,t.number)
+    def __cmp__(self, t):
+        return cmp(self.number, t.number)
 
     def __repr__(self):
         return "Track(%s,lines=%s,indexes=%s,start=%s)" % \
-            (repr(self.number),repr(self.lines),
-             repr(self.indexes),repr(self.start))
+            (repr(self.number), repr(self.lines),
+             repr(self.indexes), repr(self.start))
 
-    #returns the ISRC value of this track, or None if it cannot be found
     def ISRC(self):
+        """Returns the track's ISRC value, or None."""
+
         for line in self.lines:
             if (line.startswith('ISRC')):
-                match = re.search(r'"(.+)"',line)
+                match = re.search(r'"(.+)"', line)
                 if (match is not None):
                     return match.group(1)
         else:
             return None
 
+
 def read_tocfile(filename):
+    """Returns a TOCFile from a TOC filename on disk.
+
+    Raises TOCException if some error occurs reading or parsing the file.
+    """
+
     try:
-        f = open(filename,'r')
-    except IOError,msg:
+        f = open(filename, 'r')
+    except IOError, msg:
         raise TOCException(str(msg))
     try:
         return parse(iter(f.readlines()))

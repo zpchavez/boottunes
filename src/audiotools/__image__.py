@@ -17,12 +17,13 @@
 #along with this program; if not, write to the Free Software
 #Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 
-from audiotools import construct
+from audiotools import Con
 import imghdr
 import cStringIO
 import gettext
 
-gettext.install("audiotools",unicode=True)
+gettext.install("audiotools", unicode=True)
+
 
 def __jpeg__(h, f):
     if (h[0:3] == "FFD8FF".decode('hex')):
@@ -30,14 +31,17 @@ def __jpeg__(h, f):
     else:
         return None
 
+
 imghdr.tests.append(__jpeg__)
 
 
-#takes a string of file data
-#returns an ImageMetrics class if the file can be identified
-#raises InvalidImage if there is an error or the file is unknown
 def image_metrics(file_data):
-    header = imghdr.what(None,file_data)
+    """Returns an ImageMetrics subclass from a string of file data.
+
+    Raises InvalidImage if there is an error parsing the file
+    or its type is unknown."""
+
+    header = imghdr.what(None, file_data)
 
     file = cStringIO.StringIO(file_data)
     try:
@@ -56,12 +60,30 @@ def image_metrics(file_data):
     finally:
         file.close()
 
+
 #######################
 #JPEG
 #######################
 
+
 class ImageMetrics:
+    """A container for image data."""
+
     def __init__(self, width, height, bits_per_pixel, color_count, mime_type):
+        """Fields are as follows:
+
+        width          - image width as an integer number of pixels
+        height         - image height as an integer number of pixels
+        bits_per_pixel - the number of bits per pixel as an integer
+        color_count    - for palette-based images, the total number of colors
+        mime_type      - the image's MIME type, as a string
+
+        All of the ImageMetrics subclasses implement these fields.
+        In addition, they all implement a parse() classmethod
+        used to parse binary string data and return something
+        ImageMetrics compatible.
+        """
+
         self.width = width
         self.height = height
         self.bits_per_pixel = bits_per_pixel
@@ -76,38 +98,46 @@ class ImageMetrics:
                 repr(self.color_count),
                 repr(self.mime_type))
 
+
 class InvalidImage(Exception):
-    def __init__(self,err):
+    """Raised if an image cannot be parsed correctly."""
+
+    def __init__(self, err):
         self.err = unicode(err)
 
     def __unicode__(self):
         return self.err
 
-class InvalidJPEG(InvalidImage): pass
+
+class InvalidJPEG(InvalidImage):
+    """Raised if a JPEG cannot be parsed correctly."""
+
+    pass
+
 
 class __JPEG__(ImageMetrics):
-    SEGMENT_HEADER = construct.Struct('segment_header',
-                                construct.Const(construct.Byte('header'),0xFF),
-                                construct.Byte('type'),
-                                construct.If(
-        lambda ctx: ctx['type'] not in (0xD8,0xD9),
-        construct.UBInt16('length')))
+    SEGMENT_HEADER = Con.Struct('segment_header',
+                                Con.Const(Con.Byte('header'), 0xFF),
+                                Con.Byte('type'),
+                                Con.If(
+        lambda ctx: ctx['type'] not in (0xD8, 0xD9),
+        Con.UBInt16('length')))
 
-    APP0 = construct.Struct('JFIF_segment_marker',
-                      construct.String('identifier',5),
-                      construct.Byte('major_version'),
-                      construct.Byte('minor_version'),
-                      construct.Byte('density_units'),
-                      construct.UBInt16('x_density'),
-                      construct.UBInt16('y_density'),
-                      construct.Byte('thumbnail_width'),
-                      construct.Byte('thumbnail_height'))
+    APP0 = Con.Struct('JFIF_segment_marker',
+                      Con.String('identifier', 5),
+                      Con.Byte('major_version'),
+                      Con.Byte('minor_version'),
+                      Con.Byte('density_units'),
+                      Con.UBInt16('x_density'),
+                      Con.UBInt16('y_density'),
+                      Con.Byte('thumbnail_width'),
+                      Con.Byte('thumbnail_height'))
 
-    SOF = construct.Struct('start_of_frame',
-                     construct.Byte('data_precision'),
-                     construct.UBInt16('image_height'),
-                     construct.UBInt16('image_width'),
-                     construct.Byte('components'))
+    SOF = Con.Struct('start_of_frame',
+                     Con.Byte('data_precision'),
+                     Con.UBInt16('image_height'),
+                     Con.UBInt16('image_width'),
+                     Con.Byte('components'))
 
     def __init__(self, width, height, bits_per_pixel):
         ImageMetrics.__init__(self, width, height, bits_per_pixel,
@@ -125,27 +155,26 @@ class __JPEG__(ImageMetrics):
                 if (segment.type == 0xDA):
                     break
 
-                if (segment.type in (0xC0,0xC1,0xC2,0xC3,
-                                     0xC5,0XC5,0xC6,0xC7,
-                                     0xC9,0xCA,0xCB,0xCD,
-                                     0xCE,0xCF)): #start of frame
+                if (segment.type in (0xC0, 0xC1, 0xC2, 0xC3,
+                                     0xC5, 0XC5, 0xC6, 0xC7,
+                                     0xC9, 0xCA, 0xCB, 0xCD,
+                                     0xCE, 0xCF)):  # start of frame
                     segment_data = cStringIO.StringIO(
                         file.read(segment.length - 2))
                     frame0 = cls.SOF.parse_stream(segment_data)
                     segment_data.close()
 
-                    return __JPEG__(width = frame0.image_width,
-                                    height = frame0.image_height,
-                                    bits_per_pixel = (frame0.data_precision * \
-                                                      frame0.components))
+                    return __JPEG__(width=frame0.image_width,
+                                    height=frame0.image_height,
+                                    bits_per_pixel=(frame0.data_precision *
+                                                    frame0.components))
                 else:
-                    file.seek(segment.length - 2,1)
+                    file.seek(segment.length - 2, 1)
 
                 segment = cls.SEGMENT_HEADER.parse_stream(file)
 
-
             raise InvalidJPEG(_(u'Start of frame not found'))
-        except construct.ConstError:
+        except Con.ConstError:
             raise InvalidJPEG(_(u"Invalid JPEG segment marker at 0x%X") % \
                                   (file.tell()))
 
@@ -154,25 +183,30 @@ class __JPEG__(ImageMetrics):
 #PNG
 #######################
 
-class InvalidPNG(InvalidImage): pass
+
+class InvalidPNG(InvalidImage):
+    """Raised if a PNG cannot be parsed correctly."""
+
+    pass
+
 
 class __PNG__(ImageMetrics):
-    HEADER = construct.Const(construct.String('header',8),
+    HEADER = Con.Const(Con.String('header', 8),
                        '89504e470d0a1a0a'.decode('hex'))
-    CHUNK_HEADER = construct.Struct('chunk',
-                              construct.UBInt32('length'),
-                              construct.String('type',4))
-    CHUNK_FOOTER = construct.Struct('crc32',
-                              construct.UBInt32('crc'))
+    CHUNK_HEADER = Con.Struct('chunk',
+                              Con.UBInt32('length'),
+                              Con.String('type', 4))
+    CHUNK_FOOTER = Con.Struct('crc32',
+                              Con.UBInt32('crc'))
 
-    IHDR = construct.Struct('IHDR',
-                      construct.UBInt32('width'),
-                      construct.UBInt32('height'),
-                      construct.Byte('bit_depth'),
-                      construct.Byte('color_type'),
-                      construct.Byte('compression_method'),
-                      construct.Byte('filter_method'),
-                      construct.Byte('interlace_method'))
+    IHDR = Con.Struct('IHDR',
+                      Con.UBInt32('width'),
+                      Con.UBInt32('height'),
+                      Con.Byte('bit_depth'),
+                      Con.Byte('color_type'),
+                      Con.Byte('compression_method'),
+                      Con.Byte('filter_method'),
+                      Con.Byte('interlace_method'))
 
     def __init__(self, width, height, bits_per_pixel, color_count):
         ImageMetrics.__init__(self, width, height, bits_per_pixel, color_count,
@@ -199,55 +233,62 @@ class __PNG__(ImageMetrics):
                 data = file.read(chunk_header.length)
                 chunk_footer = cls.CHUNK_FOOTER.parse_stream(file)
 
-            if (ihdr.color_type == 0):   #grayscale
+            if (ihdr.color_type == 0):    # grayscale
                 bits_per_pixel = ihdr.bit_depth
                 color_count = 0
-            elif (ihdr.color_type == 2): #RGB
+            elif (ihdr.color_type == 2):  # RGB
                 bits_per_pixel = ihdr.bit_depth * 3
                 color_count = 0
-            elif (ihdr.color_type == 3): #palette
+            elif (ihdr.color_type == 3):  # palette
                 bits_per_pixel = 8
                 if ((len(plte) % 3) != 0):
                     raise InvalidPNG(_(u'Invalid PLTE chunk length'))
                 else:
                     color_count = len(plte) / 3
-            elif (ihdr.color_type == 4): #grayscale + alpha
+            elif (ihdr.color_type == 4):  # grayscale + alpha
                 bits_per_pixel = ihdr.bit_depth * 2
                 color_count = 0
-            elif (ihdr.color_type == 6): #RGB + alpha
+            elif (ihdr.color_type == 6):  # RGB + alpha
                 bits_per_pixel = ihdr.bit_depth * 4
                 color_count = 0
 
-            return __PNG__(ihdr.width,ihdr.height,bits_per_pixel,color_count)
-        except construct.ConstError:
+            return __PNG__(ihdr.width, ihdr.height, bits_per_pixel,
+                           color_count)
+        except Con.ConstError:
             raise InvalidPNG(_(u'Invalid PNG'))
+
 
 #######################
 #BMP
 #######################
 
-class InvalidBMP(InvalidImage): pass
+
+class InvalidBMP(InvalidImage):
+    """Raised if a BMP cannot be parsed correctly."""
+
+    pass
+
 
 class __BMP__(ImageMetrics):
-    HEADER = construct.Struct('bmp_header',
-                        construct.Const(construct.String('magic_number',2),'BM'),
-                        construct.ULInt32('file_size'),
-                        construct.ULInt16('reserved1'),
-                        construct.ULInt16('reserved2'),
-                        construct.ULInt32('bitmap_data_offset'))
+    HEADER = Con.Struct('bmp_header',
+                        Con.Const(Con.String('magic_number', 2), 'BM'),
+                        Con.ULInt32('file_size'),
+                        Con.ULInt16('reserved1'),
+                        Con.ULInt16('reserved2'),
+                        Con.ULInt32('bitmap_data_offset'))
 
-    INFORMATION = construct.Struct('bmp_information',
-                             construct.ULInt32('header_size'),
-                             construct.ULInt32('width'),
-                             construct.ULInt32('height'),
-                             construct.ULInt16('color_planes'),
-                             construct.ULInt16('bits_per_pixel'),
-                             construct.ULInt32('compression_method'),
-                             construct.ULInt32('image_size'),
-                             construct.ULInt32('horizontal_resolution'),
-                             construct.ULInt32('vertical_resolution'),
-                             construct.ULInt32('colors_used'),
-                             construct.ULInt32('important_colors_used'))
+    INFORMATION = Con.Struct('bmp_information',
+                             Con.ULInt32('header_size'),
+                             Con.ULInt32('width'),
+                             Con.ULInt32('height'),
+                             Con.ULInt16('color_planes'),
+                             Con.ULInt16('bits_per_pixel'),
+                             Con.ULInt32('compression_method'),
+                             Con.ULInt32('image_size'),
+                             Con.ULInt32('horizontal_resolution'),
+                             Con.ULInt32('vertical_resolution'),
+                             Con.ULInt32('colors_used'),
+                             Con.ULInt32('important_colors_used'))
 
     def __init__(self, width, height, bits_per_pixel, color_count):
         ImageMetrics.__init__(self, width, height, bits_per_pixel, color_count,
@@ -263,34 +304,41 @@ class __BMP__(ImageMetrics):
                            information.bits_per_pixel,
                            information.colors_used)
 
-        except construct.ConstError:
+        except Con.ConstError:
             raise InvalidBMP(_(u'Invalid BMP'))
+
 
 #######################
 #GIF
 #######################
 
-class InvalidGIF(InvalidImage): pass
+
+class InvalidGIF(InvalidImage):
+    """Raised if a GIF cannot be parsed correctly."""
+
+    pass
+
 
 class __GIF__(ImageMetrics):
-    HEADER = construct.Struct('header',
-                        construct.Const(construct.String('gif',3),'GIF'),
-                        construct.String('version',3))
+    HEADER = Con.Struct('header',
+                        Con.Const(Con.String('gif', 3), 'GIF'),
+                        Con.String('version', 3))
 
-    SCREEN_DESCRIPTOR = construct.Struct('logical_screen_descriptor',
-                                   construct.ULInt16('width'),
-                                   construct.ULInt16('height'),
-                                   construct.Embed(
-        construct.BitStruct('packed_fields',
-                      construct.Flag('global_color_table'),
-                      construct.Bits('color_resolution',3),
-                      construct.Flag('sort'),
-                      construct.Bits('global_color_table_size',3))),
-                                   construct.Byte('background_color_index'),
-                                   construct.Byte('pixel_aspect_ratio'))
+    SCREEN_DESCRIPTOR = Con.Struct('logical_screen_descriptor',
+                                   Con.ULInt16('width'),
+                                   Con.ULInt16('height'),
+                                   Con.Embed(
+        Con.BitStruct('packed_fields',
+                      Con.Flag('global_color_table'),
+                      Con.Bits('color_resolution', 3),
+                      Con.Flag('sort'),
+                      Con.Bits('global_color_table_size', 3))),
+                                   Con.Byte('background_color_index'),
+                                   Con.Byte('pixel_aspect_ratio'))
 
     def __init__(self, width, height, color_count):
-        ImageMetrics.__init__(self, width, height, 8, color_count, u'image/gif')
+        ImageMetrics.__init__(self, width, height, 8, color_count,
+                              u'image/gif')
 
     @classmethod
     def parse(cls, file):
@@ -300,48 +348,54 @@ class __GIF__(ImageMetrics):
 
             return __GIF__(descriptor.width, descriptor.height,
                            2 ** (descriptor.global_color_table_size + 1))
-        except construct.ConstError:
+        except Con.ConstError:
             raise InvalidGIF(_(u'Invalid GIF'))
+
 
 #######################
 #TIFF
 #######################
 
-class InvalidTIFF(InvalidImage): pass
+
+class InvalidTIFF(InvalidImage):
+    """Raised if a TIFF cannot be parsed correctly."""
+
+    pass
+
 
 class __TIFF__(ImageMetrics):
-    HEADER = construct.Struct('header',
-                        construct.String('byte_order',2),
-                        construct.Switch('order',
+    HEADER = Con.Struct('header',
+                        Con.String('byte_order', 2),
+                        Con.Switch('order',
                                    lambda ctx: ctx['byte_order'],
-                                   {"II":construct.Embed(
-        construct.Struct('little_endian',
-                   construct.Const(construct.ULInt16('version'),42),
-                   construct.ULInt32('offset'))),
-                                    "MM":construct.Embed(
-        construct.Struct('big_endian',
-                   construct.Const(construct.UBInt16('version'),42),
-                   construct.UBInt32('offset')))}))
+                                   {"II": Con.Embed(
+        Con.Struct('little_endian',
+                   Con.Const(Con.ULInt16('version'), 42),
+                   Con.ULInt32('offset'))),
+                                    "MM": Con.Embed(
+        Con.Struct('big_endian',
+                   Con.Const(Con.UBInt16('version'), 42),
+                   Con.UBInt32('offset')))}))
 
-    L_IFD = construct.Struct('ifd',
-                       construct.PrefixedArray(
-        length_field=construct.ULInt16('length'),
-        subcon=construct.Struct('tags',
-                          construct.ULInt16('id'),
-                          construct.ULInt16('type'),
-                          construct.ULInt32('count'),
-                          construct.ULInt32('offset'))),
-                       construct.ULInt32('next'))
+    L_IFD = Con.Struct('ifd',
+                       Con.PrefixedArray(
+        length_field=Con.ULInt16('length'),
+        subcon=Con.Struct('tags',
+                          Con.ULInt16('id'),
+                          Con.ULInt16('type'),
+                          Con.ULInt32('count'),
+                          Con.ULInt32('offset'))),
+                       Con.ULInt32('next'))
 
-    B_IFD = construct.Struct('ifd',
-                       construct.PrefixedArray(
-        length_field=construct.UBInt16('length'),
-        subcon=construct.Struct('tags',
-                          construct.UBInt16('id'),
-                          construct.UBInt16('type'),
-                          construct.UBInt32('count'),
-                          construct.UBInt32('offset'))),
-                       construct.UBInt32('next'))
+    B_IFD = Con.Struct('ifd',
+                       Con.PrefixedArray(
+        length_field=Con.UBInt16('length'),
+        subcon=Con.Struct('tags',
+                          Con.UBInt16('id'),
+                          Con.UBInt16('type'),
+                          Con.UBInt32('count'),
+                          Con.UBInt32('offset'))),
+                       Con.UBInt32('next'))
 
     def __init__(self, width, height, bits_per_pixel, color_count):
         ImageMetrics.__init__(self, width, height,
@@ -350,40 +404,38 @@ class __TIFF__(ImageMetrics):
 
     @classmethod
     def b_tag_value(cls, file, tag):
-        subtype = {1:construct.Byte("data"),
-                   2:construct.CString("data"),
-                   3:construct.UBInt16("data"),
-                   4:construct.UBInt32("data"),
-                   5:construct.Struct("data",
-                                construct.UBInt32("high"),
-                                construct.UBInt32("low"))}[tag.type]
+        subtype = {1: Con.Byte("data"),
+                   2: Con.CString("data"),
+                   3: Con.UBInt16("data"),
+                   4: Con.UBInt32("data"),
+                   5: Con.Struct("data",
+                                 Con.UBInt32("high"),
+                                 Con.UBInt32("low"))}[tag.type]
 
-
-        data = construct.StrictRepeater(tag.count,
+        data = Con.StrictRepeater(tag.count,
                                   subtype)
         if ((tag.type != 2) and (data.sizeof() <= 4)):
             return tag.offset
         else:
-            file.seek(tag.offset,0)
+            file.seek(tag.offset, 0)
             return data.parse_stream(file)
 
     @classmethod
     def l_tag_value(cls, file, tag):
-        subtype = {1:construct.Byte("data"),
-                   2:construct.CString("data"),
-                   3:construct.ULInt16("data"),
-                   4:construct.ULInt32("data"),
-                   5:construct.Struct("data",
-                                construct.ULInt32("high"),
-                                construct.ULInt32("low"))}[tag.type]
+        subtype = {1: Con.Byte("data"),
+                   2: Con.CString("data"),
+                   3: Con.ULInt16("data"),
+                   4: Con.ULInt32("data"),
+                   5: Con.Struct("data",
+                                 Con.ULInt32("high"),
+                                 Con.ULInt32("low"))}[tag.type]
 
-
-        data = construct.StrictRepeater(tag.count,
+        data = Con.StrictRepeater(tag.count,
                                   subtype)
         if ((tag.type != 2) and (data.sizeof() <= 4)):
             return tag.offset
         else:
-            file.seek(tag.offset,0)
+            file.seek(tag.offset, 0)
             return data.parse_stream(file)
 
     @classmethod
@@ -404,21 +456,21 @@ class __TIFF__(ImageMetrics):
             else:
                 raise InvalidTIFF(_(u'Invalid byte order'))
 
-            file.seek(header.offset,0)
+            file.seek(header.offset, 0)
 
             ifd = IFD.parse_stream(file)
 
             while (True):
                 for tag in ifd.tags:
                     if (tag.id == 0x0100):
-                        width = tag_value(file,tag)
+                        width = tag_value(file, tag)
                     elif (tag.id == 0x0101):
-                        height = tag_value(file,tag)
+                        height = tag_value(file, tag)
                     elif (tag.id == 0x0102):
                         try:
-                            bits_per_sample = sum(tag_value(file,tag))
+                            bits_per_sample = sum(tag_value(file, tag))
                         except TypeError:
-                            bits_per_sample = tag_value(file,tag)
+                            bits_per_sample = tag_value(file, tag)
                     elif (tag.id == 0x0140):
                         color_count = tag.count / 3
                     else:
@@ -427,39 +479,44 @@ class __TIFF__(ImageMetrics):
                 if (ifd.next == 0x00):
                     break
                 else:
-                    file.seek(ifd.next,0)
+                    file.seek(ifd.next, 0)
                     ifd = IFD.parse_stream(file)
 
-            return __TIFF__(width,height,bits_per_sample,color_count)
-        except construct.ConstError:
+            return __TIFF__(width, height, bits_per_sample, color_count)
+        except Con.ConstError:
             raise InvalidTIFF(_(u'Invalid TIFF'))
 
 
-#returns True if we have the capability to thumbnail images
-#False if not
 def can_thumbnail():
+    """Returns True if we have the capability to thumbnail images."""
+
     try:
         import Image as PIL_Image
         return True
     except ImportError:
         return False
 
-#returns a list of available thumbnail image formats
+
 def thumbnail_formats():
+    """Returns a list of available thumbnail image formats."""
+
     import Image as PIL_Image
     import cStringIO
 
     #performing a dummy save seeds PIL_Image.SAVE with possible save types
-    PIL_Image.new("RGB",(1,1)).save(cStringIO.StringIO(),"bmp")
+    PIL_Image.new("RGB", (1, 1)).save(cStringIO.StringIO(), "bmp")
 
     return PIL_Image.SAVE.keys()
 
-#takes a string of raw image data
-#along with width and height integers
-#and an image format string
-#returns a new image data string in the given format
-#no larger than the given width and height
+
 def thumbnail_image(image_data, width, height, format):
+    """Generates a new, smaller image from a larger one.
+
+    image_data is a binary string.
+    width and height are the requested maximum values.
+    format as a binary string, such as 'JPEG'.
+    """
+
     import cStringIO
     import Image as PIL_Image
     import ImageFile as PIL_ImageFile
@@ -467,16 +524,15 @@ def thumbnail_image(image_data, width, height, format):
     PIL_ImageFile.MAXBLOCK = 0x100000
 
     img = PIL_Image.open(cStringIO.StringIO(image_data))
-    img.thumbnail((width,height),PIL_Image.ANTIALIAS)
+    img.thumbnail((width, height), PIL_Image.ANTIALIAS)
     output = cStringIO.StringIO()
 
     if (format.upper() == 'JPEG'):
         #PIL's default JPEG save quality isn't too great
         #so it's best to add a couple of optimizing parameters
         #since this is a common case
-        img.save(output,'JPEG',quality=90,optimize=True)
+        img.save(output, 'JPEG', quality=90, optimize=True)
     else:
-        img.save(output,format)
+        img.save(output, format)
 
     return output.getvalue()
-
