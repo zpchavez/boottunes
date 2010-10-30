@@ -494,6 +494,8 @@ class QueueDialog(QDialog, Ui_QueueDialog):
         Cancel the conversion process.  Called when "Cancel" is pressed in the progress bar dialog.
         """
         self.processThread.stop()
+        if platform.system() != 'Darwin':
+            self.processThread.terminate()
         self.removeCompletedRecordings()
 
     def event(self, event):
