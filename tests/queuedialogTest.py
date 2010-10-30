@@ -16,8 +16,8 @@ class QueueDialogTestCase(unittest.TestCase):
     def setUp(self):
         self.settings = Settings('test')
         self.settings.settings.clear()
-        self.settings.artist_defaults.clear()
-        self.settings.artist_names.clear()
+        self.settings.artistDefaults.clear()
+        self.settings.artistNames.clear()
         self.settings.completed.clear()
 
         self.queuedialog = QueueDialog()

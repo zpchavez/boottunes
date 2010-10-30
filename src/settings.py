@@ -49,50 +49,29 @@ class Settings:
         self.settingsDir = unicode(userDir.absolutePath())
 
         basePath = unicode(userDir.absolutePath())
-        self.settingsPath = settingsPath = basePath + '/' + file + '-settings'
-        self.defaultsPath = defaultsPath = basePath + '/' + file + '-defaults'
-        self.namesPath = namesPath = basePath + '/' + file + '-names'
+        self.settingsPath  = settingsPath  = basePath + '/' + file + '-settings'
+        self.defaultsPath  = defaultsPath  = basePath + '/' + file + '-defaults'
+        self.namesPath     = namesPath     = basePath + '/' + file + '-names'
         self.completedPath = completedPath = basePath + '/' + file + '-completed'
             
-        if os.path.exists(settingsPath):
-            fileSettings = codecs.open(settingsPath, 'r')
-            try:
-                self.settings = cPickle.load(fileSettings) or {}
-            except EOFError:
-                self.settings = {}
-            fileSettings.close()
-        else:
-            self.settings = {}
+        pathsAndProperties = [
+            (settingsPath,  'settings'),
+            (defaultsPath,  'artistDefaults'),
+            (namesPath,     'artistNames'),
+            (completedPath, 'completed')
+        ]        
 
-        if os.path.exists(defaultsPath):
-            fileDefaults = codecs.open(defaultsPath, 'r')
-            try:
-                self.artist_defaults = cPickle.load(fileDefaults) or {}
-            except EOFError:
-                self.artist_defaults = {}
-            fileDefaults.close()            
-        else:
-            self.artist_defaults = {}
-
-        if os.path.exists(namesPath):
-            fileNames = codecs.open(namesPath, 'r')
-            try:
-                self.artist_names = cPickle.load(fileNames) or {}
-            except EOFError:
-                self.artist_names = {}
-            fileNames.close()
-        else:
-            self.artist_names = {}
-
-        if os.path.exists(completedPath):
-            completed = codecs.open(completedPath, 'r')
-            try:
-                self.completed = cPickle.load(completed) or {}
-            except EOFError:
-                self.completed = {}
-            completed.close()            
-        else:
-            self.completed = {0:[]}
+        for pathAndProperty in pathsAndProperties:
+            filePath = pathAndProperty[0]
+            property = pathAndProperty[1]
+            setattr(self, property, {})
+            if os.path.exists(filePath):
+                fileObj = codecs.open(filePath, 'r')                
+                try:                    
+                    setattr(self, property, cPickle.load(fileObj) or {})
+                except (cPickle.UnpicklingError, AttributeError, EOFError, ImportError, IndexError):
+                    pass
+                fileObj.close()
 
     def initAddToITunesPath(self):
         """
@@ -140,11 +119,11 @@ class Settings:
 
         artist = artist.encode('utf_8')
 
-        if artist in self.artist_names:
-            id = self.artist_names[artist]
-            defaults = self.artist_defaults[id]
+        if artist in self.artistNames:
+            id = self.artistNames[artist]
+            defaults = self.artistDefaults[id]
             defaults['preferred_name'] = defaults['preferred_name']            
-            return self.artist_defaults[id]
+            return self.artistDefaults[id]
         return None
 
     def setArtistDefaults(self, name, defaults):
@@ -164,41 +143,43 @@ class Settings:
         name = name.encode('utf_8')        
         defaults['preferred_name'] = defaults['preferred_name'].encode('utf_8')
 
-        if name in self.artist_names:
-            id = self.artist_names[name]
+        if name in self.artistNames:
+            id = self.artistNames[name]
             submittedPreferredName = defaults['preferred_name']
-            existingPreferredName = self.artist_defaults[id]['preferred_name']            
+            existingPreferredName = self.artistDefaults[id]['preferred_name']
 
             if name == existingPreferredName:            
-                self.artist_defaults[id] = defaults
-                del self.artist_names[existingPreferredName]
-                self.artist_names[name] = id
-            elif submittedPreferredName not in self.artist_names:            
-                newId = len(self.artist_defaults)
-                self.artist_defaults[newId] = defaults
-                self.artist_names[name] = newId
-                self.artist_names[submittedPreferredName] = newId
+                self.artistDefaults[id] = defaults
+                del self.artistNames[existingPreferredName]
+                self.artistNames[name] = id
+            elif submittedPreferredName not in self.artistNames:
+                newId = len(self.artistDefaults)
+                self.artistDefaults[newId] = defaults
+                self.artistNames[name] = newId
+                self.artistNames[submittedPreferredName] = newId
             else:                
-                self.artist_names[submittedPreferredName] = id
-                self.artist_names[name] = id
-                self.artist_defaults[id] = defaults
+                self.artistNames[submittedPreferredName] = id
+                self.artistNames[name] = id
+                self.artistDefaults[id] = defaults
         else:            
-            if defaults['preferred_name'] in self.artist_names:
-                id = self.artist_names[defaults['preferred_name']]
-                self.artist_defaults[id] = defaults
+            if defaults['preferred_name'] in self.artistNames:
+                id = self.artistNames[defaults['preferred_name']]
+                self.artistDefaults[id] = defaults
             else:
-                id = len(self.artist_defaults)
-                self.artist_defaults[id] = defaults
-            self.artist_names[name] = id            
-            self.artist_names[defaults['preferred_name']] = id
+                id = len(self.artistDefaults)
+                self.artistDefaults[id] = defaults
+            self.artistNames[name] = id
+            self.artistNames[defaults['preferred_name']] = id
 
     def addCompleted(self, hash):
         """
         Add a hash to the list of converted recordings.
 
         @type hash: string
-        """        
-        self.completed[0].append(hash)        
+        """
+        if 0 not in self.completed:
+            self.completed[0] = []
+        self.completed[0].append(hash)
 
     def isCompleted(self, hash):
         """
@@ -207,7 +188,7 @@ class Settings:
 
         @type hash: string
         """
-        return hash in self.completed[0]        
+        return 0 in self.completed and hash in self.completed[0]
 
     def removeCompleted(self, hash):
         """
@@ -228,8 +209,8 @@ class Settings:
         fileCompleted = codecs.open(self.completedPath, 'w', 'utf_8')
 
         cPickle.dump(self.settings, fileSettings)        
-        cPickle.dump(self.artist_defaults, fileDefaults)
-        cPickle.dump(self.artist_names, fileNames)
+        cPickle.dump(self.artistDefaults, fileDefaults)
+        cPickle.dump(self.artistNames, fileNames)
         cPickle.dump(self.completed, fileCompleted)
 
         fileSettings.close()
