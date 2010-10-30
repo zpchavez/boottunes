@@ -238,7 +238,8 @@ class QueueDialog(QDialog, Ui_QueueDialog):
                 qDir.setNameFilters(['*.flac', '*.shn'])
                 filePaths = []
                 for file in qDir.entryList():
-                    filePath = (unicode(qDir.absolutePath() + '/' + file))
+                    fileNameEncoding = 'utf_8' if platform.system() == 'Darwin' else encoding
+                    filePath = unicode(qDir.absolutePath() + '/' + file).encode(fileNameEncoding)                    
                     filePaths.append(filePath)
                 # The show could be split up between folders, e.g. CD1 and CD2
                 if len(filePaths) == 0:
@@ -392,8 +393,7 @@ class QueueDialog(QDialog, Ui_QueueDialog):
         [self.validRecordings.append(None) for x in range(len(self.queueItemData))]
         for dir, data in self.queueItemData.iteritems():
             if data['valid'] == True:
-                rowForItemInQueue = self.queueListWidget.row(data['item'])
-                print rowForItemInQueue
+                rowForItemInQueue = self.queueListWidget.row(data['item'])                
                 self.validRecordings[rowForItemInQueue] = data.copy()
                 trackCount += len(data['metadata']['tracklist'])
                 self.trackCount = trackCount        
@@ -416,14 +416,21 @@ class QueueDialog(QDialog, Ui_QueueDialog):
                         os.path.basename(audioFile) + ' is an unsupported type'
                     )
                     return
-                except IOError:
+                except IOError as e:                    
                     MessageBox.critical(
                         self,
                         'Error opening file',
-                        'Could not open file ' + os.path.basename(audioFile)
+                        'Could not open file ' + os.path.basename(audioFile) + "<br /><br />" + e[1]
                     )
                     return
                 pcmReader = audiofileObj.to_pcm()
+                if isinstance(pcmReader, audiotools.PCMReaderError):
+                    MessageBox.critical(
+                        self,
+                        'Error reading file',
+                        'Could not read file ' + os.path.basename(audioFile) + "<br /><br />" + pcmReader.error_message
+                    )
+                    return
                 validRecording['pcmReaders'].append(pcmReader)
                 self.antiCrashBin.append(pcmReader)
                 
