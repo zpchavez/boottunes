@@ -386,17 +386,22 @@ class QueueDialog(QDialog, Ui_QueueDialog):
                if the user converts multiple batches in one session the program won't crash.
             """
 
-        # Count all tracks for the progress bar
+        # Count all tracks for the progress bar and load recording data into self.validRecordings
+        # in the order that the items appear in the queue.
         trackCount = 0
+        [self.validRecordings.append(None) for x in range(len(self.queueItemData))]
         for dir, data in self.queueItemData.iteritems():
             if data['valid'] == True:
-                self.validRecordings.append(data.copy())
+                rowForItemInQueue = self.queueListWidget.row(data['item'])
+                print rowForItemInQueue
+                self.validRecordings[rowForItemInQueue] = data.copy()
                 trackCount += len(data['metadata']['tracklist'])
-                self.trackCount = trackCount
+                self.trackCount = trackCount        
+        [self.validRecordings.remove(None) for x in range(self.validRecordings.count(None))]
 
         if len(self.validRecordings) == 0:
             MessageBox.warning(self, 'Notice', 'Nothing to add')
-            return
+            return        
 
         # Prepare a list of PcmReader objects
         for validRecording in self.validRecordings:
@@ -597,7 +602,7 @@ class ProcessThread(QThread):
         @type targetFile: unicode
         @type sourcePcm: audiotool.PCMReader
         @type alacMetadata: audiotools.MetaData
-        """        
+        """
         alacFile = audiotools.ALACAudio.from_pcm(targetFile, sourcePcm)
         alacFile.set_metadata(alacMetadata)
 
