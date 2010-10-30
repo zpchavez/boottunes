@@ -8,7 +8,6 @@ http://www.gnu.org/licenses/gpl-2.0.html
 """
 import re
 import datetime
-import os
 import json
 import data
 
@@ -258,11 +257,17 @@ class TxtParser(object):
                 tracklistStr += trackLine
                 expectedTrackNum = int(match.group(1)) + 1
 
-        # Filter out the numbers to get just the titles
-        pattern = '^[0-9]{1,2}[ .\-)]*(.*)$'
-        matches = re.findall(pattern, tracklistStr, re.MULTILINE)        
+        trackTimePattern = '([([]?\d{1,2}:[0-6][0-9][)\]]?)'        
+        # Filter out the track numbers and, if present, track times, to get just the titles
+        pattern = r"""^[0-9]{1,2}[ .\-)]*                # Track number, separator, and whitespace
+                      """ + trackTimePattern + """?      # Track time if present before the title
+                      (.*?)                              # The actual title
+                      (?:[ -]*?)                          # White space or dash separator
+                      """ + trackTimePattern + """?\s*$     # Track time if present after the title"""
+        matches = re.findall(pattern, tracklistStr, re.MULTILINE | re.VERBOSE)
 
-        self.tracklist = [match.strip() for match in matches]
+        # If the second group is empty, assume that what looked like the track time was actually the track title
+        self.tracklist = [match[1].strip() if match[1] else match[0] for match in matches]
         return self.tracklist
 
     def _findLocation(self, asIs = False):

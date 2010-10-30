@@ -148,6 +148,14 @@ class ParsetxtTestCase(unittest.TestCase):
         tracklist = TxtParser('01. One\n02. Two\n01. One - 03a575f8f6a1298e22cc204e5f713136')._findTracklist()
         self.assertEquals(['One', 'Two'], tracklist)
 
+        # Track times detected and removed from tracklist
+        tracklist = TxtParser('01. [1:11] One\n02. Two (2:22)\n03. Three 3:33\n04. 4:44')._findTracklist()
+        self.assertEquals(['One', 'Two', 'Three', '4:44'], tracklist) # 4:44 is the actual song name.
+
+        anotherTest = """1. Funk (Prelude, part 1) (12:39)\r\n2. Ife (17:25)\r\n3. Moja (03:16)\r\n4. Willie Nelson on Tune in 5 (05:48)"""
+
+        tracklist = TxtParser(anotherTest)._findTracklist()
+        self.assertEquals(['Funk (Prelude, part 1)', 'Ife', 'Moja', 'Willie Nelson on Tune in 5'], tracklist)
 
     def testFindLocationTriesToGetGeographicalLocationButNotVenue(self):
         """
