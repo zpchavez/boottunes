@@ -180,7 +180,7 @@ class QueueDialog(QDialog, Ui_QueueDialog):
                     if progress.wasCanceled():
                         raise LoadCanceledException
                     try:
-                        metadataList.append(self.getMetadataFromDir(qDir.absolutePath() + '/' + dir))
+                        metadataList.append(self.getMetadataFromDir(qDir.absolutePath() + os.sep + dir))
                     except QueueDialogError as e:
                         errorCount += 1
                     progress.setValue(index + 1)
@@ -238,18 +238,17 @@ class QueueDialog(QDialog, Ui_QueueDialog):
                 qDir.setNameFilters(['*.flac', '*.shn'])
                 filePaths = []
                 for file in qDir.entryList():
-                    fileNameEncoding = 'utf_8' if platform.system() == 'Darwin' else encoding
-                    filePath = unicode(qDir.absolutePath() + '/' + file).encode(fileNameEncoding)                    
+                    filePath = (unicode(qDir.absolutePath() + os.sep + file))
                     filePaths.append(filePath)
                 # The show could be split up between folders, e.g. CD1 and CD2
                 if len(filePaths) == 0:
                     qDir.setNameFilters('*')
                     qDir.setFilter(QDir.Dirs | QDir.NoDotAndDotDot)
                     for subdirStr in qDir.entryList():
-                        qSubdir = QDir(qDir.absolutePath() + '/' + subdirStr)
+                        qSubdir = QDir(qDir.absolutePath() + os.sep + subdirStr)
                         qSubdir.setNameFilters(['*.flac', '*.shn'])
                         for file in qSubdir.entryList():
-                            filePaths.append(unicode(qSubdir.absolutePath()) + '/' + unicode(file))
+                            filePaths.append(unicode(qSubdir.absolutePath()) + os.sep + unicode(file))
 
                 if len(filePaths) == 0:
                     raise QueueDialogError("Directory does not contain any supported audio files (FLAC or SHN)");
@@ -274,7 +273,7 @@ class QueueDialog(QDialog, Ui_QueueDialog):
                 # Hash used for identicons and temp directory names
                 metadata['hash'] = hashlib.md5(metadata['comments'].encode('utf_8')).hexdigest()
                 # The dir where all temporary files for this recording will be stored
-                metadata['tempDir'] = QDir(settings.settingsDir + '/' + metadata['hash'])
+                metadata['tempDir'] = QDir(settings.settingsDir + os.sep + metadata['hash'])
                 if not metadata['tempDir'].exists():
                     metadata['tempDir'].mkpath(metadata['tempDir'].absolutePath())
                 metadata['cover'] = CoverArtRetriever.getCoverImageChoices(metadata)[0][0]                
@@ -387,21 +386,17 @@ class QueueDialog(QDialog, Ui_QueueDialog):
                if the user converts multiple batches in one session the program won't crash.
             """
 
-        # Count all tracks for the progress bar and load recording data into self.validRecordings
-        # in the order that the items appear in the queue.
+        # Count all tracks for the progress bar
         trackCount = 0
-        [self.validRecordings.append(None) for x in range(len(self.queueItemData))]
         for dir, data in self.queueItemData.iteritems():
             if data['valid'] == True:
-                rowForItemInQueue = self.queueListWidget.row(data['item'])                
-                self.validRecordings[rowForItemInQueue] = data.copy()
+                self.validRecordings.append(data.copy())
                 trackCount += len(data['metadata']['tracklist'])
-                self.trackCount = trackCount        
-        [self.validRecordings.remove(None) for x in range(self.validRecordings.count(None))]
+                self.trackCount = trackCount
 
         if len(self.validRecordings) == 0:
             MessageBox.warning(self, 'Notice', 'Nothing to add')
-            return        
+            return
 
         # Prepare a list of PcmReader objects
         for validRecording in self.validRecordings:
@@ -416,21 +411,14 @@ class QueueDialog(QDialog, Ui_QueueDialog):
                         os.path.basename(audioFile) + ' is an unsupported type'
                     )
                     return
-                except IOError as e:                    
+                except IOError:
                     MessageBox.critical(
                         self,
                         'Error opening file',
-                        'Could not open file ' + os.path.basename(audioFile) + "<br /><br />" + e[1]
+                        'Could not open file ' + os.path.basename(audioFile)
                     )
                     return
                 pcmReader = audiofileObj.to_pcm()
-                if isinstance(pcmReader, audiotools.PCMReaderError):
-                    MessageBox.critical(
-                        self,
-                        'Error reading file',
-                        'Could not read file ' + os.path.basename(audioFile) + "<br /><br />" + pcmReader.error_message
-                    )
-                    return
                 validRecording['pcmReaders'].append(pcmReader)
                 self.antiCrashBin.append(pcmReader)
                 
@@ -466,7 +454,7 @@ class QueueDialog(QDialog, Ui_QueueDialog):
         Called on completion of ProcessThread.
         """
         if self.processThread.completed:
-            soundPath = data.path + '/' + 'media' + '/' + 'complete.wav'
+            soundPath = data.path + os.sep + 'media' + os.sep + 'complete.wav'
             QSound.play(soundPath)
             # Make the plurality of the words match the counts in the conversion summary message
             trackStr = ' track' if self.trackCount == 1 else ' tracks'
@@ -492,10 +480,9 @@ class QueueDialog(QDialog, Ui_QueueDialog):
     def cancelProcess(self):
         """
         Cancel the conversion process.  Called when "Cancel" is pressed in the progress bar dialog.
-        """
+        """        
         self.processThread.stop()
-        if platform.system() != 'Darwin':
-            self.processThread.terminate()
+        self.processThread.terminate()
         self.removeCompletedRecordings()
 
     def event(self, event):
@@ -562,7 +549,7 @@ class ProcessThread(QThread):
 
             alacMetadata.add_image(audiotools.Image.new(currentRecording['imageData'], 'cover', 0))
             sourcePcm = currentRecording['pcmReaders'][parent.currentTrack]
-            targetFile = tempDirPath + '/' + unicode(parent.currentTrack) + u'.m4a'
+            targetFile = tempDirPath + os.sep + unicode(parent.currentTrack) + u'.m4a'
 
             # If on Mac, run as a separate process
             if platform.system() == 'Darwin':
@@ -589,7 +576,7 @@ class ProcessThread(QThread):
                 for audioFile in metadata['tempDir'].entryList():
                     metadata['tempDir'].rename(
                         audioFile,
-                        settings['addToITunesPath'] + '/' + metadata['hash'] + '/' + audioFile
+                        settings['addToITunesPath'] + os.sep + metadata['hash'] + os.sep + audioFile
                     )
                 if not settings.isCompleted(metadata['hash']):
                     settings.addCompleted(metadata['hash'])
@@ -610,7 +597,7 @@ class ProcessThread(QThread):
         @type targetFile: unicode
         @type sourcePcm: audiotool.PCMReader
         @type alacMetadata: audiotools.MetaData
-        """
+        """        
         alacFile = audiotools.ALACAudio.from_pcm(targetFile, sourcePcm)
         alacFile.set_metadata(alacMetadata)
 

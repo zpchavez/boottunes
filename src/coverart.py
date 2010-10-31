@@ -68,18 +68,18 @@ class CoverArtRetriever():
             int(hash, 16),
             128
         )
-        identiconPath = unicode(tempDirPath + '/' + 'identicon.png')
+        identiconPath = unicode(tempDirPath + os.sep + 'identicon.png')
         identiconImage.save(identiconPath, 'PNG')
         
         visiconImage = visicon.Visicon(hash, 'seed', size=384)
-        visiconPath = unicode(tempDirPath + '/' + 'visicon.png')
+        visiconPath = unicode(tempDirPath + os.sep + 'visicon.png')
         visiconImage.draw_image().save(visiconPath, 'PNG')
 
         imageFiles = tempDir.entryList() + dir.entryList()
         
         pathList = [
-            unicode(tempDirPath + '/' + 'identicon.png'),
-            unicode(tempDirPath + '/' + 'visicon.png')
+            unicode(tempDirPath + os.sep + 'identicon.png'),
+            unicode(tempDirPath + os.sep + 'visicon.png')
         ]
         pixMapList = [
             QPixmap(pathList[0]),
@@ -93,15 +93,15 @@ class CoverArtRetriever():
             for file in imageFiles:
                 if file not in ['identicon.png', 'visicon.png']:
                     pixMapList.insert(0, CoverArtRetriever.imagePathToPixmap(
-                        unicode(dir.absolutePath() + '/' + file))
+                        unicode(dir.absolutePath() + os.sep + file))
                     )
-                    pathList.insert(0, unicode(dir.absolutePath() + '/' + file))
+                    pathList.insert(0, unicode(dir.absolutePath() + os.sep + file))
         else:
             for file in imageFiles:
                 if file not in ['identicon.png','visicon.png']:
                     pixMapList.append(CoverArtRetriever.imagePathToPixmap(
-                        unicode(dir.absolutePath() + '/' + file))
+                        unicode(dir.absolutePath() + os.sep + file))
                     )
-                    pathList.append(unicode(dir.absolutePath() + '/' + file))
+                    pathList.append(unicode(dir.absolutePath() + os.sep + file))
 
         return tuple([(pathList[i], pixMapList[i]) for i in range(len(pathList))])

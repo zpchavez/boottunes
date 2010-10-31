@@ -8,11 +8,12 @@ http://www.gnu.org/licenses/gpl-2.0.html
 """
 import re
 import datetime
+import os
 import json
 import data
 
 # Load JSON files with city, state, and country names into global variables
-jsonPath = data.path + '/' + 'json' + '/'
+jsonPath = data.path + os.sep + 'json' + os.sep
 fileCities = open(jsonPath + 'common-cities.json')
 fileStates = open(jsonPath + 'states.json')
 fileProvinces = open(jsonPath + 'provinces.json')
@@ -257,17 +258,11 @@ class TxtParser(object):
                 tracklistStr += trackLine
                 expectedTrackNum = int(match.group(1)) + 1
 
-        trackTimePattern = '([([]?\d{1,2}:[0-6][0-9][)\]]?)'        
-        # Filter out the track numbers and, if present, track times, to get just the titles
-        pattern = r"""^[0-9]{1,2}[ .\-)]*                # Track number, separator, and whitespace
-                      """ + trackTimePattern + """?      # Track time if present before the title
-                      (.*?)                              # The actual title
-                      (?:[ -]*?)                          # White space or dash separator
-                      """ + trackTimePattern + """?\s*$     # Track time if present after the title"""
-        matches = re.findall(pattern, tracklistStr, re.MULTILINE | re.VERBOSE)
+        # Filter out the numbers to get just the titles
+        pattern = '^[0-9]{1,2}[ .\-)]*(.*)$'
+        matches = re.findall(pattern, tracklistStr, re.MULTILINE)        
 
-        # If the second group is empty, assume that what looked like the track time was actually the track title
-        self.tracklist = [match[1].strip() if match[1] else match[0] for match in matches]
+        self.tracklist = [match.strip() for match in matches]
         return self.tracklist
 
     def _findLocation(self, asIs = False):

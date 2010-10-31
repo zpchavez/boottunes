@@ -16,7 +16,7 @@ from dialogs.newversion import NewVersionDialog
 from settings import settings, SettingsError
 import data
 
-__version__ = "0.1.4"
+__version__ = "0.1.3"
 
 class MainWindow(QMainWindow):
     def __init__(self, parent=None):        
@@ -134,7 +134,7 @@ app.setApplicationName('BootTunes')
 window = MainWindow()
 window.show()
 
-logoPixmap = QPixmap(data.path + '/' + 'media' + '/' + 'logo.png')
+logoPixmap = QPixmap(data.path + os.sep + 'media' + os.sep + 'logo.png')
 icon = QIcon(logoPixmap)
 app.setWindowIcon(icon)
 

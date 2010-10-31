@@ -28,18 +28,6 @@ class ShortenAudio(AudioFile):
         AudioFile.__init__(self, filename)
 
     def __populate_metadata__(self):
-        # Alteration for BootTunes:
-        # Since the vast majority of files will match the defaults, and because this method crashes
-        # Windows 7 and locks up Mac, just go with the defaults.          
-        self.__bits_per_sample__ = 16
-        self.__channels__ = 2
-        self.__channel_mask__ = 0x3
-        self.__sample_rate__ = 44100
-        self.__total_frames__ = 0
-        self.__blocks__ = []
-        self.__format__ = None
-        return        
-
         #grab a few pieces of technical metadata from the Shorten file itself
         #which requires a dry-run through the decoder
         decoder = audiotools.decoders.SHNDecoder(self.filename)

@@ -818,7 +818,7 @@ class FlacAudio(AudioFile):
     def to_pcm(self):
         from . import decoders
 
-        return decoders.FlacDecoder(self.filename,
+        return decoders.FlacDecoder(self.filename.encode('utf_8'),
                                     self.channel_mask())
 
     @classmethod
