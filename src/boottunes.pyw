@@ -16,7 +16,7 @@ from dialogs.newversion import NewVersionDialog
 from settings import settings, SettingsError
 import data
 
-__version__ = "0.1.3"
+__version__ = "0.1.4"
 
 class MainWindow(QMainWindow):
     def __init__(self, parent=None):        
