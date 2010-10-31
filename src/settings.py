@@ -95,14 +95,14 @@ class Settings:
         @rtype: unicode
         """
         possibilities = [
-            'Music' + '/' + 'iTunes' + '/' + 'iTunes Media',
-            'Music' + '/' + 'iTunes' + '/' + 'iTunes Music',
-            'My Documents' + '/' + 'My Music' + '/' + 'iTunes' + '/' + 'iTunes Media',
-            'My Documents' + '/' + 'My Music' + '/' + 'iTunes' + '/' + 'iTunes Music'
+            'Music' + os.sep + 'iTunes' + os.sep + 'iTunes Media',
+            'Music' + os.sep + 'iTunes' + os.sep + 'iTunes Music',
+            'My Documents' + os.sep + 'My Music' + os.sep + 'iTunes' + os.sep + 'iTunes Media',
+            'My Documents' + os.sep + 'My Music' + os.sep + 'iTunes' + os.sep + 'iTunes Music'
         ]
         userDir = os.path.expanduser('~')
         for possibility in possibilities:
-            possiblePath = userDir + '/' + possibility + '/' + 'Automatically Add to iTunes'
+            possiblePath = userDir + os.sep + possibility + os.sep + 'Automatically Add to iTunes'
             if os.path.exists(possiblePath):
                 return unicode(possiblePath)
         return None
