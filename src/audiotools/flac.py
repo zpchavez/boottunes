@@ -20,10 +20,9 @@
 import array
 import audiotools
 import sys,cStringIO
+import construct
 
-Con = audiotools.Con
-
-class UTF8(Con.Struct):
+class UTF8(construct.Struct):
     @classmethod
     def __total_utf8_bytes__(cls, header):
         total = 0
@@ -38,29 +37,29 @@ class UTF8(Con.Struct):
     def __calculate_utf8_value__(cls, ctx):
         import operator
 
-        return Con.lib.bin_to_int(ctx.header[ctx.header.index('\x00') + 1:] + \
+        return construct.lib.bin_to_int(ctx.header[ctx.header.index('\x00') + 1:] + \
                                   reduce(operator.concat,
                                          [s[2:] for s in ctx['sub_byte']],
                                          ''))
 
     def __init__(self, name):
-        Con.Struct.__init__(
+        construct.Struct.__init__(
             self,name,
-            Con.Bytes('header',8),
-            Con.Value('total_bytes',
+            construct.Bytes('header',8),
+            construct.Value('total_bytes',
                       lambda ctx: self.__total_utf8_bytes__(ctx['header'])),
-            Con.MetaRepeater(
+            construct.MetaRepeater(
             lambda ctx: self.__total_utf8_bytes__(ctx['header']) - 1,
-            Con.Bytes('sub_byte',8)),
-            Con.Value('value',
+            construct.Bytes('sub_byte',8)),
+            construct.Value('value',
                       lambda ctx: self.__calculate_utf8_value__(ctx)))
 
-class Unary(Con.Adapter):
+class Unary(construct.Adapter):
     def __init__(self, name):
-        Con.Adapter.__init__(
+        construct.Adapter.__init__(
             self,
-            Con.RepeatUntil(lambda obj,ctx: obj == 1,
-                            Con.Byte(name)))
+            construct.RepeatUntil(lambda obj,ctx: obj == 1,
+                            construct.Byte(name)))
 
     def _encode(self, value, context):
         if (value > 0):
@@ -71,7 +70,7 @@ class Unary(Con.Adapter):
     def _decode(self, obj, context):
         return len(obj) - 1
 
-class PlusOne(Con.Adapter):
+class PlusOne(construct.Adapter):
     def _encode(self, value, context):
         return value - 1
 
@@ -81,55 +80,55 @@ class PlusOne(Con.Adapter):
 class FlacStreamException(Exception): pass
 
 class FlacReader:
-    FRAME_HEADER = Con.Struct('frame_header',
-                              Con.Bits('sync',14),
-                              Con.Bits('reserved',2),
-                              Con.Bits('block_size',4),
-                              Con.Bits('sample_rate',4),
-                              Con.Bits('channel_assignment',4),
-                              Con.Bits('bits_per_sample',3),
-                              Con.Padding(1),
-                              Con.IfThenElse(
+    FRAME_HEADER = construct.Struct('frame_header',
+                              construct.Bits('sync',14),
+                              construct.Bits('reserved',2),
+                              construct.Bits('block_size',4),
+                              construct.Bits('sample_rate',4),
+                              construct.Bits('channel_assignment',4),
+                              construct.Bits('bits_per_sample',3),
+                              construct.Padding(1),
+                              construct.IfThenElse(
         'total_channels',
         lambda ctx1: ctx1['channel_assignment'] <= 7,
-        Con.Value('c',lambda ctx2: ctx2['channel_assignment'] + 1),
-        Con.Value('c',lambda ctx3: 2)),
+        construct.Value('c',lambda ctx2: ctx2['channel_assignment'] + 1),
+        construct.Value('c',lambda ctx3: 2)),
 
                               UTF8('frame_number'),
 
-                              Con.IfThenElse(
+                              construct.IfThenElse(
         'extended_block_size',
         lambda ctx1: ctx1['block_size'] == 6,
-        Con.Bits('b',8),
-        Con.If(lambda ctx2: ctx2['block_size'] == 7,
-               Con.Bits('b',16))),
+        construct.Bits('b',8),
+        construct.If(lambda ctx2: ctx2['block_size'] == 7,
+               construct.Bits('b',16))),
 
-                              Con.IfThenElse(
+                              construct.IfThenElse(
         'extended_sample_rate',
         lambda ctx1: ctx1['sample_rate'] == 12,
-        Con.Bits('s',8),
-        Con.If(lambda ctx2: ctx2['sample_rate'] in (13,14),
-               Con.Bits('s',16))),
+        construct.Bits('s',8),
+        construct.If(lambda ctx2: ctx2['sample_rate'] in (13,14),
+               construct.Bits('s',16))),
 
-                              Con.Bits('crc8',8))
+                              construct.Bits('crc8',8))
 
-    UNARY = Con.Struct('unary',
-                       Con.RepeatUntil(
+    UNARY = construct.Struct('unary',
+                       construct.RepeatUntil(
         lambda obj,ctx: obj == '\x01',
-        Con.Field('bytes',1)),
-                       Con.Value('value',
+        construct.Field('bytes',1)),
+                       construct.Value('value',
                                  lambda ctx: len(ctx['bytes']) - 1)
                        )
 
-    SUBFRAME_HEADER = Con.Struct('subframe_header',
-                                 Con.Padding(1),
-                                 Con.Bits('subframe_type',6),
-                                 Con.Flag('has_wasted_bits_per_sample'),
-                                 Con.IfThenElse(
+    SUBFRAME_HEADER = construct.Struct('subframe_header',
+                                 construct.Padding(1),
+                                 construct.Bits('subframe_type',6),
+                                 construct.Flag('has_wasted_bits_per_sample'),
+                                 construct.IfThenElse(
         'wasted_bits_per_sample',
         lambda ctx: ctx['has_wasted_bits_per_sample'],
         PlusOne(Unary('value')),
-        Con.Value('value',lambda ctx2: 0)))
+        construct.Value('value',lambda ctx2: 0)))
 
 
     GET_BLOCKSIZE_FROM_STREAMINFO = -1
@@ -269,7 +268,7 @@ class FlacReader:
     def begin_bitstream(self):
         import bitstream
 
-        #self.bitstream = Con.BitStreamReader(self.stream)
+        #self.bitstream = construct.BitStreamReader(self.stream)
         self.bitstream = bitstream.BitStreamReader(self.stream)
 
     def read_frame(self):
@@ -277,7 +276,7 @@ class FlacReader:
 
         try:
             header = FlacReader.FRAME_HEADER.parse_stream(self.bitstream)
-        except Con.core.FieldError:
+        except construct.core.FieldError:
             return ""
 
         if (header.sync != 0x3FFE):
@@ -312,7 +311,7 @@ class FlacReader:
             self.bitstream.read(len(self.bitstream.buffer))
 
 
-        if (crc16sum != Con.Bits('crc16',16).parse_stream(self.bitstream)):
+        if (crc16sum != construct.Bits('crc16',16).parse_stream(self.bitstream)):
             raise FlacStreamException('crc16 checksum failed')
 
 
@@ -346,13 +345,13 @@ class FlacReader:
             else:
                 bits_per_sample = FlacReader.SAMPLE_SIZE[header.bits_per_sample]
 
-            stream = Con.GreedyRepeater(
-                Con.BitStruct('bits',
-                              Con.Bits('value',bits_per_sample,
+            stream = construct.GreedyRepeater(
+                construct.BitStruct('bits',
+                              construct.Bits('value',bits_per_sample,
                                        swapped=True,signed=True)))
 
             return stream.build(
-                [Con.Container(value=v) for v in
+                [construct.Container(value=v) for v in
                  FlacReader.CHANNEL_FUNCTIONS[header.channel_assignment](
                     subframe_data)])
 
@@ -423,7 +422,7 @@ class FlacReader:
             return subframe
 
     def read_subframe_constant(self, block_size, bits_per_sample):
-        sample = Con.Bits('b',bits_per_sample).parse_stream(
+        sample = construct.Bits('b',bits_per_sample).parse_stream(
             self.bitstream)
 
         subframe = array.array('i',[sample] * block_size)
@@ -433,17 +432,17 @@ class FlacReader:
 
     def read_subframe_verbatim(self, block_size, bits_per_sample):
         return array.array('i',
-                           Con.StrictRepeater(
+                           construct.StrictRepeater(
             block_size,
-            Con.Bits("samples",
+            construct.Bits("samples",
                      bits_per_sample,
                      signed=True)).parse_stream(self.bitstream))
 
 
     def read_subframe_fixed(self, order, block_size, bits_per_sample):
-        samples = Con.StrictRepeater(
+        samples = construct.StrictRepeater(
             order,
-            Con.Bits("warm_up_samples",
+            construct.Bits("warm_up_samples",
                      bits_per_sample,
                      signed=True))
 
@@ -461,25 +460,25 @@ class FlacReader:
 
 
     def read_subframe_lpc(self, order, block_size, bits_per_sample):
-        samples = Con.StrictRepeater(
+        samples = construct.StrictRepeater(
             order,
-            Con.Bits("warm_up_samples",
+            construct.Bits("warm_up_samples",
                      bits_per_sample,
                      signed=True))
 
         subframe = array.array('i',
                                samples.parse_stream(self.bitstream))
 
-        lpc_precision = Con.Bits('lpc_precision',
+        lpc_precision = construct.Bits('lpc_precision',
                                  4).parse_stream(self.bitstream) + 1
 
-        lpc_shift = Con.Bits('lpc_shift',
+        lpc_shift = construct.Bits('lpc_shift',
                              5).parse_stream(self.bitstream)
 
         coefficients = array.array('i',
-                                   Con.StrictRepeater(
+                                   construct.StrictRepeater(
             order,
-            Con.Bits('coefficients',
+            construct.Bits('coefficients',
                      lpc_precision,
                      signed=True)).parse_stream(self.bitstream))
 
@@ -511,7 +510,7 @@ class FlacReader:
         else:
             raise FlacStreamException('invalid residual coding method')
 
-        partition_order = Con.Bits('partition_order',4).parse_stream(
+        partition_order = construct.Bits('partition_order',4).parse_stream(
             self.bitstream)
 
         if (partition_order > 0):
@@ -531,15 +530,15 @@ class FlacReader:
 
 
     def read_encoded_rice(self, total_samples, rice2=False):
-        bin_to_int = Con.lib.binary.bin_to_int
+        bin_to_int = construct.lib.binary.bin_to_int
 
         samples = array.array('i')
 
         if (not rice2):
-            rice_parameter = Con.Bits('rice_parameter',4).parse_stream(
+            rice_parameter = construct.Bits('rice_parameter',4).parse_stream(
                 self.bitstream)
         else:
-            rice_parameter = Con.Bits('rice_parameter',5).parse_stream(
+            rice_parameter = construct.Bits('rice_parameter',5).parse_stream(
                 self.bitstream)
 
         if (rice_parameter != 0xF):
@@ -567,10 +566,10 @@ class FlacReader:
         else:
             #unencoded residual
 
-            bits_per_sample = Con.Bits('escape_code',5).parse_stream(
+            bits_per_sample = construct.Bits('escape_code',5).parse_stream(
                 self.bitstream)
 
-            sample = Con.Bits("sample",bits_per_sample,signed=True)
+            sample = construct.Bits("sample",bits_per_sample,signed=True)
 
             for x in xrange(total_samples):
                 samples.append(sample.parse_stream(self.bitstream))
