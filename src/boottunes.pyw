@@ -77,7 +77,10 @@ class MainWindow(QMainWindow):
 
     def checkForUpdate(self):
         try:
-            jsonString = urllib2.urlopen('http://zacharychavez.com/boottunes/latest', timeout=3).read()            
+            jsonString = urllib2.urlopen(
+                'http://zacharychavez.com/boottunes/latest?version=' + __version__,
+                timeout=3
+            ).read()
             jsonDict = json.loads(jsonString)
             if jsonDict['version'] > __version__ and jsonDict['version'] != settings['skipVersion']:
                 dialog = NewVersionDialog(jsonDict, parent=self)
