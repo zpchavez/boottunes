@@ -223,6 +223,7 @@ class QueueDialog(QDialog, Ui_QueueDialog):
                 fileHandle = codecs.open(textFilePath, 'r', encoding)
                 
                 metadata = TxtParser(fileHandle.read()).parseTxt()                
+                fileHandle.close()
 
                 foundCount = 0
                 for k, v in metadata.iteritems():                    

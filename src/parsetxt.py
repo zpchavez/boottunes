@@ -37,8 +37,10 @@ fileCountries.close()
 class TxtParser(object):
     "Parse text from a text file for metadata"
 
-    def __init__(self, txt):
-        self.txt = txt
+    def __init__(self, txt):        
+        # For reasons unknown, some text files may use just \r for newlines.
+        # Normlize all newlines to \n for simplicity.
+        self.txt = txt.replace('\r\n', '\n').replace('\r', '\n')        
 
     def _findMetadataBlock(self):
         """
@@ -50,7 +52,7 @@ class TxtParser(object):
         if hasattr(self, 'metadataBlock'): return self.metadataBlock
 
         pattern = '\n?((^.{2,60}$\n?){3,6})'
-        matches = re.findall(pattern, self.txt, re.MULTILINE)
+        matches = re.findall(pattern, self.txt, re.MULTILINE)        
 
         # This is to prevent a recursion loop in the call to self._findLocation() a few lines down.
         if len(matches) == 1 and matches[0] == self.txt:
@@ -90,8 +92,8 @@ class TxtParser(object):
         
         match = re.match('([^\n]{1,25})$[\r\n]{1,2}$', self.txt, re.MULTILINE | re.DOTALL)
         if match:
-            self.artist = match.group(1).strip()
-            return match.group(1).strip()
+            self.artist = match.group(1).strip()            
+            return self.artist
 
         matches = re.findall(r'^(\S.+)\S*$', self._findMetadataBlock(), re.MULTILINE)
         if len(matches) > 0:
@@ -99,8 +101,8 @@ class TxtParser(object):
             match = matches[0]
             regex = re.compile('Artist:\s*', re.IGNORECASE)
             match = regex.sub('', matches[0])
-            self.artist = match.strip()
-            return match.strip()
+            self.artist = match.strip()            
+            return self.artist
 
     def _findDate(self):
         """
@@ -217,10 +219,10 @@ class TxtParser(object):
             match = re.search(pattern, txt, re.MULTILINE)
             if match == None:
                 break;
-            tracklistStr += match.group(0)
+            tracklistStr += match.group(0)            
             previousTxt = txt                        
             txt = txt.replace(match.group(0), '')            
-
+        
         self.tracklistStr = unicode(tracklistStr)
         return self.tracklistStr
 
@@ -456,7 +458,7 @@ class TxtParser(object):
                 dateObj = None
         else:
             dateObj = None
-
+        
         return {'artist'    : unicode(self._findArtist()),
                 'date'      : dateObj,
                 'location'  : unicode(self._findLocation()),

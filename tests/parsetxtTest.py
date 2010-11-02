@@ -33,6 +33,11 @@ class ParsetxtTestCase(unittest.TestCase):
         block = TxtParser(txt)._findMetadataBlock()
         self.assertEquals(expected, block)
 
+        # If \r used instead of \n, block still detected
+        txt = txt.replace('\n', '\r')        
+        block = TxtParser(txt)._findMetadataBlock()
+        self.assertEquals(expected, block)
+
         # If there is no discernible block, the entire string will be returned unchanged
         # Don't return the tracklist
         txt = sampleTxt.replace(expected, '')
