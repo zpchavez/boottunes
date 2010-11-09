@@ -60,8 +60,6 @@ class ConfirmMetadataDialog(QDialog, Ui_ConfirmMetadataDialog):
         # completely wrong and is not synonymous with the submitted artist name.
         diff = difflib.SequenceMatcher(None, suggestedArtist.lower(), submittedArtist.lower())
 
-        print str(diff.ratio())
-
         settings.setArtistDefaults(
             suggestedArtist if suggestedArtist and diff.ratio() > 0.5 else submittedArtist,
             defaults
