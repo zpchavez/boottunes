@@ -220,9 +220,17 @@ class QueueDialog(QDialog, Ui_QueueDialog):
                 fileHandle = open(textFilePath, 'r')                
                 encoding = chardet.detect(fileHandle.read())['encoding']                                
                 fileHandle.close()
-                fileHandle = codecs.open(textFilePath, 'r', encoding)
+                # Try UTF-8 first.  If there's an error, try the chardet detected encoding.
+                # This seems to give the best results.
+                fileHandle = codecs.open(textFilePath, 'r', 'utf_8')
+                try:
+                    fileHandle.read()
+                    fileHandle.seek(0)
+                except UnicodeDecodeError:
+                    fileHandle = codecs.open(textFilePath, 'r', encoding)
                 
-                metadata = TxtParser(fileHandle.read()).parseTxt()                
+                metadata = TxtParser(fileHandle.read()).parseTxt()
+                
                 fileHandle.close()
 
                 foundCount = 0
@@ -235,8 +243,10 @@ class QueueDialog(QDialog, Ui_QueueDialog):
                 if metadata['tracklist'] == None:
                     raise QueueDialogError("Could not find a tracklist in " + txtFile)
 
+                validExtensions = ['*.flac', '*.shn']
+
                 # Must contain valid audio files
-                qDir.setNameFilters(['*.flac', '*.shn'])
+                qDir.setNameFilters(validExtensions)
                 filePaths = []
                 for file in qDir.entryList():
                     fileNameEncoding = 'utf_8' if platform.system() == 'Darwin' else encoding
@@ -248,7 +258,7 @@ class QueueDialog(QDialog, Ui_QueueDialog):
                     qDir.setFilter(QDir.Dirs | QDir.NoDotAndDotDot)
                     for subdirStr in qDir.entryList():
                         qSubdir = QDir(qDir.absolutePath() + '/' + subdirStr)
-                        qSubdir.setNameFilters(['*.flac', '*.shn'])
+                        qSubdir.setNameFilters(validExtensions)
                         for file in qSubdir.entryList():
                             filePaths.append(unicode(qSubdir.absolutePath()) + '/' + unicode(file))
 
@@ -541,7 +551,7 @@ class ProcessThread(QThread):
 
             filePath = metadata['audioFiles'][parent.currentTrack]
             self.currentFile = filePath
-            
+
             if 'defaults' in metadata:
                 artistName = metadata['defaults']['preferred_name'].decode('utf_8')
             else:
