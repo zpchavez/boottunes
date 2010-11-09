@@ -7,6 +7,7 @@ http://www.gnu.org/licenses/gpl-2.0.html
 """
 import re
 import os
+import shutil
 import codecs
 import hashlib
 import urllib
@@ -243,7 +244,7 @@ class QueueDialog(QDialog, Ui_QueueDialog):
                 if metadata['tracklist'] == None:
                     raise QueueDialogError("Could not find a tracklist in " + txtFile)
 
-                validExtensions = ['*.flac', '*.shn']
+                validExtensions = ['*.flac', '*.shn', '*.m4a']
 
                 # Must contain valid audio files
                 qDir.setNameFilters(validExtensions)
@@ -263,7 +264,7 @@ class QueueDialog(QDialog, Ui_QueueDialog):
                             filePaths.append(unicode(qSubdir.absolutePath()) + '/' + unicode(file))
 
                 if len(filePaths) == 0:
-                    raise QueueDialogError("Directory does not contain any supported audio files (FLAC or SHN)");
+                    raise QueueDialogError("Directory does not contain any supported audio files (FLAC, SHN, ALAC)");
                 elif len(metadata['tracklist']) < len(filePaths):
                     raise QueueDialogError("Number of audio files does not match tracklist")
 
@@ -552,6 +553,9 @@ class ProcessThread(QThread):
             filePath = metadata['audioFiles'][parent.currentTrack]
             self.currentFile = filePath
 
+            extensionMatches = re.findall('\.([^.]+)$', filePath)
+            self.extension = extensionMatches[0] if extensionMatches else ''
+
             if 'defaults' in metadata:
                 artistName = metadata['defaults']['preferred_name'].decode('utf_8')
             else:
@@ -622,7 +626,11 @@ class ProcessThread(QThread):
         @type sourcePcm: audiotool.PCMReader
         @type alacMetadata: audiotools.MetaData
         """
-        alacFile = audiotools.ALACAudio.from_pcm(targetFile, sourcePcm)
+        if re.match('^m4a$', self.extension, re.IGNORECASE):
+            shutil.copyfile(self.currentFile, targetFile)
+            alacFile = audiotools.open(targetFile)            
+        else:
+            alacFile = audiotools.ALACAudio.from_pcm(targetFile, sourcePcm)
         alacFile.set_metadata(alacMetadata)
 
     def stop(self):        
