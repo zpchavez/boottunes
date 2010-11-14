@@ -351,7 +351,7 @@ class QueueDialog(QDialog, Ui_QueueDialog):
         if 'title' in metadata and metadata['title'] != '':
             albumTitle = metadata['title']
         else:
-            # if any parts of the title are blank, add a note and display the item in red
+            # If any parts of the title are blank, add a note and display the item in red
             albumTitle = settings['albumTitleFormat']
             for placeHolder in ['artist', 'venue', 'location', 'date']:
                 match = re.search('\[' + placeHolder + '\]', albumTitle)
@@ -435,16 +435,21 @@ class QueueDialog(QDialog, Ui_QueueDialog):
                         'Could not open file ' + os.path.basename(audioFile) + "<br /><br />" + e[1]
                     )
                     return
-                pcmReader = audiofileObj.to_pcm()
-                if isinstance(pcmReader, audiotools.PCMReaderError):
-                    MessageBox.critical(
-                        self,
-                        'Error reading file',
-                        'Could not read file ' + os.path.basename(audioFile) + "<br /><br />" + pcmReader.error_message
-                    )
-                    return
-                validRecording['pcmReaders'].append(pcmReader)
-                self.antiCrashBin.append(pcmReader)
+                # If ALAC already, set the reader to None.
+                if isinstance(audiofileObj, audiotools.ALACAudio):                    
+                    validRecording['pcmReaders'].append(None)
+                else:
+                    pcmReader = audiofileObj.to_pcm()
+                    if isinstance(pcmReader, audiotools.PCMReaderError):
+                        MessageBox.critical(
+                            self,
+                            'Error reading file',
+                            'Could not read file ' + os.path.basename(audioFile)
+                            + "<br /><br />" + pcmReader.error_message
+                        )
+                        return
+                    validRecording['pcmReaders'].append(pcmReader)
+                    self.antiCrashBin.append(pcmReader)
                 
         self.progressBarLabel = progressBarLabel = QLabel()
         self.progressDialog = progressDialog = QProgressDialog("Loading", "Cancel", 1, trackCount + 1, self)
