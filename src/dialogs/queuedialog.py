@@ -580,7 +580,7 @@ class ProcessThread(QThread):
             )
             self.emit(SIGNAL("progress(int)"), progressCounter)
 
-            alacMetadata.add_image(audiotools.Image.new(currentRecording['imageData'], 'cover', 0))
+            alacMetadata.add_image(audiotools.Image.new(currentRecording['imageData'], 'cover', 0))            
             sourcePcm = currentRecording['pcmReaders'][parent.currentTrack]
             targetFile = tempDirPath + '/' + unicode(parent.currentTrack) + u'.m4a'
 
@@ -637,6 +637,10 @@ class ProcessThread(QThread):
         else:
             alacFile = audiotools.ALACAudio.from_pcm(targetFile, sourcePcm)
         alacFile.set_metadata(alacMetadata)
+        # Set the "part of a compilation" flag to false
+        metadata = alacFile.get_metadata()
+        metadata['cpil'] = metadata.text_atom('data', '\x00\x00\x00\x15\x00\x00\x00\x00\x00')
+        alacFile.set_metadata(metadata)
 
     def stop(self):        
         with QMutexLocker(self.mutex):
