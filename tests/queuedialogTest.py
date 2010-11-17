@@ -14,15 +14,18 @@ class QueueDialogTestCase(unittest.TestCase):
     showPath = testPath + '/' + 'test-shows'
 
     def setUp(self):
+        self.app = QApplication(sys.argv)
         self.settings = Settings('test')
         self.settings.settings.clear()
         self.settings.artistDefaults.clear()
         self.settings.artistNames.clear()
         self.settings.completed.clear()
+        self.settings['defaultArt'] = 'Visicon'
 
         self.queuedialog = QueueDialog()
 
     def tearDown(self):
+        del self.app
         settings.clearTempFiles()
 
     def testGetMetadataFromDirGetsMetadataFromTheSpecifiedDirectory(self):
@@ -37,8 +40,7 @@ class QueueDialogTestCase(unittest.TestCase):
         ]
         expectedTempPath = settings.settingsDir + '/' + metadata['hash']
         self.assertEquals(expectedAudioFiles, metadata['audioFiles'])
-        self.assertEquals('The Foo Bars', metadata['artist'])
-        self.assertEquals(expectedTempPath + '/' + 'visicon.png', metadata['cover'])
+        self.assertEquals('The Foo Bars', metadata['artist'])        
         self.assertEquals('Venue', metadata['venue'])
         self.assertEquals(datetime.date(1970, 7, 7), metadata['date'])
         self.assertEquals(
@@ -63,8 +65,7 @@ class QueueDialogTestCase(unittest.TestCase):
         ]
         expectedTempPath = settings.settingsDir + '/' + metadata['hash']
         self.assertEquals(expectedAudioFiles, metadata['audioFiles'])
-        self.assertEquals('The Foo Bars', metadata['artist'])
-        self.assertEquals(expectedTempPath + '/' + 'visicon.png', metadata['cover'])
+        self.assertEquals('The Foo Bars', metadata['artist'])        
         self.assertEquals('Venue', metadata['venue'])
         self.assertEquals(datetime.date(1970, 7, 8), metadata['date'])
         self.assertEquals(
@@ -90,8 +91,7 @@ class QueueDialogTestCase(unittest.TestCase):
         ]
         expectedTempPath = settings.settingsDir + '/' + metadata['hash']
         self.assertEquals(expectedAudioFiles, metadata['audioFiles'])
-        self.assertEquals('The Foo Bars', metadata['artist'])
-        self.assertEquals(expectedTempPath + '/' + 'visicon.png', metadata['cover'])
+        self.assertEquals('The Foo Bars', metadata['artist'])        
         self.assertEquals('Venue', metadata['venue'])
         self.assertEquals(datetime.date(1970, 7, 7), metadata['date'])
 
@@ -114,8 +114,5 @@ class QueueDialogTestCase(unittest.TestCase):
         self.assertTrue(isinstance(metadataTuple, tuple))
 
 
-if __name__ == '__main__':
-    app = QApplication(sys.argv)
+if __name__ == '__main__':    
     unittest.main()
-else:
-    app = QApplication(sys.argv)

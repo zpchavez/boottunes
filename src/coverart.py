@@ -25,12 +25,12 @@ class CoverArtRetriever():
         @rtype QPixmap
         """        
         # Workaround for loss of JPEG functionality when the app is packaged with py2app or py2exe.
-        if re.search('/\.jpeg|\.jpg$', imagePath, re.IGNORECASE):
+        if re.search('/\.jpeg|\.jpg|\.gif$', imagePath, re.IGNORECASE):            
             image = Image.open(imagePath)
             stringIO = StringIO.StringIO()
-            image.save(stringIO, format='png')            
-            pixmap = QPixmap()
-            pixmap.loadFromData(stringIO.getvalue())
+            image.save(stringIO, format='png')
+            pixmap = QPixmap()            
+            pixmap.loadFromData(stringIO.getvalue())            
             return pixmap
         else:
             pixmap = QPixmap(imagePath)
@@ -56,6 +56,11 @@ class CoverArtRetriever():
         dir = metadata['dir']
         tempDir = metadata['tempDir']
         tempDirPath = tempDir.absolutePath()
+        
+        dir.setFilter(QDir.Dirs | QDir.NoDotAndDotDot)
+        dir.setNameFilters(['*'])
+        subDirs = dir.entryList()        
+        
         nameFilters = ['*.gif', '*.png', '*.jpg', '*.jpeg']
         tempDir.setNameFilters(nameFilters)
         tempDir.setFilter(QDir.Files)
@@ -75,26 +80,32 @@ class CoverArtRetriever():
         visiconPath = unicode(tempDirPath + '/' + 'visicon.png')
         visiconImage.draw_image().save(visiconPath, 'PNG')
 
-        imageFiles = tempDir.entryList() + dir.entryList()
-        
+        imageFiles = list(tempDir.entryList()) + list(dir.entryList())
+        for subDir in subDirs:
+            subDirQDir = QDir(dir.absolutePath() + '/' + subDir)
+            subDirQDir.setNameFilters(nameFilters)
+            subDirQDir.setFilter(QDir.Files)
+            for imageFile in list(subDirQDir.entryList()):
+                imageFiles.append(subDir + '/' + imageFile)
+
         pathList = [
             unicode(tempDirPath + '/' + 'identicon.png'),
             unicode(tempDirPath + '/' + 'visicon.png')
-        ]
+        ]        
         pixMapList = [
             QPixmap(pathList[0]),
             QPixmap(pathList[1])
-        ]
+        ]        
         if settings['defaultArt'] in ['Visicon', 'Image File => Visicon']:
             pixMapList.reverse()
             pathList.reverse()
-
-        if 'Image File' in settings['defaultArt']:
-            for file in imageFiles:
+        
+        if 'Image File' in settings['defaultArt']:            
+            for file in imageFiles:                
                 if file not in ['identicon.png', 'visicon.png']:
                     pixMapList.insert(0, CoverArtRetriever.imagePathToPixmap(
                         unicode(dir.absolutePath() + '/' + file))
-                    )
+                    )                    
                     pathList.insert(0, unicode(dir.absolutePath() + '/' + file))
         else:
             for file in imageFiles:
@@ -103,5 +114,5 @@ class CoverArtRetriever():
                         unicode(dir.absolutePath() + '/' + file))
                     )
                     pathList.append(unicode(dir.absolutePath() + '/' + file))
-
+        
         return tuple([(pathList[i], pixMapList[i]) for i in range(len(pathList))])

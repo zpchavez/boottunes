@@ -9,7 +9,7 @@ from  PyQt4.QtCore import QDir
 class AudiotoolsTestCase(unittest.TestCase):
 
     testPath = unicode(QDir.fromNativeSeparators(os.path.dirname(__file__)))
-    showPath = testPath + '/' + 'test-shows'
+    showPath = testPath + '/test-shows'
 
     antiCrashBin = []
     """PCMReader objects going out of scope causes Windows 7 to crash, hence the antiCrashBin"""

@@ -111,6 +111,7 @@ class QueueDialog(QDialog, Ui_QueueDialog):
             if isinstance(metadata, tuple):
                 for metadatum in metadata:
                     if not settings.isCompleted(metadatum['hash']):
+                        metadatum['cover'] = CoverArtRetriever.getCoverImageChoices(metadatum)[0][0]
                         self.addToQueue(metadatum)
                 self.queueListWidget.sortItems()
             else:
@@ -288,8 +289,7 @@ class QueueDialog(QDialog, Ui_QueueDialog):
                 # The dir where all temporary files for this recording will be stored
                 metadata['tempDir'] = QDir(settings.settingsDir + '/' + metadata['hash'])
                 if not metadata['tempDir'].exists():
-                    metadata['tempDir'].mkpath(metadata['tempDir'].absolutePath())
-                metadata['cover'] = CoverArtRetriever.getCoverImageChoices(metadata)[0][0]                
+                    metadata['tempDir'].mkpath(metadata['tempDir'].absolutePath())                
                 return metadata
 
             except IOError as e:
