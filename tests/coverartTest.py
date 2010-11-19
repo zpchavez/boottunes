@@ -34,6 +34,7 @@ class CoverArtRetrieverTestCase(unittest.TestCase):
         self.settings['defaultArt'] = 'Visicon'
         self.metadata['dir'] = QDir(self.showPath + '/show1')
         choices = CoverArtRetriever.getCoverImageChoices(self.metadata)
+        print choices
         self.assertEquals(self.outputPath + '/visicon.png', choices[0][0])
         self.assertEquals(self.outputPath + '/identicon.png', choices[1][0])
         self.assertEquals(QPixmap(self.outputPath + '/visicon.png').cacheKey(), choices[0][1].cacheKey())
@@ -49,7 +50,8 @@ class CoverArtRetrieverTestCase(unittest.TestCase):
         self.assertEquals(self.outputPath + '/visicon.png', choices[3][0])
         self.assertEquals(self.outputPath + '/identicon.png', choices[4][0])
         self.assertEquals(QPixmap(self.showPath + '/show2/art.png').cacheKey(), choices[0][1].cacheKey())
-        # The other two actually don't match due to the fix where jpegs and gifs are converted to pngs and reimported                
+        self.assertEquals(QPixmap(self.showPath + '/show2/art.jpg').cacheKey(), choices[1][1].cacheKey())
+        self.assertEquals(QPixmap(self.showPath + '/show2/art.gif').cacheKey(), choices[2][1].cacheKey())
         self.assertEquals(QPixmap(self.outputPath + '/visicon.png').cacheKey(), choices[3][1].cacheKey())
         self.assertEquals(QPixmap(self.outputPath + '/identicon.png').cacheKey(), choices[4][1].cacheKey())
 
@@ -64,5 +66,5 @@ class CoverArtRetrieverTestCase(unittest.TestCase):
         self.assertEquals(QPixmap(self.outputPath + '/visicon.png').cacheKey(), choices[1][1].cacheKey())
         self.assertEquals(QPixmap(self.outputPath + '/identicon.png').cacheKey(), choices[2][1].cacheKey())
 
-if __name__ == '__main__':    
+if __name__ == '__main__':
     unittest.main()

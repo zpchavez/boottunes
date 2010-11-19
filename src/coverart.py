@@ -4,7 +4,6 @@ BootTunes is licensed under the GPLv2.
 http://www.gnu.org/licenses/gpl-2.0.html
 """
 import re
-import os
 import StringIO
 import identicon
 import visicon
@@ -14,27 +13,6 @@ from PyQt4.QtGui import *
 from settings import settings
 
 class CoverArtRetriever():
-
-    @staticmethod
-    def imagePathToPixmap(imagePath):
-        """
-        Return a QPixmap given the path to a gif, png, or jpeg file.
-
-        @type imagePath: unicode
-
-        @rtype QPixmap
-        """        
-        # Workaround for loss of JPEG functionality when the app is packaged with py2app or py2exe.
-        if re.search('/\.jpeg|\.jpg|\.gif$', imagePath, re.IGNORECASE):            
-            image = Image.open(imagePath)
-            stringIO = StringIO.StringIO()
-            image.save(stringIO, format='png')
-            pixmap = QPixmap()            
-            pixmap.loadFromData(stringIO.getvalue())            
-            return pixmap
-        else:
-            pixmap = QPixmap(imagePath)
-            return pixmap
 
     @staticmethod
     def getCoverImageChoices(metadata):
@@ -103,16 +81,16 @@ class CoverArtRetriever():
         if 'Image File' in settings['defaultArt']:            
             for file in imageFiles:                
                 if file not in ['identicon.png', 'visicon.png']:
-                    pixMapList.insert(0, CoverArtRetriever.imagePathToPixmap(
-                        unicode(dir.absolutePath() + '/' + file))
-                    )                    
+                    pixMapList.insert(0, QPixmap(
+                        unicode(dir.absolutePath() + '/' + file)
+                    ))
                     pathList.insert(0, unicode(dir.absolutePath() + '/' + file))
         else:
             for file in imageFiles:
                 if file not in ['identicon.png','visicon.png']:
-                    pixMapList.append(CoverArtRetriever.imagePathToPixmap(
-                        unicode(dir.absolutePath() + '/' + file))
-                    )
+                    pixMapList.append(QPixmap(
+                        unicode(dir.absolutePath() + '/' + file)
+                    ))
                     pathList.append(unicode(dir.absolutePath() + '/' + file))
         
         return tuple([(pathList[i], pixMapList[i]) for i in range(len(pathList))])
