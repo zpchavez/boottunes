@@ -8,7 +8,6 @@ from PyQt4.QtGui import *
 from PyQt4.QtCore import *
 from ui.ui_choosecover import Ui_ChooseCoverDialog
 from coverart import CoverArtRetriever
-from settings import settings
 
 class ChooseCoverDialog(QDialog, Ui_ChooseCoverDialog):
 

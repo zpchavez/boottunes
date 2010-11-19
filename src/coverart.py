@@ -3,11 +3,8 @@ Copyright (C) 2010 Zachary Chavez
 BootTunes is licensed under the GPLv2.
 http://www.gnu.org/licenses/gpl-2.0.html
 """
-import re
-import StringIO
 import identicon
 import visicon
-from PIL import Image
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 from settings import settings

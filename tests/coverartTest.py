@@ -34,7 +34,6 @@ class CoverArtRetrieverTestCase(unittest.TestCase):
         self.settings['defaultArt'] = 'Visicon'
         self.metadata['dir'] = QDir(self.showPath + '/show1')
         choices = CoverArtRetriever.getCoverImageChoices(self.metadata)
-        print choices
         self.assertEquals(self.outputPath + '/visicon.png', choices[0][0])
         self.assertEquals(self.outputPath + '/identicon.png', choices[1][0])
         self.assertEquals(QPixmap(self.outputPath + '/visicon.png').cacheKey(), choices[0][1].cacheKey())

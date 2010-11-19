@@ -1,6 +1,5 @@
 import unittest
-import os
-from settings import Settings, SettingsError
+from settings import Settings
 
 class SettingsTestCase(unittest.TestCase):
 
