@@ -9,7 +9,7 @@ import datetime
 import difflib
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
-from settings import settings
+from settings import getSettings
 from ui.ui_confirmmetadata import Ui_ConfirmMetadataDialog
 from dialogs.choosecover import ChooseCoverDialog
 
@@ -29,7 +29,7 @@ class ConfirmMetadataDialog(QDialog, Ui_ConfirmMetadataDialog):
         self.setupUi(self)
         self.setWindowFlags(Qt.Window)
 
-        artistDefaults = settings.getArtistDefaults(metadata['artist'])
+        artistDefaults = getSettings().getArtistDefaults(metadata['artist'])
         if artistDefaults:            
             self.artistLineEdit.setText(artistDefaults['preferred_name'].decode('utf_8'))            
         else:
@@ -60,7 +60,7 @@ class ConfirmMetadataDialog(QDialog, Ui_ConfirmMetadataDialog):
         # completely wrong and is not synonymous with the submitted artist name.
         diff = difflib.SequenceMatcher(None, suggestedArtist.lower(), submittedArtist.lower())
 
-        settings.setArtistDefaults(
+        getSettings().setArtistDefaults(
             suggestedArtist if suggestedArtist and diff.ratio() > 0.5 else submittedArtist,
             defaults
         )

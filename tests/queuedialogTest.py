@@ -6,7 +6,7 @@ import datetime
 from PyQt4.QtGui import *
 from PyQt4.QtCore import *
 from dialogs.queuedialog import *
-from settings import *
+from settings import getSettings
 
 class QueueDialogTestCase(unittest.TestCase):
 
@@ -15,7 +15,7 @@ class QueueDialogTestCase(unittest.TestCase):
 
     def setUp(self):
         self.app = QApplication(sys.argv)
-        self.settings = Settings('test')
+        self.settings = getSettings('test')
         self.settings.settings.clear()
         self.settings.artistDefaults.clear()
         self.settings.artistNames.clear()
@@ -26,7 +26,7 @@ class QueueDialogTestCase(unittest.TestCase):
 
     def tearDown(self):
         del self.app
-        settings.clearTempFiles()
+        self.settings.clearTempFiles()
 
     def testGetMetadataFromDirGetsMetadataFromTheSpecifiedDirectory(self):
         showPath = self.showPath + '/' + 'show1'
@@ -38,7 +38,7 @@ class QueueDialogTestCase(unittest.TestCase):
             showPath + '/' + '2.flac',
             showPath + '/' + '3.flac'
         ]
-        expectedTempPath = settings.settingsDir + '/' + metadata['hash']
+        expectedTempPath = self.settings.settingsDir + '/' + metadata['hash']
         self.assertEquals(expectedAudioFiles, metadata['audioFiles'])
         self.assertEquals('The Foo Bars', metadata['artist'])        
         self.assertEquals('Venue', metadata['venue'])
@@ -63,7 +63,7 @@ class QueueDialogTestCase(unittest.TestCase):
             showPath + '/' + 'CD2' + '/' + '1.shn',
             showPath + '/' + 'CD2' + '/' + '2.shn'
         ]
-        expectedTempPath = settings.settingsDir + '/' + metadata['hash']
+        expectedTempPath = self.settings.settingsDir + '/' + metadata['hash']
         self.assertEquals(expectedAudioFiles, metadata['audioFiles'])
         self.assertEquals('The Foo Bars', metadata['artist'])        
         self.assertEquals('Venue', metadata['venue'])
@@ -89,7 +89,7 @@ class QueueDialogTestCase(unittest.TestCase):
             showPath + '/' + '2.flac',
             showPath + '/' + '3.flac'
         ]
-        expectedTempPath = settings.settingsDir + '/' + metadata['hash']
+        expectedTempPath = self.settings.settingsDir + '/' + metadata['hash']
         self.assertEquals(expectedAudioFiles, metadata['audioFiles'])
         self.assertEquals('The Foo Bars', metadata['artist'])        
         self.assertEquals('Venue', metadata['venue'])

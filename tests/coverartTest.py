@@ -5,7 +5,7 @@ from hashlib import md5
 from PyQt4.QtCore import QDir
 from PyQt4.QtGui import *
 from coverart import CoverArtRetriever
-from settings import Settings
+from settings import getSettings
 
 class CoverArtRetrieverTestCase(unittest.TestCase):
 
@@ -17,7 +17,7 @@ class CoverArtRetrieverTestCase(unittest.TestCase):
     """The value passed to the getCoverImageChoices method"""
 
     def setUp(self):
-        self.settings = Settings("test")
+        self.settings = getSettings("test")
         self.app = QApplication(sys.argv)
 
     def tearDown(self):

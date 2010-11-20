@@ -7,7 +7,7 @@ import identicon
 import visicon
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
-from settings import settings
+from settings import getSettings
 
 class CoverArtRetriever():
 
@@ -31,17 +31,17 @@ class CoverArtRetriever():
         dir = metadata['dir']
         tempDir = metadata['tempDir']
         tempDirPath = tempDir.absolutePath()
-        
+
         dir.setFilter(QDir.Dirs | QDir.NoDotAndDotDot)
         dir.setNameFilters(['*'])
-        subDirs = dir.entryList()        
-        
+        subDirs = dir.entryList()
+
         nameFilters = ['*.gif', '*.png', '*.jpg', '*.jpeg']
         tempDir.setNameFilters(nameFilters)
         tempDir.setFilter(QDir.Files)
         dir.setNameFilters(nameFilters)
-        dir.setFilter(QDir.Files)        
-        
+        dir.setFilter(QDir.Files)
+
         # Create identicon and visicon
         hash = metadata['hash']
         identiconImage = identicon.render_identicon(
@@ -50,7 +50,7 @@ class CoverArtRetriever():
         )
         identiconPath = unicode(tempDirPath + '/' + 'identicon.png')
         identiconImage.save(identiconPath, 'PNG')
-        
+
         visiconImage = visicon.Visicon(hash, 'seed', size=384)
         visiconPath = unicode(tempDirPath + '/' + 'visicon.png')
         visiconImage.draw_image().save(visiconPath, 'PNG')
@@ -66,17 +66,17 @@ class CoverArtRetriever():
         pathList = [
             unicode(tempDirPath + '/' + 'identicon.png'),
             unicode(tempDirPath + '/' + 'visicon.png')
-        ]        
+        ]
         pixMapList = [
             QPixmap(pathList[0]),
             QPixmap(pathList[1])
-        ]        
-        if settings['defaultArt'] in ['Visicon', 'Image File => Visicon']:
+        ]
+        if getSettings()['defaultArt'] in ['Visicon', 'Image File => Visicon']:
             pixMapList.reverse()
             pathList.reverse()
-        
-        if 'Image File' in settings['defaultArt']:            
-            for file in imageFiles:                
+
+        if 'Image File' in getSettings()['defaultArt']:
+            for file in imageFiles:
                 if file not in ['identicon.png', 'visicon.png']:
                     pixMapList.insert(0, QPixmap(
                         unicode(dir.absolutePath() + '/' + file)
@@ -89,5 +89,5 @@ class CoverArtRetriever():
                         unicode(dir.absolutePath() + '/' + file)
                     ))
                     pathList.append(unicode(dir.absolutePath() + '/' + file))
-        
+
         return tuple([(pathList[i], pixMapList[i]) for i in range(len(pathList))])

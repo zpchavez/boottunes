@@ -13,7 +13,7 @@ from PyQt4.QtCore import *
 from dialogs.queuedialog import QueueDialog
 from dialogs.messagebox import MessageBox
 from dialogs.newversion import NewVersionDialog
-from settings import settings, SettingsError
+from settings import getSettings, SettingsError
 import data
 
 __version__ = "0.1.5"
@@ -23,7 +23,7 @@ class MainWindow(QMainWindow):
         super(MainWindow, self).__init__(parent)
 
         try:
-            settings.initAddToITunesPath()
+            getSettings().initAddToITunesPath()
         except SettingsError:
             dir = QFileDialog.getExistingDirectory(
                 None,
@@ -31,7 +31,7 @@ class MainWindow(QMainWindow):
             )
             if not dir:
                 sys.exit()
-            settings['addToITunesPath'] = dir
+            getSettings()['addToITunesPath'] = dir
 
         menuBar = QMenuBar()
         helpMenu = menuBar.addMenu('&Help')
@@ -82,7 +82,7 @@ class MainWindow(QMainWindow):
                 timeout=3
             ).read()
             jsonDict = json.loads(jsonString)
-            if jsonDict['version'] > __version__ and jsonDict['version'] != settings['skipVersion']:
+            if jsonDict['version'] > __version__ and jsonDict['version'] != getSettings()['skipVersion']:
                 dialog = NewVersionDialog(jsonDict, parent=self)
                 dialog.exec_()
         except:
@@ -141,9 +141,9 @@ logoPixmap = QPixmap(data.path + '/' + 'media' + '/' + 'logo.png')
 icon = QIcon(logoPixmap)
 app.setWindowIcon(icon)
 
-if settings['checkForUpdates']:
+if getSettings()['checkForUpdates']:
     window.checkForUpdate()
 
 app.exec_()
-settings.pickleAndStore()
-settings.clearTempFiles()
+getSettings().pickleAndStore()
+getSettings().clearTempFiles()

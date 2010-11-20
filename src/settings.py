@@ -21,8 +21,8 @@ class Settings:
                 'defaultArt'      : 'Visicon',
                 'checkForUpdates' : True,
                 'skipVersion'     : ''}
-                
-    def __getitem__(self, key):        
+
+    def __getitem__(self, key):
         if key not in self.settings:
             return self.defaults[key] if key in self.defaults else None
         return self.settings[key]
@@ -38,7 +38,11 @@ class Settings:
             return key in self.defaults
         return key in self.settings
 
-    def __init__(self, file='settings'):                
+    def __init__(self, file='settings'):
+        """
+        @type  file: string
+        @param file: the prefix of the settings files used.  Used for testing.
+        """
         userDir = QDir(os.path.expanduser('~'))
 
         userDir.cd('Application Data') or userDir.cd('AppData') or userDir.cd('Library')
@@ -53,21 +57,21 @@ class Settings:
         self.defaultsPath  = defaultsPath  = basePath + '/' + file + '-defaults'
         self.namesPath     = namesPath     = basePath + '/' + file + '-names'
         self.completedPath = completedPath = basePath + '/' + file + '-completed'
-            
+
         pathsAndProperties = [
             (settingsPath,  'settings'),
             (defaultsPath,  'artistDefaults'),
             (namesPath,     'artistNames'),
             (completedPath, 'completed')
-        ]        
+        ]
 
         for pathAndProperty in pathsAndProperties:
             filePath = pathAndProperty[0]
             property = pathAndProperty[1]
             setattr(self, property, {})
             if os.path.exists(filePath):
-                fileObj = codecs.open(filePath, 'r')                
-                try:                    
+                fileObj = codecs.open(filePath, 'r')
+                try:
                     setattr(self, property, cPickle.load(fileObj) or {})
                 except (cPickle.UnpicklingError, AttributeError, EOFError, ImportError, IndexError):
                     pass
@@ -122,7 +126,7 @@ class Settings:
         if artist in self.artistNames:
             id = self.artistNames[artist]
             defaults = self.artistDefaults[id]
-            defaults['preferred_name'] = defaults['preferred_name']            
+            defaults['preferred_name'] = defaults['preferred_name']
             return self.artistDefaults[id]
         return None
 
@@ -140,7 +144,7 @@ class Settings:
         if defaults['preferred_name'] == '':
             return
 
-        name = name.encode('utf_8')        
+        name = name.encode('utf_8')
         defaults['preferred_name'] = defaults['preferred_name'].encode('utf_8')
 
         if name in self.artistNames:
@@ -148,7 +152,7 @@ class Settings:
             submittedPreferredName = defaults['preferred_name']
             existingPreferredName = self.artistDefaults[id]['preferred_name']
 
-            if name == existingPreferredName:            
+            if name == existingPreferredName:
                 self.artistDefaults[id] = defaults
                 del self.artistNames[existingPreferredName]
                 self.artistNames[name] = id
@@ -157,11 +161,11 @@ class Settings:
                 self.artistDefaults[newId] = defaults
                 self.artistNames[name] = newId
                 self.artistNames[submittedPreferredName] = newId
-            else:                
+            else:
                 self.artistNames[submittedPreferredName] = id
                 self.artistNames[name] = id
                 self.artistDefaults[id] = defaults
-        else:            
+        else:
             if defaults['preferred_name'] in self.artistNames:
                 id = self.artistNames[defaults['preferred_name']]
                 self.artistDefaults[id] = defaults
@@ -208,7 +212,7 @@ class Settings:
         fileNames = codecs.open(self.namesPath, 'w', 'utf_8')
         fileCompleted = codecs.open(self.completedPath, 'w', 'utf_8')
 
-        cPickle.dump(self.settings, fileSettings)        
+        cPickle.dump(self.settings, fileSettings)
         cPickle.dump(self.artistDefaults, fileDefaults)
         cPickle.dump(self.artistNames, fileNames)
         cPickle.dump(self.completed, fileCompleted)
@@ -232,5 +236,16 @@ class Settings:
                 tempQDir.remove(tempFile)
             settingsQDir.rmdir(self.settingsDir + '/' + dir)
 
-settings = Settings()
-"""To share settings between modules, use this instance instead of creating new instances of Settings"""
+
+def getSettings(file = 'settings'):
+    """
+    To share settings between modules, use this function
+    instead of creating new instances of Settings.
+
+    @type  file: string
+    @param file: the prefix of the settings files used.  Used for testing.
+                 This parameter will be ignored for all subsequent calls.
+    """
+    if not hasattr(getSettings, 'settings'):
+        getSettings.settings = Settings(file)
+    return getSettings.settings
