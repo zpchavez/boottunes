@@ -162,6 +162,14 @@ class ParsetxtTestCase(unittest.TestCase):
         tracklist = TxtParser(anotherTest)._findTracklist()
         self.assertEquals(['Funk (Prelude, part 1)', 'Ife', 'Moja', 'Willie Nelson on Tune in 5'], tracklist)
 
+        # Forgive skipped track numbers
+        tracklist = TxtParser('1) One\n2) Two\n3) Three\n5) Four')._findTracklist()
+        self.assertEquals(['One', 'Two', 'Three', 'Four'], tracklist)
+
+        # Forgive repeated track numbers
+        tracklist = TxtParser('1) One\n2) Two\n3) Three\n3) Four')._findTracklist()
+        self.assertEquals(['One', 'Two', 'Three', 'Four'], tracklist)
+
     def testFindLocationTriesToGetGeographicalLocationButNotVenue(self):
         """
         Getting the first line of the metadata block with a comma will work in most cases.
