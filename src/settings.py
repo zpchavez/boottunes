@@ -83,10 +83,9 @@ class Settings:
         actually exists.  If it does not, check all the standard locations.
 
         Raises SettingsError if the folder isn't set and could not be found.
-
         """
         if 'addToITunesPath' not in self.settings or not os.path.exists(self.settings['addToITunesPath']):
-            settings['addToITunesPath'] = self.getDetectedAddToITunesPath()
+            self.settings['addToITunesPath'] = self.getDetectedAddToITunesPath()
 
         if not self.settings['addToITunesPath']:
             raise SettingsError('Could not find Automatically Add to iTunes path')
