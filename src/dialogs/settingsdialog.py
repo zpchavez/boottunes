@@ -6,7 +6,7 @@ http://www.gnu.org/licenses/gpl-2.0.html
 import datetime
 from PyQt4.QtGui import *
 from PyQt4.QtCore import *
-from settings import getSettings
+from settings import settings
 from ui.ui_settings import Ui_SettingsDialog
 
 class SettingsDialog(QDialog, Ui_SettingsDialog):
@@ -23,21 +23,21 @@ class SettingsDialog(QDialog, Ui_SettingsDialog):
         self.setWindowFlags(Qt.Window)
         self.resize(0, 0) # fixes problem of the window being too big on Windows
 
-        self.albumTitleFormatLineEdit.setText(getSettings()['albumTitleFormat'])
+        self.albumTitleFormatLineEdit.setText(settings['albumTitleFormat'])
 
-        if getSettings()['defaultArt'] == 'Image File => Identicon':
+        if settings['defaultArt'] == 'Image File => Identicon':
             self.defaultArtRadioButtonImageFileIdenticon.setChecked(True)
-        elif getSettings()['defaultArt'] == 'Image File => Visicon':
+        elif settings['defaultArt'] == 'Image File => Visicon':
             self.defaultArtRadioButtonImageFileVisicon.setChecked(True)
-        elif getSettings()['defaultArt'] == 'Visicon':
+        elif settings['defaultArt'] == 'Visicon':
             self.defaultArtRadioButtonVisicon.setChecked(True)
         else:
             self.defaultArtRadioButtonIdenticon.setChecked(True)
 
-        if getSettings()['checkForUpdates']:
+        if settings['checkForUpdates']:
             self.checkForUpdatesCheckBox.setChecked(True)
 
-        self.addToITunesPathTextEdit.setText(getSettings()['addToITunesPath'])
+        self.addToITunesPathTextEdit.setText(settings['addToITunesPath'])
 
         # Set the ComboBox values
         for k, v in self.dateOptions.iteritems():
@@ -45,52 +45,52 @@ class SettingsDialog(QDialog, Ui_SettingsDialog):
 
         # Select the value saved in settings
         self.dateFormatComboBox.setCurrentIndex(
-            self.dateFormatComboBox.findData(getSettings()['dateFormat'])
+            self.dateFormatComboBox.findData(settings['dateFormat'])
         )
 
     def accept(self):
-        getSettings()['albumTitleFormat'] = unicode(self.albumTitleFormatLineEdit.text())
-        getSettings()['dateFormat'] = unicode(self.dateOptions[str(self.dateFormatComboBox.currentText())])
+        settings['albumTitleFormat'] = unicode(self.albumTitleFormatLineEdit.text())
+        settings['dateFormat'] = unicode(self.dateOptions[str(self.dateFormatComboBox.currentText())])
         if self.defaultArtRadioButtonImageFileIdenticon.isChecked():
-            getSettings()['defaultArt'] = u'Image File => Identicon'
+            settings['defaultArt'] = u'Image File => Identicon'
         elif self.defaultArtRadioButtonImageFileVisicon.isChecked():
-            getSettings()['defaultArt'] = u'Image File => Visicon'
+            settings['defaultArt'] = u'Image File => Visicon'
         elif self.defaultArtRadioButtonVisicon.isChecked():
-            getSettings()['defaultArt'] = u'Visicon'
+            settings['defaultArt'] = u'Visicon'
         else:
-            getSettings()['defaultArt'] = u'Identicon'
+            settings['defaultArt'] = u'Identicon'
 
-        getSettings()['checkForUpdates'] = self.checkForUpdatesCheckBox.isChecked()
+        settings['checkForUpdates'] = self.checkForUpdatesCheckBox.isChecked()        
 
-        getSettings()['addToITunesPath'] = unicode(self.addToITunesPathTextEdit.toPlainText())
+        settings['addToITunesPath'] = unicode(self.addToITunesPathTextEdit.toPlainText())
 
         self.parentWidget().refreshQueue()
         self.close()
 
     def restoreDefaults(self):
-        self.albumTitleFormatLineEdit.setText(getSettings().defaults['albumTitleFormat'])
+        self.albumTitleFormatLineEdit.setText(settings.defaults['albumTitleFormat'])
         
-        if getSettings().defaults['defaultArt'] == 'Image File => Identicon':
+        if settings.defaults['defaultArt'] == 'Image File => Identicon':
             self.defaultArtRadioButtonImageFileIdenticon.setChecked(True)
-        elif getSettings().defaults['defaultArt'] == 'Image File => Visicon':
+        elif settings.defaults['defaultArt'] == 'Image File => Visicon':
             self.defaultArtRadioButtonImageFileVisicon.setChecked(True)
-        elif getSettings().defaults['defaultArt'] == 'Visicon':
+        elif settings.defaults['defaultArt'] == 'Visicon':
             self.defaultArtRadioButtonVisicon.setChecked(True)
         else:
             self.defaultArtRadioButtonIdenticon.setChecked(True)
     
-        self.checkForUpdatesCheckBox.setChecked(getSettings().defaults['checkForUpdates'])
+        self.checkForUpdatesCheckBox.setChecked(settings.defaults['checkForUpdates'])
 
-        defaultAddToITunesPath = getSettings().getDetectedAddToITunesPath()
+        defaultAddToITunesPath = settings.getDetectedAddToITunesPath()
         if defaultAddToITunesPath:
             self.addToITunesPathTextEdit.setText(defaultAddToITunesPath)
 
         # Select the value saved in settings
         self.dateFormatComboBox.setCurrentIndex(
-            self.dateFormatComboBox.findData(getSettings().defaults['dateFormat'])
+            self.dateFormatComboBox.findData(settings.defaults['dateFormat'])
         )
         
     def changeAddToITunesPath(self):
-        dirName = QFileDialog.getExistingDirectory(self, 'Locate Directory', getSettings()['addToITunesPath'])
+        dirName = QFileDialog.getExistingDirectory(self, 'Locate Directory', settings['addToITunesPath'])
         if dirName:            
             self.addToITunesPathTextEdit.setText(dirName)

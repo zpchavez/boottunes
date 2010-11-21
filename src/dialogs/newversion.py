@@ -6,7 +6,7 @@ http://www.gnu.org/licenses/gpl-2.0.html
 from PyQt4.QtGui import *
 from PyQt4.QtCore import *
 from ui.ui_newversion import Ui_NewVersionDialog
-from settings import getSettings
+from settings import settings
 
 class NewVersionDialog(QDialog, Ui_NewVersionDialog):
 
@@ -19,12 +19,12 @@ class NewVersionDialog(QDialog, Ui_NewVersionDialog):
         self.info = info
 
     def skipVersion(self):
-        getSettings()['skipVersion'] = self.info['version']
+        settings['skipVersion'] = self.info['version']
         self.hide()
 
     def visitDownloadPage(self):
         QDesktopServices.openUrl(QUrl(self.info['url']))
-        getSettings()['skipVersion'] = self.info['version']
+        settings['skipVersion'] = self.info['version']
         self.hide()
 
     def reject(self):

@@ -16,7 +16,7 @@ os.system("rm -rf build")
 thisPath = os.path.dirname(os.path.realpath(__file__))
 
 NAME = 'BootTunes'
-VERSION = '0.1.6'
+VERSION = '0.1.5'
 APP = ['boottunes.pyw']
 DATA_FILES = ['data']
 OPTIONS = {
@@ -44,10 +44,8 @@ file = open('dist/BootTunes.app/Contents/Resources/__boot__.py', 'w')
 file.write("""import os, sys \nsys.path = [os.path.join(
     os.environ['RESOURCEPATH'], 'lib', 'python2.6', 'lib-dynload')] + sys.path\n""" + bootContents
 )
-# Create qt.conf file to prevent "...loading two sets of Qt binaries..." error.
-file = open('dist/boottunes.app/Contents/Resources/qt.conf', 'w')
-file.write('[Paths]\nPrefix = .\nBinaries = .')
-
+# Create empty qt.conf file to prevent "...loading two sets of Qt binaries..." error.
+open('dist/boottunes.app/Contents/Resources/qt.conf', 'w')
 # Delete unneeded files
 os.system("rm -f dist/BootTunes.app/Contents/Frameworks/QtCore.framework/Versions/4/QtCore_debug")
 os.system("rm -f dist/BootTunes.app/Contents/Frameworks/QtGui.framework/Versions/4/QtGui_debug")
@@ -92,31 +90,3 @@ for file in cFiles:
 # Encodings files are needed as well
 pythonFiles.append('encodings/*.pyc')
 os.system('cd /usr/lib/python2.6; zip -r ' + appPath + '/Resources/lib/python26.zip ' + ' '.join(pythonFiles))
-
-# Need to copy JPEG and GIF plugins
-os.mkdir(appPath + '/plugins')
-os.mkdir(appPath + '/plugins/imageformats')
-shutil.copy('/Developer/Applications/Qt/plugins/imageformats/libqgif.dylib', appPath + '/plugins/imageformats')
-shutil.copy('/Developer/Applications/Qt/plugins/imageformats/libqjpeg.dylib', appPath + '/plugins/imageformats')
-# Set the path to the Qt frameworks in the plugins
-pluginPath = appPath + '/plugins/imageformats'
-os.system(
-    'install_name_tool -change QtGui.framework/Versions/4/QtGui ' +
-    '@executable_path/../Frameworks/QtGui.framework/Versions/4/QtGui ' +
-    pluginPath + '/libqjpeg.dylib'
-)
-os.system(
-    'install_name_tool -change QtCore.framework/Versions/4/QtCore ' +
-    '@executable_path/../Frameworks/QtCore.framework/Versions/4/QtCore ' +
-    pluginPath + '/libqjpeg.dylib'
-)
-os.system(
-    'install_name_tool -change QtGui.framework/Versions/4/QtGui ' +
-    '@executable_path/../Frameworks/QtGui.framework/Versions/4/QtGui ' +
-    pluginPath + '/libqgif.dylib'
-)
-os.system(
-    'install_name_tool -change QtCore.framework/Versions/4/QtCore ' +
-    '@executable_path/../Frameworks/QtCore.framework/Versions/4/QtCore ' +
-    pluginPath + '/libqgif.dylib'
-)

@@ -5,13 +5,12 @@ Usage:
 
 from distutils.core import setup
 import py2exe
-import shutil
 import os
 os.system("rmdir dist /S /Q")
 os.system("rmdir build /S /Q")
 
 NAME = 'BootTunes'
-VERSION = '0.1.6'
+VERSION = '1.0.0'
 
 APP = ['boottunes.pyw']
 DATA_FILES = [('data/media', [
@@ -33,17 +32,15 @@ setup(
     options={'py2exe': OPTIONS}
 )
 
-# Copy QT plugins for displaying JPEG and GIF files
-thisPath = os.path.dirname(os.path.realpath(__file__))
-imageFormatsPath = thisPath + '/dist/imageFormats'
-
-os.mkdir(imageFormatsPath)
-
-shutil.copy(
-    '/Python26/Lib/site-packages/PyQt4/plugins/imageformats/qjpeg4.dll',
-    imageFormatsPath
-)
-shutil.copy(
-    '/Python26/Lib/site-packages/PyQt4/plugins/imageformats/qgif4.dll',
-    imageFormatsPath
-)
+# Need to add to the system path
+#file = open('dist/BootTunes.app/Contents/Resources/__boot__.py', 'r')
+#bootContents = file.read()
+#file = open('dist/BootTunes.app/Contents/Resources/__boot__.py', 'w')
+#file.write("""import os, sys \nsys.path = [os.path.join(
+#    os.environ['RESOURCEPATH'], 'lib', 'python2.6', 'lib-dynload')] + sys.path\n""" + bootContents
+#)
+# Create empty qt.conf file to prevent "...loading two sets of Qt binaries..." error.
+#open('dist/boottunes.app/Contents/Resources/qt.conf', 'w')
+## Delete unneeded files
+#os.system("rm -f dist/BootTunes.app/Contents/Frameworks/QtCore.framework/Versions/4/QtCore_debug")
+#os.system("rm -f dist/BootTunes.app/Contents/Frameworks/QtGui.framework/Versions/4/QtGui_debug")

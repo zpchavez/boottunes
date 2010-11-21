@@ -8,6 +8,7 @@ from PyQt4.QtGui import *
 from PyQt4.QtCore import *
 from ui.ui_choosecover import Ui_ChooseCoverDialog
 from coverart import CoverArtRetriever
+from settings import settings
 
 class ChooseCoverDialog(QDialog, Ui_ChooseCoverDialog):
 
@@ -31,7 +32,6 @@ class ChooseCoverDialog(QDialog, Ui_ChooseCoverDialog):
         """        
         image = self.coverImageChoices[index][1]
         image = image.scaledToWidth(384)
-        image = image.scaledToHeight(384)
         self.imageLabel.setPixmap(image)
 
     def accept(self):
