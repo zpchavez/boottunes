@@ -107,7 +107,7 @@ class QueueDialogTestCase(unittest.TestCase):
         try:
             self.queuedialog.getMetadataFromDir(showPath)
         except QueueDialogError as e:
-            self.assertEquals(e[0], "Number of audio files does not match tracklist")
+            self.assertEquals(e[0], "More audio files found than tracks in the tracklist")
 
     def testGetMetadataFromDirAndSubDirsGetsMetadataForAllValidShowsInSubDirectoriesWithinTheTargetDir(self):
         metadataTuple = self.queuedialog.getMetadataFromDirAndSubDirs(self.showPath)        
