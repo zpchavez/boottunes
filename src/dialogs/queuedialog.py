@@ -14,6 +14,7 @@ import urllib
 import chardet
 import platform
 import audiotools
+import audiotools.tracklint as tracklint
 from multiprocessing import Process
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
@@ -28,6 +29,9 @@ import data
 
 class QueueDialogError(Exception): pass
 class LoadCanceledException(Exception): pass
+class TracklintFixableError(Exception): pass
+
+systemName = platform.system()
 
 class QueueDialog(QDialog, Ui_QueueDialog):
     def __init__(self):
@@ -234,14 +238,14 @@ class QueueDialog(QDialog, Ui_QueueDialog):
                 metadata = TxtParser(fileHandle.read()).parseTxt()
 
                 fileHandle.close()
-
+                
                 foundCount = 0
                 for k, v in metadata.iteritems():
                     if v:
                         foundCount += 1
                 if foundCount < 4 and not theFinalTxt:
                     continue
-
+                
                 if metadata['tracklist'] == None:
                     raise QueueDialogError("Could not find a tracklist in " + txtFile)
 
@@ -249,11 +253,11 @@ class QueueDialog(QDialog, Ui_QueueDialog):
 
                 # Must contain valid audio files
                 qDir.setNameFilters(validExtensions)
-                filePaths = []
-                for file in qDir.entryList():
-                    fileNameEncoding = 'utf_8' if platform.system() == 'Darwin' else encoding
-                    filePath = unicode(qDir.absolutePath() + '/' + file).encode(fileNameEncoding)
-                    filePaths.append(filePath)
+                filePaths = []                
+                fileNameEncoding = 'utf_8' if systemName == 'Darwin' else encoding
+                for file in qDir.entryList():                                                            
+                    filePath = unicode(qDir.absolutePath() + '/' + file).encode(fileNameEncoding)                    
+                    filePaths.append(filePath)                                    
                 # The show could be split up between folders, e.g. CD1 and CD2
                 if len(filePaths) == 0:
                     qDir.setNameFilters('*')
@@ -262,26 +266,25 @@ class QueueDialog(QDialog, Ui_QueueDialog):
                         qSubdir = QDir(qDir.absolutePath() + '/' + subdirStr)
                         qSubdir.setNameFilters(validExtensions)
                         for file in qSubdir.entryList():
-                            filePaths.append(unicode(qSubdir.absolutePath()) + '/' + unicode(file))
-
+                            filePaths.append(unicode(qSubdir.absolutePath()) + '/' + unicode(file))                
                 if len(filePaths) == 0:
                     raise QueueDialogError("Directory does not contain any supported audio files (FLAC, SHN, ALAC)");
                 elif len(metadata['tracklist']) < len(filePaths):
                     raise QueueDialogError("More audio files found than tracks in the tracklist")
 
                 # If more tracks detected than files exist, assume the extra tracks are an error
-                del metadata['tracklist'][len(filePaths):]
+                del metadata['tracklist'][len(filePaths):]                
 
-                metadata['audioFiles'] = filePaths
+                metadata['audioFiles'] = filePaths                
 
                 try:
-                    # Assume that an artist name found in the actual file metadata is more accurate
+                    # Assume that an artist name found in the actual file metadata is more accurate                    
                     audioFile = audiotools.open(filePaths[0])
                     audioFileMetadata = audioFile.get_metadata()
                     if audioFileMetadata and audioFileMetadata.artist_name:
                         metadata['artist'] = audioFileMetadata.artist_name
                 except audiotools.UnsupportedFile as e:
-                    raise QueueDialogError(os.path.basename(filepaths[0]) + " is an unsupported file: ")
+                    raise QueueDialogError(os.path.basename(filePaths[0]) + " is an unsupported file: ")
 
                 metadata['dir'] = qDir
                 # Hash used for identicons and temp directory names
@@ -292,7 +295,7 @@ class QueueDialog(QDialog, Ui_QueueDialog):
                     metadata['tempDir'].mkpath(metadata['tempDir'].absolutePath())
                 return metadata
 
-            except IOError as e:
+            except IOError as e:                
                 raise QueueDialogError("Could not read file: " + txtFile + "<br /><br />" + e.args[1])
             except UnicodeDecodeError as e:
                 raise QueueDialogError("Could not read file: " + txtFile + "<br /><br />" + e.args[4])
@@ -511,7 +514,7 @@ class QueueDialog(QDialog, Ui_QueueDialog):
         Cancel the conversion process.  Called when "Cancel" is pressed in the progress bar dialog.
         """
         self.processThread.stop()
-        if platform.system() != 'Darwin':
+        if systemName != 'Darwin':
             self.processThread.terminate()
         self.removeCompletedRecordings()
 
@@ -585,7 +588,7 @@ class ProcessThread(QThread):
             targetFile = tempDirPath + '/' + unicode(parent.currentTrack) + u'.m4a'
 
             # If on Mac, run as a separate process
-            if platform.system() == 'Darwin':
+            if systemName == 'Darwin':
                 self.process = Process(target=self.encodeProcess, args=(targetFile, sourcePcm, alacMetadata))
                 self.process.start()
                 while self.process.is_alive() and not self.isStopped():
@@ -645,7 +648,7 @@ class ProcessThread(QThread):
     def stop(self):
         with QMutexLocker(self.mutex):
             self.stopped = True
-        if platform.system() == 'Darwin' and self.process.is_alive():
+        if systemName == 'Darwin' and self.process.is_alive():
             self.process.terminate()
 
     def isStopped(self):
