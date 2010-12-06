@@ -93,27 +93,36 @@ class QueueDialog(QDialog, Ui_QueueDialog):
 
         @type dirName: string or list of strings if multiple dirs are dragged and dropped
         """
+        self.loadingMultipleShows = False
         try:
             if isinstance(dirOrDirs, list):
                 metadata = []
+                self.loadingMultipleShows = True
                 for dir in dirOrDirs:
-                    try:
-                        ret = self.getMetadataFromDirAndSubDirs(QDir(dir))
-                    except:
-                        continue
-                    if isinstance(ret, dict):
-                        metadata.append(ret)
+                    if unicode(dir) in self.queueItemData:                        
+                        metadata = [self.queueItemData[unicode(dir)]['metadata']]
                     else:
-                        metadata += ret
+                        try:
+                            ret = self.getMetadataFromDirAndSubDirs(QDir(dir))
+                        except:
+                            continue
+                        if isinstance(ret, dict):
+                            metadata.append(ret)
+                        else: # Must be a tuple
+                            metadata += ret
                 if len(metadata) == 1:
                     metadata = metadata[0]
                 else:
                     metadata = tuple(metadata)
             else:
                 dir = dirOrDirs
-                metadata = self.getMetadataFromDirAndSubDirs(QDir(dir));
+                if unicode(dir) in self.queueItemData:                    
+                    metadata = self.queueItemData[unicode(dir)]['metadata']
+                else:
+                    metadata = self.getMetadataFromDirAndSubDirs(QDir(dir));
+
             if isinstance(metadata, tuple):
-                for metadatum in metadata:
+                for metadatum in metadata:                    
                     if not getSettings().isCompleted(metadatum['hash']):
                         metadatum['cover'] = CoverArtRetriever.getCoverImageChoices(metadatum)[0][0]
                         self.addToQueue(metadatum)
@@ -130,7 +139,10 @@ class QueueDialog(QDialog, Ui_QueueDialog):
                         getSettings().removeCompleted(metadata['hash'])
                     else:
                         return
-                ConfirmMetadataDialog(metadata, self).exec_()
+                if hasattr(self, 'processThread') and not self.processThread.isStopped():
+                    pass
+                else:
+                    ConfirmMetadataDialog(metadata, self).exec_()
         except QueueDialogError as e:
             MessageBox.critical(
                 self,
@@ -174,21 +186,25 @@ class QueueDialog(QDialog, Ui_QueueDialog):
             qDir = QDir(dirName)
             qDir.setFilter(QDir.Dirs | QDir.NoDotAndDotDot)
             metadataList = []
-            errorCount = 1
-
+            errorCount = 1            
             if qDir.entryList():
                 # Display progress bar
+                self.loadingMultipleShows = True
                 progress = QProgressDialog("Loading", "Cancel", 1, len(qDir.entryList()), self)
                 progress.setWindowFlags(Qt.Window | Qt.WindowCloseButtonHint)
                 progress.setWindowModality(Qt.WindowModal)
 
-                for index, dir in enumerate(qDir.entryList()):
+                for index, dir in enumerate(qDir.entryList()):                    
                     if progress.wasCanceled():
                         raise LoadCanceledException
-                    try:
-                        metadataList.append(self.getMetadataFromDir(qDir.absolutePath() + '/' + dir))
-                    except QueueDialogError as e:
-                        errorCount += 1
+                    absoluteDirPath = unicode(qDir.absolutePath() + '/' + dir)
+                    if unicode(absoluteDirPath) in self.queueItemData:                        
+                        metadataList.append(self.queueItemData[absoluteDirPath]['metadata'])
+                    else:
+                        try:
+                            metadataList.append(self.getMetadataFromDir(absoluteDirPath))
+                        except QueueDialogError as e:
+                            errorCount += 1
                     progress.setValue(index + 1)
 
             # If any valid recordings were found, simply ignore those that weren't valid.
@@ -277,15 +293,6 @@ class QueueDialog(QDialog, Ui_QueueDialog):
 
                 metadata['audioFiles'] = filePaths                
 
-                try:
-                    # Assume that an artist name found in the actual file metadata is more accurate                    
-                    audioFile = audiotools.open(filePaths[0])
-                    audioFileMetadata = audioFile.get_metadata()
-                    if audioFileMetadata and audioFileMetadata.artist_name:
-                        metadata['artist'] = audioFileMetadata.artist_name
-                except audiotools.UnsupportedFile as e:
-                    raise QueueDialogError(os.path.basename(filePaths[0]) + " is an unsupported file: ")
-
                 metadata['dir'] = qDir
                 # Hash used for identicons and temp directory names
                 metadata['hash'] = hashlib.md5(metadata['comments'].encode('utf_8')).hexdigest()
@@ -293,6 +300,22 @@ class QueueDialog(QDialog, Ui_QueueDialog):
                 metadata['tempDir'] = QDir(getSettings().settingsDir + '/' + metadata['hash'])
                 if not metadata['tempDir'].exists():
                     metadata['tempDir'].mkpath(metadata['tempDir'].absolutePath())
+
+                try:
+                    # Assume that an artist name found in the actual file metadata is more accurate
+                    audioFile = audiotools.open(filePaths[0])
+                    if isinstance(audioFile, audiotools.tracklint.BrokenFlacAudio):
+                        if self.loadingMultipleShows:
+                            raise QueueDialogError('Malformed FLAC files.  Load this show alone to fix.')
+                        else:
+                            self.fixBadFlacFiles(metadata)
+                    else:
+                        audioFileMetadata = audioFile.get_metadata()
+                        if audioFileMetadata and audioFileMetadata.artist_name:
+                            metadata['artist'] = audioFileMetadata.artist_name
+                except audiotools.UnsupportedFile as e:
+                    raise QueueDialogError(os.path.basename(filePaths[0]) + " is an unsupported file: ")
+
                 return metadata
 
             except IOError as e:                
@@ -423,7 +446,7 @@ class QueueDialog(QDialog, Ui_QueueDialog):
             validRecording['pcmReaders'] = []
             for audioFile in validRecording['metadata']['audioFiles']:
                 try:
-                    audiofileObj = audiotools.open(audioFile)
+                    audiofileObj = audiotools.open(audioFile)                    
                 except audiotools.UnsupportedFile:
                     MessageBox.critical(
                         self,
@@ -465,12 +488,12 @@ class QueueDialog(QDialog, Ui_QueueDialog):
 
 
         self.lock = QReadWriteLock()
-        self.processThread = ProcessThread(self.lock, self)
-        self.connect(self.processThread, SIGNAL("progress(int)"), self.updateProgress)
+        self.processThread = ConvertFilesThread(self.lock, self)
+        self.connect(self.processThread, SIGNAL("progress(int, QString)"), self.updateProgress)
         self.connect(self.processThread, SIGNAL("finished()"), self.conversionComplete)
         self.processThread.start()
 
-    def updateProgress(self, value):
+    def updateProgress(self, value, text):
         """
         Updates the progress bar.  Slot for ProcessThread.SIGNAL(progress(int)).
         """
@@ -478,12 +501,12 @@ class QueueDialog(QDialog, Ui_QueueDialog):
             self.progressDialog.setValue(value + 1)
             if value < self.progressDialog.maximum():
                 self.progressBarLabel.setText(
-                    'Converting "' + self.currentTrackName + '"'
+                    text
                 )
 
     def conversionComplete(self):
         """
-        Called on completion of ProcessThread.
+        Called on completion of ConvertFilesThread.
         """
         if self.processThread.completed:
             soundPath = data.path + '/' + 'media' + '/' + 'complete.wav'
@@ -499,6 +522,13 @@ class QueueDialog(QDialog, Ui_QueueDialog):
             )
             self.removeCompletedRecordings()
 
+    def badFlacFixingComplete(self):
+        """maps.google.com
+        Called on completion of FixBadFlacsThread.
+        """
+        if hasattr(self, 'metadata') and self.metadata:
+            ConfirmMetadataDialog(self.metadata, self).exec_()
+
     def removeCompletedRecordings(self):
         """
         Remove items that have been set as completed from the queue.
@@ -512,11 +542,12 @@ class QueueDialog(QDialog, Ui_QueueDialog):
     def cancelProcess(self):
         """
         Cancel the conversion process.  Called when "Cancel" is pressed in the progress bar dialog.
-        """
-        self.processThread.stop()
+        """        
+        self.processThread.stop()        
         if systemName != 'Darwin':
             self.processThread.terminate()
-        self.removeCompletedRecordings()
+        if (hasattr(self, 'validRecordings')):
+            self.removeCompletedRecordings()
 
     def event(self, event):
         """
@@ -532,13 +563,82 @@ class QueueDialog(QDialog, Ui_QueueDialog):
             return True
         return QDialog.event(self, event)
 
-class ProcessThread(QThread):
+    def fixBadFlacFiles(self, metadata):        
+        self.progressBarLabel = progressBarLabel = QLabel()
+        self.progressDialog = progressDialog = QProgressDialog(
+            "Loading",
+            "Cancel",
+            1,
+            len(metadata['audioFiles']),
+            self
+        )
+        self.connect(self.progressDialog, SIGNAL("canceled()"), self.cancelProcess)
+        progressDialog.setWindowFlags(Qt.Window | Qt.WindowCloseButtonHint)
+        progressDialog.setWindowModality(Qt.WindowModal)
+        progressDialog.setLabel(progressBarLabel)
+        progressBarLabel.setText('Temporarily removing ID3 tags')
+        progressDialog.setValue(1)
+
+        self.lock = QReadWriteLock()
+        self.processThread = FixBadFlacsThread(self.lock, metadata, self)
+        self.connect(self.processThread, SIGNAL("progress(int, QString)"), self.updateProgress)
+        self.connect(self.processThread, SIGNAL("finished()"), self.badFlacFixingComplete)
+        self.processThread.start()
+
+class FixBadFlacsThread(QThread):
+    """
+    Fix invalid FLAC files.
+    """
+    def __init__(self, lock, metadata, parent):        
+        super(FixBadFlacsThread, self).__init__(parent)
+        parent.metadata = None
+        self.lock = lock
+        self.metadata = metadata
+        self.stopped = False        
+        self.completed = False
+
+    def run(self):        
+        for index, audioFile in enumerate(self.metadata['audioFiles']):
+            audioObj = audiotools.open(audioFile)            
+            if isinstance(audioObj, audiotools.tracklint.BrokenFlacAudio):
+                if systemName == 'Darwin':
+                    self.process = Process(target=self.fixProcess, args=(index, audioObj))
+                    self.process.start()
+                    while self.process.is_alive() and not self.isStopped():
+                        pass
+                else:
+                    self.fixProcess(index)
+                self.metadata['audioFiles'][index] = unicode(
+                    self.metadata['tempDir'].absolutePath() + '/'
+                    + os.path.basename(self.metadata['audioFiles'][index])
+                )
+            if self.isStopped():
+                return
+            self.emit(SIGNAL("progress(int, QString)"), index, 'Temporarily removing ID3 tags')
+        self.parent().metadata = self.metadata
+        self.completed = True
+        self.stop()
+
+    def fixProcess(self, index, audioObj):        
+        audioObj.fix_id3_preserve_originals(
+            self.metadata['tempDir'].absolutePath()
+        )
+        
+    def stop(self):
+        self.stopped = True
+        if systemName == 'Darwin' and hasattr(self, 'process') and self.process.is_alive():
+            self.process.terminate()
+
+    def isStopped(self):
+        return self.stopped
+
+class ConvertFilesThread(QThread):
     """
     Convert all of the valid recordings in the queue to lossless m4a files and place
     them in the "Automatically Add To iTunes" directory.
     """
     def __init__(self, lock, parent):
-        super(ProcessThread, self).__init__(parent)
+        super(ConvertFilesThread, self).__init__(parent)
         self.lock = lock
         self.stopped = False
         self.mutex = QMutex()
@@ -581,7 +681,7 @@ class ProcessThread(QThread):
                 date         = unicode(metadata['date'].isoformat()),
                 comment      = metadata['comments']
             )
-            self.emit(SIGNAL("progress(int)"), progressCounter)
+            self.emit(SIGNAL("progress(int, QString)"), progressCounter, 'Converting "' + parent.currentTrackName + '"')
 
             alacMetadata.add_image(audiotools.Image.new(currentRecording['imageData'], 'cover', 0))
             sourcePcm = currentRecording['pcmReaders'][parent.currentTrack]
@@ -621,9 +721,8 @@ class ProcessThread(QThread):
             else:
                 parent.currentTrack += 1
 
-        self.emit(SIGNAL("progress(int)"), progressCounter)
+        self.emit(SIGNAL("progress(int, QString)"), progressCounter, 'Finishing')
         self.completed = True
-        self.emit(SIGNAL('finished'))
         self.stop()
 
     def encodeProcess(self, targetFile, sourcePcm, alacMetadata):
