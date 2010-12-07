@@ -207,7 +207,7 @@ class TxtParser(object):
         """
         if hasattr(self, 'tracklistStr'): return self.tracklistStr
 
-        pattern = '\n?((^[0-9]{1,2}[\W](.*)$\n?){1,})'
+        pattern = r"""\n?((^[\t\s]*[0-9]{1,2}[\W](.*)$\n?){1,})"""
  
         # There may be line breaks with text in between signifying an encore, so
         # look through and get all the pieces that look like a tracklist segments,
@@ -244,11 +244,11 @@ class TxtParser(object):
         tracklistStr = '' # use the same name for the filtered tracklist string
         expectedTrackNum = 1
         for trackLine in trackLines:
-            # Don't count if the line contains an md5 hash
-            if re.search('[0-9a-f]{32}', trackLine, re.IGNORECASE):                
+            # Don't count if the line contains an md5 hash            
+            if re.search('[0-9a-f]{32}', trackLine, re.IGNORECASE):
                 continue
             match = re.search('(\d{1,2}).*', trackLine)
-            actualTrackNum = int(match.group(1)) if match else None
+            actualTrackNum = int(match.group(1)) if match else None            
             # Allow for common mistakes of repeating track numbers and skipping track numbers
             expectedTrackNums = [expectedTrackNum, expectedTrackNum - 1, expectedTrackNum + 1]
             if match and actualTrackNum in expectedTrackNums:
@@ -260,11 +260,10 @@ class TxtParser(object):
             elif match and expectedTrackNum != 1 and actualTrackNum in [0, 1]:
                 # If tracklist seperated into multiple discs, the counting may start over
                 tracklistStr += trackLine
-                expectedTrackNum = int(match.group(1)) + 1
-        
+                expectedTrackNum = int(match.group(1)) + 1        
         trackTimePattern = '([([]?\d{1,2}:[0-6][0-9][)\]]?)'        
         # Filter out the track numbers and, if present, track times, to get just the titles
-        pattern = r"""^[0-9]{1,2}[ .\-)]*                # Track number, separator, and whitespace
+        pattern = r"""^[\t\s]*[0-9]{1,2}[ .\-)]*                # Track number, separator, and whitespace
                       """ + trackTimePattern + """?      # Track time if present before the title
                       (.*?)                              # The actual title
                       (?:[ -]*?)                         # White space or dash separator

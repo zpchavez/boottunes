@@ -157,7 +157,10 @@ class ParsetxtTestCase(unittest.TestCase):
         tracklist = TxtParser('01. [1:11] One\n02. Two (2:22)\n03. Three 3:33\n04. 4:44')._findTracklist()
         self.assertEquals(['One', 'Two', 'Three', '4:44'], tracklist) # 4:44 is the actual song name.
 
-        anotherTest = """1. Funk (Prelude, part 1) (12:39)\r\n2. Ife (17:25)\r\n3. Moja (03:16)\r\n4. Willie Nelson on Tune in 5 (05:48)"""
+        anotherTest = (
+            "1. Funk (Prelude, part 1) (12:39)\r\n2. Ife (17:25)\r\n"
+          + "3. Moja (03:16)\r\n4. Willie Nelson on Tune in 5 (05:48)"
+        )
 
         tracklist = TxtParser(anotherTest)._findTracklist()
         self.assertEquals(['Funk (Prelude, part 1)', 'Ife', 'Moja', 'Willie Nelson on Tune in 5'], tracklist)
@@ -169,6 +172,14 @@ class ParsetxtTestCase(unittest.TestCase):
         # Forgive repeated track numbers
         tracklist = TxtParser('1) One\n2) Two\n3) Three\n3) Four')._findTracklist()
         self.assertEquals(['One', 'Two', 'Three', 'Four'], tracklist)
+
+        # Tracklists indented with tabs read correctly
+        tracklist = TxtParser('\t01. One\n\t02. Two\n\t03. Three')._findTracklist()
+        self.assertEquals(['One', 'Two', 'Three'], tracklist)
+
+        # Tracklists indented with spaces read correctly
+        tracklist = TxtParser('    01. One\n    02. Two\n    03. Three')._findTracklist()
+        self.assertEquals(['One', 'Two', 'Three'], tracklist)
 
     def testFindLocationTriesToGetGeographicalLocationButNotVenue(self):
         """
