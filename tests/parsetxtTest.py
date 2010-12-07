@@ -243,6 +243,10 @@ class ParsetxtTestCase(unittest.TestCase):
         location = TxtParser('The Foo Bars\n1980-12-01\nToronto, Canada\nThe Venue')._findLocation()
         self.assertEquals('Toronto, Ontario, Canada', location)
 
+        # City name must match the whole word ("Parish" not mistaken for "Paris").
+        location = TxtParser('The Foo Bars\n1980-12-01\nThe New Parish\nOakland, CA')._findLocation()
+        self.assertEquals('Oakland, CA', location)
+
     def testFindVenueTriesToGetVenue(self):
         venue = TxtParser(sampleTxt)._findVenue()
         self.assertEquals('Venue', venue)
@@ -299,6 +303,9 @@ class ParsetxtTestCase(unittest.TestCase):
 
         venue = TxtParser('Wilco\n2010-09-21\nCapitol\nOffenbach am Main, Germany')._findVenue()
         self.assertEquals('Capitol', venue)
+
+        venue = TxtParser('The Foo Bars\nVenue\nAustin, TX\n 1990-09-09 (Sunday)')._findVenue()
+        self.assertEquals('Venue', venue)
 
 
     def testParseTxtReturnsDictionaryWithAllFoundMetadata(self):

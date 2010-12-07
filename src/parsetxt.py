@@ -60,7 +60,7 @@ class TxtParser(object):
 
         # Default will be the whole string.
         self.metadataBlock = self.txt
-
+        
         # If a date and/or location is found in the block, use it
         for match in matches:
             if match[0] in self._findTracklistString():
@@ -78,7 +78,7 @@ class TxtParser(object):
                 self.metadataBlock = match[0]
                 return self.metadataBlock
             else:
-                self.txt = temp        
+                self.txt = temp
 
         return self.metadataBlock
 
@@ -114,9 +114,9 @@ class TxtParser(object):
         if hasattr(self, 'date'): return self.date        
 
         months = "(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*"
-        pattern = "\d{1,4}.\d{1,2}.\d{2,4}|" + months + " \d{1,2}.*\d{2,4}|\d{1,2}.* " + months + ".* \d{2,4}|" \
+        pattern = "\d{1,4}.\d{1,2}.\d{2,4}|" + months + " \d{1,2}.*?\d{2,4}|\d{1,2}.*? " + months + ".*? \d{2,4}|" \
                   "\d{2,4}." + months + ".\d{1,2}"
-        matches = re.findall(pattern, self.txt, re.IGNORECASE)
+        matches = re.findall(pattern, self.txt, re.IGNORECASE)        
         if len(matches) > 0:            
             self.date = matches[0].strip()
             return matches[0].strip()
@@ -294,7 +294,7 @@ class TxtParser(object):
 
         # Check for a city from the common-cities list
         for city, cityDetails in cities.iteritems():
-            match = re.search(city, metadataBlock)
+            match = re.search('\W' + city + r'(\W|\Z)', metadataBlock)
             if match:
                 if 'province' in cityDetails:
                     for provinceAbbr in cityDetails['province']:
@@ -406,8 +406,8 @@ class TxtParser(object):
             return ''
 
         metadataBlock = self._findMetadataBlock()        
-        metadataBlock = metadataBlock.replace(self._findArtist(), '')
-        metadataBlock = metadataBlock.replace(self._findDate(), '')
+        metadataBlock = metadataBlock.replace(self._findArtist(), '')                
+        metadataBlock = metadataBlock.replace(self._findDate(), '')        
 
         matches = re.search(            
             '((?:live at )?(.*)[,\s\-]*)?' + locationTxt + '((?: \(USA\))?(?:live at )?[,\s\-]*(.*))?',
@@ -423,7 +423,7 @@ class TxtParser(object):
         if matches:
             strippedChars = ' ,\r\t\n-'
             possibilities = [matches.group(4).strip(strippedChars), matches.group(2).strip(strippedChars)]            
-            for possibility in possibilities:
+            for index, possibility in enumerate(possibilities):
                 if possibility == '': # May be blank after stripped out insignificant characters
                     continue
                 if countryOrStateMatch and (countryOrState in possibility):
@@ -433,6 +433,10 @@ class TxtParser(object):
                 if re.search('\W?Canada\W?', possibility):
                     continue
                 if re.search('\d{2}:\d{2}', possibility): # Probably the play length
+                    continue
+                if re.search('\(.*\)', possibility): # If it's in parentheses, it's probably not the venue
+                    continue
+                if index == 0 and len(possibility) > 50: # A venue name that long wouldn't even fit on the sign
                     continue
                 else:                    
                     self.venue = re.sub('^[tT]he ', '', possibility, 1) # Filter out "the"
