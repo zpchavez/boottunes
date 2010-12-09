@@ -276,6 +276,10 @@ class TxtParser(object):
         @param asIs: Whether to return the location name exactly as it appears in the file
                      rather than shortening US state names to their abbreviations and expanding
                      country abbreviations to their full names.
+                     
+        @type  searchedText: string
+        @param searchedText: If specified, the search will be limited to this text, rather
+                             than the default which is the detected metadata block.
 
         @rtype: string
         """
