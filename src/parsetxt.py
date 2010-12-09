@@ -48,15 +48,11 @@ class TxtParser(object):
         artist, date, and location
 
         @rtype: string
-        """
+        """        
         if hasattr(self, 'metadataBlock'): return self.metadataBlock
-
+        
         pattern = '\n?((^.{2,60}$\n?){3,6})'
         matches = re.findall(pattern, self.txt, re.MULTILINE)        
-
-        # This is to prevent a recursion loop in the call to self._findLocation() a few lines down.
-        if len(matches) == 1 and matches[0] == self.txt:
-            return self.txt
 
         # Default will be the whole string.
         self.metadataBlock = self.txt
@@ -64,21 +60,14 @@ class TxtParser(object):
         # If a date and/or location is found in the block, use it
         for match in matches:
             if match[0] in self._findTracklistString():
-                continue
-            # Temporarily overwrite self.txt with the current match so we can check if
-            # it alone contains a date or location
-            temp = self.txt
-            self.txt = match[0]
+                continue            
             # Delete any cached results, so that a new search is performed, rather
             # than simply returning the previous result.
             if hasattr(self, 'location'): del self.location
             if hasattr(self, 'date'): del self.date            
-            if (self._findDate() or self._findLocation()):
-                self.txt = temp
+            if (self._findDate() or self._findLocation(searchedText = match[0])):                
                 self.metadataBlock = match[0]
-                return self.metadataBlock
-            else:
-                self.txt = temp
+                return self.metadataBlock                
 
         return self.metadataBlock
 
@@ -87,22 +76,27 @@ class TxtParser(object):
         Find the artist in self.txt
 
         @rtype: string
-        """
+        """        
         if hasattr(self, 'artist'): return self.artist
-        
+
+        # Artist listed by itself on one line at the top
         match = re.match('([^\n]{1,25})$[\r\n]{1,2}$', self.txt, re.MULTILINE | re.DOTALL)
         if match:
             self.artist = match.group(1).strip()            
-            return self.artist
-
-        matches = re.findall(r'^(\S.+)\S*$', self._findMetadataBlock(), re.MULTILINE)
-        if len(matches) > 0:
-            # Remove, if present, the label for the line
-            match = matches[0]
-            regex = re.compile('Artist:\s*', re.IGNORECASE)
-            match = regex.sub('', matches[0])
-            self.artist = match.strip()            
-            return self.artist
+        else:
+            # Artist listed at the top of the metadata block
+            matches = re.findall(r'^(\S.+)\S*$', self._findMetadataBlock(), re.MULTILINE)
+            if len(matches) > 0:
+                # Remove, if present, the label for the line
+                match = matches[0]
+                regex = re.compile('Artist:\s*', re.IGNORECASE)
+                match = regex.sub('', matches[0])
+                self.artist = match.strip()
+            
+        self.artist = self.artist.replace(self._findDate(), '')
+        self.artist = self.artist.replace(self._findLocation(), '')
+        self.artist = self.artist.replace(self._findVenue(), '')
+        return self.artist
 
     def _findDate(self):
         """
@@ -274,7 +268,7 @@ class TxtParser(object):
         self.tracklist = [match[1].strip() if match[1] else match[0] for match in matches]
         return self.tracklist
 
-    def _findLocation(self, asIs = False):
+    def _findLocation(self, asIs = False, searchedText = None):
         """
         Return the geographical location of the recording.
 
@@ -285,17 +279,22 @@ class TxtParser(object):
 
         @rtype: string
         """
-        if asIs and hasattr(self, 'locationAsIs'):
+        if asIs and searchedText == None and hasattr(self, 'locationAsIs'):
             return self.locationAsIs
-        elif not asIs and hasattr(self, 'location'):
-            return self.location        
+        elif not asIs and searchedText == None and hasattr(self, 'location'):
+            return self.location
 
-        metadataBlock = self._findMetadataBlock()
+        if searchedText == None:
+            metadataBlock = self._findMetadataBlock()
+        else:
+            metadataBlock = searchedText
+        
+        metadataBlock = self._findMetadataBlock()        
 
         # Check for a city from the common-cities list
         for city, cityDetails in cities.iteritems():
             match = re.search('\W' + city + r'(\W|\Z)', metadataBlock)
-            if match:
+            if match:                
                 if 'province' in cityDetails:
                     for provinceAbbr in cityDetails['province']:
                         provinceFull = provinces[provinceAbbr]
@@ -464,7 +463,7 @@ class TxtParser(object):
                 dateObj = None
         else:
             dateObj = None
-        
+
         return {'artist'    : unicode(self._findArtist()),
                 'date'      : dateObj,
                 'location'  : unicode(self._findLocation()),
