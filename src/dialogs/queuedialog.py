@@ -607,7 +607,7 @@ class FixBadFlacsThread(QThread):
                     while self.process.is_alive() and not self.isStopped():
                         pass
                 else:
-                    self.fixProcess(index)
+                    self.fixProcess(index, audioObj)
                 self.metadata['audioFiles'][index] = unicode(
                     self.metadata['tempDir'].absolutePath() + '/'
                     + os.path.basename(self.metadata['audioFiles'][index])
@@ -619,7 +619,7 @@ class FixBadFlacsThread(QThread):
         self.completed = True
         self.stop()
 
-    def fixProcess(self, index, audioObj):        
+    def fixProcess(self, index, audioObj):
         audioObj.fix_id3_preserve_originals(
             self.metadata['tempDir'].absolutePath()
         )
