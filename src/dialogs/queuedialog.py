@@ -191,6 +191,7 @@ class QueueDialog(QDialog, Ui_QueueDialog):
                 # Display progress bar
                 self.loadingMultipleShows = True
                 progress = QProgressDialog("Loading", "Cancel", 1, len(qDir.entryList()), self)
+                progress.setWindowTitle('BootTunes')
                 progress.setWindowFlags(Qt.Window | Qt.WindowCloseButtonHint)
                 progress.setWindowModality(Qt.WindowModal)
 
@@ -480,6 +481,7 @@ class QueueDialog(QDialog, Ui_QueueDialog):
         self.progressBarLabel = progressBarLabel = QLabel()
         self.progressDialog = progressDialog = QProgressDialog("Loading", "Cancel", 1, trackCount + 1, self)
         self.connect(self.progressDialog, SIGNAL("canceled()"), self.cancelProcess)
+        progressDialog.setWindowTitle('BootTunes')
         progressDialog.setWindowFlags(Qt.Window | Qt.WindowCloseButtonHint)
         progressDialog.setWindowModality(Qt.WindowModal)
         progressDialog.setLabel(progressBarLabel)
@@ -573,6 +575,7 @@ class QueueDialog(QDialog, Ui_QueueDialog):
             self
         )
         self.connect(self.progressDialog, SIGNAL("canceled()"), self.cancelProcess)
+        progressDialog.setWindowTitle('BootTunes')
         progressDialog.setWindowFlags(Qt.Window | Qt.WindowCloseButtonHint)
         progressDialog.setWindowModality(Qt.WindowModal)
         progressDialog.setLabel(progressBarLabel)
