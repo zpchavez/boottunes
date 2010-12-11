@@ -18,6 +18,8 @@
 #Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 
 # BootTunes additions: The BrokenFlacAudio.fix_id3_preserve_originals method.
+#                      Removed anydbm import.
+#                      Removed command line code.
 
 import audiotools
 import sys
@@ -27,7 +29,6 @@ import re
 import tempfile
 import subprocess
 import cStringIO
-import anydbm
 import gettext
 
 import settings # Added for BootTunes
@@ -492,102 +493,3 @@ if (audiotools.FlacAudio in audiotools.AVAILABLE_TYPES):
 audiotools.TYPE_MAP = dict([(track_type.NAME,track_type)
                             for track_type in audiotools.AVAILABLE_TYPES
                             if track_type.has_binaries(audiotools.BIN)])
-
-if (__name__ == '__main__'):
-    parser = audiotools.OptionParser(
-        usage=_(u'%prog [options] [--fix] [--undo] [--db file] <track 1> [track 2] ...'),
-        version="Python Audio Tools %s" % (audiotools.VERSION))
-
-    parser.add_option('--fix',
-                      action='store_true',
-                      default=False,
-                      dest='fix',
-                      help=_(u'perform suggest fixes'))
-
-    parser.add_option('--db',
-                      action='store',
-                      type='string',
-                      dest='db',
-                      help=_(u'undo database file'))
-
-    parser.add_option('--undo',
-                      action='store_true',
-                      default=False,
-                      dest='undo',
-                      help=_(u'undo performed fixes'))
-
-    parser.add_option('-V','--verbose',
-                      action='store',
-                      dest='verbosity',
-                      choices=["quiet","normal","debug"],
-                      default="normal",
-                      help=_(u'the verbosity level to execute at'))
-
-    (options,args) = parser.parse_args()
-    msg = audiotools.Messenger("tracklint",options)
-
-    if (options.undo and (options.db is None)):
-        msg.error(_(u"Cannot perform undo without undo db"))
-        sys.exit(1)
-
-    if ((options.db is not None) and
-        (not audiotools.BIN.can_execute(audiotools.BIN["xdelta"]))):
-        msg.error(_(u"xdelta must be installed for undo support"))
-        sys.exit(1)
-
-
-    if (options.fix):
-        if (options.db is not None):
-            #if we're fixing tracks and have an undo DB,
-            #save undo information to it during the fixing process
-            try:
-                undo_db = anydbm.open(options.db,"c")
-            except:
-                msg.error(_(u"Unable to open \"%s\"") % (msg.filename(options.db)))
-                sys.exit(1)
-            try:
-                for track in audiofiles(args,messenger=msg):
-                    try:
-                        update_and_backup(track,undo_db,msg)
-                    except IOError:
-                        msg.error(_(u"Unable to write \"%s\"") % \
-                                      (msg.filename(track.filename)))
-                        sys.exit(1)
-            finally:
-                undo_db.close()
-        else:
-            #if we're fixing tracks and have no undo DB,
-            #simply overwrite the track and track metadata directly
-            for track in audiofiles(args,messenger=msg):
-                (track,messages) = fix_track(track,dry_run=False)
-                display_messages(msg,track,messages)
-                (metadata,messages) = fix_metadata(track.get_metadata())
-                display_messages(msg,track,messages)
-                try:
-                    track.set_metadata(metadata)
-                except IOError:
-                    msg.error(_(u"Unable to write \"%s\"") % \
-                                  (msg.filename(track.filename)))
-                    sys.exit(1)
-    elif (options.undo):
-        try:
-            undo_db = anydbm.open(options.db,"r")
-        except anydbm.error:
-            msg.error(_(u"Unable to open \"%s\"") % (msg.filename(options.db)))
-            sys.exit(1)
-        try:
-            for track in audiofiles(args,messenger=msg):
-                try:
-                    undo_from_backup(track,undo_db,msg)
-                except IOError:
-                    msg.error(_(u"Unable to write \"%s\"") % \
-                                  (msg.filename(track.filename)))
-                    sys.exit(1)
-        finally:
-            undo_db.close()
-    else: #a dry-run of the fixing procedure, with no changes made
-        for track in audiofiles(args,messenger=msg):
-            (track,messages) = fix_track(track,dry_run=True)
-            display_messages(msg,track,messages)
-            (metadata,messages) = fix_metadata(track.get_metadata())
-            display_messages(msg,track,messages)
