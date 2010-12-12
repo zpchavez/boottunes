@@ -76,6 +76,7 @@ pythonFiles = []
 cFiles = []
 
 modulePath = '/System/Library/Frameworks/Python.framework/Versions/2.6/lib/python2.6/'
+cModulePath = '/System/Library/Frameworks/Python.framework/Versions/2.6/lib/python2.6/lib-dynload'
 
 for name, mod in finder.modules.iteritems():
     if mod.__file__:
@@ -85,6 +86,14 @@ for name, mod in finder.modules.iteritems():
             elif mod.__file__:
                 relPath = mod.__file__.replace(modulePath, '').replace('.py', '.pyc')
                 pythonFiles.append(relPath)
+
+cFiles.append(cModulePath + '/_multibytecodec.so')
+cFiles.append(cModulePath + '/_codecs_cn.so')
+cFiles.append(cModulePath + '/_codecs_hk.so')
+cFiles.append(cModulePath + '/_codecs_iso2022.so')
+cFiles.append(cModulePath + '/_codecs_jp.so')
+cFiles.append(cModulePath + '/_codecs_kr.so')
+cFiles.append(cModulePath + '/_codecs_tw.so')
 
 for file in cFiles:
     shutil.copy(file, appPath + '/Resources/lib/python2.6/lib-dynload/' + os.path.basename(file))
