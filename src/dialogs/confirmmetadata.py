@@ -41,7 +41,7 @@ class ConfirmMetadataDialog(QDialog, Ui_ConfirmMetadataDialog):
         self.dateEdit.setDate(QDate(pyDate.year, pyDate.month, pyDate.day))
         self.locationLineEdit.setText(metadata['location'])
         self.venueLineEdit.setText(metadata['venue'])
-        if artistDefaults:
+        if artistDefaults and 'genre' in artistDefaults:
             self.genreLineEdit.setText(artistDefaults['genre'])
 
         self.tracklistTableWidget.setRowCount(len(metadata['tracklist']))
