@@ -41,6 +41,8 @@ class ConfirmMetadataDialog(QDialog, Ui_ConfirmMetadataDialog):
         self.dateEdit.setDate(QDate(pyDate.year, pyDate.month, pyDate.day))
         self.locationLineEdit.setText(metadata['location'])
         self.venueLineEdit.setText(metadata['venue'])
+        if artistDefaults:
+            self.genreLineEdit.setText(artistDefaults['genre'])
 
         self.tracklistTableWidget.setRowCount(len(metadata['tracklist']))
         self.tracklistTableWidget.setColumnCount(1)
@@ -54,7 +56,10 @@ class ConfirmMetadataDialog(QDialog, Ui_ConfirmMetadataDialog):
         suggestedArtist = unicode(self.metadata['artist'])
         submittedArtist = unicode(self.artistLineEdit.text()).strip()        
 
-        defaults = {'preferred_name': submittedArtist}
+        defaults = {
+            'preferred_name': submittedArtist,
+            'genre'         : unicode(self.genreLineEdit.text()).strip()
+        }
 
         # If the entered name has little similarity to the original, assume the detected artist was
         # completely wrong and is not synonymous with the submitted artist name.
@@ -85,4 +90,3 @@ class ConfirmMetadataDialog(QDialog, Ui_ConfirmMetadataDialog):
         self.metadata['title'] = unicode(self.titleLineEdit.text())
         self.close()        
         ChooseCoverDialog(self.metadata, parent=self.parentWidget()).exec_()
-   

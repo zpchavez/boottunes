@@ -362,7 +362,7 @@ class QueueDialog(QDialog, Ui_QueueDialog):
 
         artistName = metadata['defaults']['preferred_name'] if 'defaults' in metadata else metadata['artist']
         if isinstance(artistName, str):
-            artistName = artistName.decode('utf-8')
+            artistName = artistName.decode('utf_8')
 
         if path in self.queueItemData:
             listItem = self.queueItemData[path]['item']
@@ -681,23 +681,27 @@ class ConvertFilesThread(QThread):
                 album_name   = metadata['albumTitle'],
                 artist_name  = artistName,
                 year         = unicode(metadata['date'].year),
-                date         = unicode(metadata['date'].isoformat()),
+                date         = unicode(metadata['date'].isoformat()),                
                 comment      = metadata['comments']
             )
             self.emit(SIGNAL("progress(int, QString)"), progressCounter, 'Converting "' + parent.currentTrackName + '"')
 
             alacMetadata.add_image(audiotools.Image.new(currentRecording['imageData'], 'cover', 0))
+            genre = metadata['defaults']['genre']
             sourcePcm = currentRecording['pcmReaders'][parent.currentTrack]
             targetFile = tempDirPath + '/' + unicode(parent.currentTrack) + u'.m4a'
 
             # If on Mac, run as a separate process
             if systemName == 'Darwin':
-                self.process = Process(target=self.encodeProcess, args=(targetFile, sourcePcm, alacMetadata))
+                self.process = Process(
+                    target=self.encodeProcess,
+                    args=(targetFile, sourcePcm, alacMetadata, genre)
+                )
                 self.process.start()
                 while self.process.is_alive() and not self.isStopped():
                     pass
             else:
-                self.encodeProcess(targetFile, sourcePcm, alacMetadata)
+                self.encodeProcess(targetFile, sourcePcm, alacMetadata, genre)
 
             if self.isStopped():
                 return
@@ -728,13 +732,14 @@ class ConvertFilesThread(QThread):
         self.completed = True
         self.stop()
 
-    def encodeProcess(self, targetFile, sourcePcm, alacMetadata):
+    def encodeProcess(self, targetFile, sourcePcm, alacMetadata, genre):
         """
         The actual m4a encoding process.
 
         @type targetFile: unicode
         @type sourcePcm: audiotool.PCMReader
         @type alacMetadata: audiotools.MetaData
+        @type genre: unicode
         """
         if re.match('^m4a$', self.extension, re.IGNORECASE):
             shutil.copyfile(self.currentFile, targetFile)
@@ -745,6 +750,7 @@ class ConvertFilesThread(QThread):
         # Set the "part of a compilation" flag to false
         metadata = alacFile.get_metadata()
         metadata['cpil'] = metadata.text_atom('data', '\x00\x00\x00\x15\x00\x00\x00\x00\x00')
+        metadata['\xa9gen'] = metadata.text_atom('\xa9gen', genre)
         alacFile.set_metadata(metadata)
 
     def stop(self):

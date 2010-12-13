@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'confirmmetadata.ui'
 #
-# Created: Thu Oct  7 00:31:53 2010
+# Created: Sun Dec 12 20:09:09 2010
 #      by: PyQt4 UI code generator 4.7.6
 #
 # WARNING! All changes made in this file will be lost!
@@ -18,7 +18,7 @@ class Ui_ConfirmMetadataDialog(object):
     def setupUi(self, ConfirmMetadataDialog):
         ConfirmMetadataDialog.setObjectName(_fromUtf8("ConfirmMetadataDialog"))
         ConfirmMetadataDialog.setWindowModality(QtCore.Qt.ApplicationModal)
-        ConfirmMetadataDialog.resize(392, 602)
+        ConfirmMetadataDialog.resize(398, 630)
         ConfirmMetadataDialog.setModal(False)
         self.verticalLayout_3 = QtGui.QVBoxLayout(ConfirmMetadataDialog)
         self.verticalLayout_3.setObjectName(_fromUtf8("verticalLayout_3"))
@@ -52,12 +52,18 @@ class Ui_ConfirmMetadataDialog(object):
         self.venueLineEdit = QtGui.QLineEdit(ConfirmMetadataDialog)
         self.venueLineEdit.setObjectName(_fromUtf8("venueLineEdit"))
         self.gridLayout.addWidget(self.venueLineEdit, 3, 2, 1, 1)
+        self.label_8 = QtGui.QLabel(ConfirmMetadataDialog)
+        self.label_8.setObjectName(_fromUtf8("label_8"))
+        self.gridLayout.addWidget(self.label_8, 4, 0, 1, 1)
+        self.genreLineEdit = QtGui.QLineEdit(ConfirmMetadataDialog)
+        self.genreLineEdit.setObjectName(_fromUtf8("genreLineEdit"))
+        self.gridLayout.addWidget(self.genreLineEdit, 4, 2, 1, 1)
         self.label_7 = QtGui.QLabel(ConfirmMetadataDialog)
         self.label_7.setObjectName(_fromUtf8("label_7"))
-        self.gridLayout.addWidget(self.label_7, 4, 0, 1, 2)
+        self.gridLayout.addWidget(self.label_7, 5, 0, 1, 2)
         self.titleLineEdit = QtGui.QLineEdit(ConfirmMetadataDialog)
         self.titleLineEdit.setObjectName(_fromUtf8("titleLineEdit"))
-        self.gridLayout.addWidget(self.titleLineEdit, 4, 2, 1, 1)
+        self.gridLayout.addWidget(self.titleLineEdit, 5, 2, 1, 1)
         self.verticalLayout_3.addLayout(self.gridLayout)
         self.verticalLayout = QtGui.QVBoxLayout()
         self.verticalLayout.setObjectName(_fromUtf8("verticalLayout"))
@@ -123,6 +129,7 @@ class Ui_ConfirmMetadataDialog(object):
         self.dateEdit.setDisplayFormat(QtGui.QApplication.translate("ConfirmMetadataDialog", "MMMM dd, yyyy", None, QtGui.QApplication.UnicodeUTF8))
         self.label_3.setText(QtGui.QApplication.translate("ConfirmMetadataDialog", "&Location", None, QtGui.QApplication.UnicodeUTF8))
         self.label_4.setText(QtGui.QApplication.translate("ConfirmMetadataDialog", "&Venue", None, QtGui.QApplication.UnicodeUTF8))
+        self.label_8.setText(QtGui.QApplication.translate("ConfirmMetadataDialog", "Genre", None, QtGui.QApplication.UnicodeUTF8))
         self.label_7.setText(QtGui.QApplication.translate("ConfirmMetadataDialog", "Title &Override", None, QtGui.QApplication.UnicodeUTF8))
         self.label_5.setText(QtGui.QApplication.translate("ConfirmMetadataDialog", "&Tracklist", None, QtGui.QApplication.UnicodeUTF8))
         self.label_6.setText(QtGui.QApplication.translate("ConfirmMetadataDialog", "Comments", None, QtGui.QApplication.UnicodeUTF8))

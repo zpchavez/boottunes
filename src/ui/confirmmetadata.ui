@@ -9,8 +9,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>392</width>
-    <height>602</height>
+    <width>398</width>
+    <height>630</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -104,7 +104,17 @@
      <item row="3" column="2">
       <widget class="QLineEdit" name="venueLineEdit"/>
      </item>
-     <item row="4" column="0" colspan="2">
+     <item row="4" column="0">
+      <widget class="QLabel" name="label_8">
+       <property name="text">
+        <string>Genre</string>
+       </property>
+      </widget>
+     </item>
+     <item row="4" column="2">
+      <widget class="QLineEdit" name="genreLineEdit"/>
+     </item>
+     <item row="5" column="0" colspan="2">
       <widget class="QLabel" name="label_7">
        <property name="text">
         <string>Title &amp;Override</string>
@@ -114,7 +124,7 @@
        </property>
       </widget>
      </item>
-     <item row="4" column="2">
+     <item row="5" column="2">
       <widget class="QLineEdit" name="titleLineEdit"/>
      </item>
     </layout>

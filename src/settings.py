@@ -145,6 +145,7 @@ class Settings:
 
         name = name.encode('utf_8')
         defaults['preferred_name'] = defaults['preferred_name'].encode('utf_8')
+        defaults['genre'] = defaults['genre'].encode('utf_8')
 
         if name in self.artistNames:
             id = self.artistNames[name]
