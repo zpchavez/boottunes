@@ -50,7 +50,19 @@ class TxtParser(object):
         @rtype: string
         """        
         if hasattr(self, 'metadataBlock'): return self.metadataBlock
-        
+
+        if re.search('MOTB Release', self.txt, re.IGNORECASE):            
+            pattern = 'Band: (.+)\nDate: (.+)\nVenue: (.+)\nLocation: (.+)'
+            match = re.search(pattern, self.txt, re.IGNORECASE | re.MULTILINE)
+            if match:                
+                self.metadataBlock = (
+                    match.group(1) + '\n' +
+                    match.group(2) + '\n' +
+                    match.group(3) + '\n' +
+                    match.group(4)
+                )
+                return self.metadataBlock
+
         pattern = '\n?((^.{2,60}$\n?){3,6})'
         matches = re.findall(pattern, self.txt, re.MULTILINE)        
 
@@ -201,7 +213,7 @@ class TxtParser(object):
         """
         if hasattr(self, 'tracklistStr'): return self.tracklistStr
 
-        pattern = r"""\n?((^[\t\s]*[0-9]{1,2}[\W](.*)$\n?){1,})"""
+        pattern = r"""\n?((^[\t\s]*((\d{3}-)?d\dt)?[0-9]{1,2}[\W](.*)$\n?){1,})"""
  
         # There may be line breaks with text in between signifying an encore, so
         # look through and get all the pieces that look like a tracklist segments,
@@ -217,7 +229,7 @@ class TxtParser(object):
             previousTxt = txt                        
             txt = txt.replace(match.group(0), '')            
         
-        self.tracklistStr = unicode(tracklistStr)        
+        self.tracklistStr = unicode(tracklistStr)                
         return self.tracklistStr
 
     def _findTracklist(self):
@@ -234,14 +246,15 @@ class TxtParser(object):
             return None
 
         # Make sure the numbers count up incrementally.  Remove anything that doesn't match.
-        trackLines = tracklistStr.splitlines(True);
+        trackLines = tracklistStr.splitlines(True);        
         tracklistStr = '' # use the same name for the filtered tracklist string
         expectedTrackNum = 1
         for trackLine in trackLines:
             # Don't count if the line contains an md5 hash            
             if re.search('[0-9a-f]{32}', trackLine, re.IGNORECASE):
-                continue
-            match = re.search('(\d{1,2}).*', trackLine)
+                continue            
+            #match = re.search('(?:(\d{3}-)?d\dt)?(\d{1,2}).*', trackLine)
+            match = re.search('(?:(?:\d{3}-)?d\dt)?(\d{1,2}).*', trackLine)
             actualTrackNum = int(match.group(1)) if match else None            
             # Allow for common mistakes of repeating track numbers and skipping track numbers
             expectedTrackNums = [expectedTrackNum, expectedTrackNum - 1, expectedTrackNum + 1]
@@ -257,7 +270,8 @@ class TxtParser(object):
                 expectedTrackNum = int(match.group(1)) + 1        
         trackTimePattern = '([([]?\d{1,2}:[0-6][0-9][)\]]?)'        
         # Filter out the track numbers and, if present, track times, to get just the titles
-        pattern = r"""^[\t\s]*[0-9]{1,2}[ .\-)]*                # Track number, separator, and whitespace
+        pattern = r"""^(?:(?:\d{3}-)?d\dt)?              # Possible prefix like d1t01 or 101-d1t01
+                      [\t\s]*[0-9]{1,2}[ .\-)]*          # Track number, separator, and whitespace
                       """ + trackTimePattern + """?      # Track time if present before the title
                       (.*?)                              # The actual title
                       (?:[ -]*?)                         # White space or dash separator

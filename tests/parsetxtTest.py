@@ -19,9 +19,36 @@ Notes: B- Quality
 Don't encode in a lossy format, dude!
 """
 
+# Format used in MOTB releases
+motbText = \
+"""MOTB Release: 12345
+Release Date: 2010-01-01
+Band: The Foo Bars
+Date: 1980-12-01 (Monday)
+Venue: The Venue
+Location: New York, NY
+Analog Audience Sournce: X
+Medium Stock Brands: Y
+Analog Lineage: Z
+Analog Sound Preservation: XYZ
+Taped By: Foo Baz
+Transfer By: Baz Bar
+Mastering By: Bar Foo
+
+Set 1
+d1t01 - One
+d1t02 - Two
+d1t03 - Three
+
+Set 2
+d2t01 - Four
+d2t02 - Five
+d2t03 - Six
+"""
+
 class ParsetxtTestCase(unittest.TestCase):
 
-    def testFindMetadataBlockTriesToGetTheBlockOfBasicInfoWhichMayNotBeAtTheStartOfTheTxt(self):        
+    def testFindMetadataBlockTriesToGetTheBlockOfBasicInfoWhichMayNotBeAtTheStartOfTheTxt(self):
         expected = "The Foo Bars\n1980-12-01\nTopeka, KS\nThe Venue\n"
 
         block = TxtParser(sampleTxt)._findMetadataBlock()
@@ -34,15 +61,20 @@ class ParsetxtTestCase(unittest.TestCase):
         self.assertEquals(expected, block)
 
         # If \r used instead of \n, block still detected
-        txt = txt.replace('\n', '\r')        
+        txt = txt.replace('\n', '\r')
         block = TxtParser(txt)._findMetadataBlock()
         self.assertEquals(expected, block)
 
         # If there is no discernible block, the entire string will be returned unchanged
         # Don't return the tracklist
         txt = sampleTxt.replace(expected, '')
-        block = TxtParser(txt)._findMetadataBlock()        
-        self.assertEquals(txt, block)        
+        block = TxtParser(txt)._findMetadataBlock()
+        self.assertEquals(txt, block)
+
+        # Support for MOTB releases
+        block = TxtParser(motbText)._findMetadataBlock()
+        expected = 'The Foo Bars\n1980-12-01 (Monday)\nThe Venue\nNew York, NY'
+        self.assertEquals(expected, block)
 
     def testFindArtistTriesToGetTheArtist(self):
         artist = TxtParser(sampleTxt)._findArtist()
@@ -180,6 +212,20 @@ class ParsetxtTestCase(unittest.TestCase):
         # Tracklists indented with spaces read correctly
         tracklist = TxtParser('    01. One\n    02. Two\n    03. Three')._findTracklist()
         self.assertEquals(['One', 'Two', 'Three'], tracklist)
+
+        # Format common for Grateful Dead shows
+        tracklist = TxtParser(
+            'Set1\nd1t01 - One >\nd1t02 - Two >\nd1t03 - Three\n\nSet2\nd2t01 - Four'
+          + '\nd2t02 - Five\nd2t03 - Six\n~encore~\nd2t04 - Seven'
+        )._findTracklist()
+        self.assertEquals(['One >', 'Two >', 'Three', 'Four', 'Five', 'Six', 'Seven'], tracklist)
+
+        # Another format common for Grateful Dead shows
+        tracklist = TxtParser(
+            'Set1\n101-d1t01 - One >\n102-d1t02 - Two >\n103-d1t03 - Three\n\nSet2\n201-d2t01 - Four'
+          + '\n202-d2t02 - Five\n203-d2t03 - Six\n~encore~\n204-d2t04 - Seven'
+        )._findTracklist()
+        self.assertEquals(['One >', 'Two >', 'Three', 'Four', 'Five', 'Six', 'Seven'], tracklist)
 
     def testFindLocationTriesToGetGeographicalLocationButNotVenue(self):
         """
