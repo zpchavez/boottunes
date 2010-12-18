@@ -156,7 +156,9 @@ class TxtParser(object):
 
         if monthInt:
             pattern = '(\d{1,2})\D+(\d{4})|(\d{4})\D+(\d{1,2})'
-            match = re.search(pattern, dateTxt)            
+            match = re.search(pattern, dateTxt)
+            if not match:
+                return None
             if match.group(1) != None:
                 dayInt = int(match.group(1))
                 yearInt = int(match.group(2))
@@ -441,7 +443,7 @@ class TxtParser(object):
             strippedChars = ' ,\r\t\n-'
             possibilities = [matches.group(4).strip(strippedChars), matches.group(2).strip(strippedChars)]            
             for index, possibility in enumerate(possibilities):
-                if possibility == '': # May be blank after stripped out insignificant characters
+                if not possibility: # May be blank after stripped out insignificant characters
                     continue
                 if countryOrStateMatch and (countryOrState in possibility):
                     continue
