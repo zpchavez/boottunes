@@ -130,6 +130,7 @@ class QueueDialog(QDialog, Ui_QueueDialog):
             else:
                 if getSettings().isCompleted(metadata['hash']):
                     msgBox = QMessageBox(self)
+                    msgBox.setWindowTitle('BootTunes')
                     msgBox.setText('This recording has already been converted.')
                     msgBox.setInformativeText('Do you want to convert it again?')
                     msgBox.setStandardButtons(QMessageBox.No | QMessageBox.Yes)
