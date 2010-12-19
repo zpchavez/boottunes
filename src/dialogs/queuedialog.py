@@ -525,7 +525,7 @@ class QueueDialog(QDialog, Ui_QueueDialog):
             self.removeCompletedRecordings()
 
     def badFlacFixingComplete(self):
-        """maps.google.com
+        """
         Called on completion of FixBadFlacsThread.
         """
         if hasattr(self, 'metadata') and self.metadata:
