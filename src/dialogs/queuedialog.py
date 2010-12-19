@@ -686,8 +686,8 @@ class ConvertFilesThread(QThread):
             )
             self.emit(SIGNAL("progress(int, QString)"), progressCounter, 'Converting "' + parent.currentTrackName + '"')
 
-            alacMetadata.add_image(audiotools.Image.new(currentRecording['imageData'], 'cover', 0))
             genre = metadata['defaults']['genre']
+            imageData = currentRecording['imageData']
             sourcePcm = currentRecording['pcmReaders'][parent.currentTrack]
             targetFile = tempDirPath + '/' + unicode(parent.currentTrack) + u'.m4a'
 
@@ -695,13 +695,13 @@ class ConvertFilesThread(QThread):
             if systemName == 'Darwin':
                 self.process = Process(
                     target=self.encodeProcess,
-                    args=(targetFile, sourcePcm, alacMetadata, genre)
+                    args=(targetFile, sourcePcm, alacMetadata, genre, imageData)
                 )
                 self.process.start()
                 while self.process.is_alive() and not self.isStopped():
                     pass
             else:
-                self.encodeProcess(targetFile, sourcePcm, alacMetadata, genre)
+                self.encodeProcess(targetFile, sourcePcm, alacMetadata, genre, imageData)
 
             if self.isStopped():
                 return
@@ -732,7 +732,7 @@ class ConvertFilesThread(QThread):
         self.completed = True
         self.stop()
 
-    def encodeProcess(self, targetFile, sourcePcm, alacMetadata, genre):
+    def encodeProcess(self, targetFile, sourcePcm, alacMetadata, genre, imageData):
         """
         The actual m4a encoding process.
 
@@ -740,6 +740,7 @@ class ConvertFilesThread(QThread):
         @type sourcePcm: audiotool.PCMReader
         @type alacMetadata: audiotools.MetaData
         @type genre: unicode
+        @type imageData: str
         """
         if re.match('^m4a$', self.extension, re.IGNORECASE):
             shutil.copyfile(self.currentFile, targetFile)
@@ -747,11 +748,17 @@ class ConvertFilesThread(QThread):
         else:
             alacFile = audiotools.ALACAudio.from_pcm(targetFile, sourcePcm)
         alacFile.set_metadata(alacMetadata)
-        # Set the "part of a compilation" flag to false
         metadata = alacFile.get_metadata()
+        # Set the "part of a compilation" flag to false
         metadata['cpil'] = metadata.text_atom('data', '\x00\x00\x00\x15\x00\x00\x00\x00\x00')
         metadata['\xa9gen'] = metadata.text_atom('\xa9gen', genre)
         alacFile.set_metadata(metadata)
+        # Separately attempt to set the cover art, since a MemoryError may occur in large files
+        try:
+            metadata.add_image(audiotools.Image.new(imageData, 'cover', 0))
+            alacFile.set_metadata(metadata)
+        except MemoryError:
+            pass
 
     def stop(self):
         with QMutexLocker(self.mutex):
