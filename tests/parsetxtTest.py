@@ -103,6 +103,12 @@ class ParsetxtTestCase(unittest.TestCase):
         artist = TxtParser("The Foo Bars\n\nThe Venue\n1980-12-01\nTopeka, KS\nRunning Time: 60:00")._findArtist()
         self.assertEquals('The Foo Bars', artist)
 
+        # Artist can begin with whitespace
+        artist = TxtParser("  The Foo Bars\n1980-12-01\nTopeka, KS")._findArtist()
+        self.assertEquals("The Foo Bars", artist)
+
+        artist = TxtParser("\tThe Foo Bars\n1980-12-01\nTopeka, KS")._findArtist()
+        self.assertEquals("The Foo Bars", artist)
 
     def testFindDateReturnsStringForFirstThingThatLooksLikeADate(self):
         date = TxtParser(sampleTxt)._findDate()

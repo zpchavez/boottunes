@@ -79,8 +79,8 @@ class TxtParser(object):
             if hasattr(self, 'date'): del self.date            
             if (self._findDate() or self._findLocation(searchedText = match[0])):                
                 self.metadataBlock = match[0]
-                return self.metadataBlock                
-
+                break
+        
         return self.metadataBlock
 
     def _findArtist(self):
@@ -94,10 +94,10 @@ class TxtParser(object):
         # Artist listed by itself on one line at the top
         match = re.match('([^\n]{1,25})$[\r\n]{1,2}$', self.txt, re.MULTILINE | re.DOTALL)
         if match:
-            self.artist = match.group(1).strip()            
+            self.artist = match.group(1).strip()
         else:
             # Artist listed at the top of the metadata block
-            matches = re.findall(r'^(\S.+)\S*$', self._findMetadataBlock(), re.MULTILINE)
+            matches = re.findall(r'(\S.+)\S*$', self._findMetadataBlock(), re.MULTILINE)
             if len(matches) > 0:
                 # Remove, if present, the label for the line
                 match = matches[0]
