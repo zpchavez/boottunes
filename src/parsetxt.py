@@ -142,6 +142,10 @@ class TxtParser(object):
                      common formats
         @rtype: datetime.date
         """
+        currentYear = datetime.datetime.now().year
+        currentCentury = int(str(currentYear)[:2])
+        currentDecadeAndYear = int(str(currentYear)[2:])
+
         # If date contains a text month, get it as an integer
         monthInt = None
         if re.search('[a-z]', dateTxt, re.IGNORECASE):
@@ -155,16 +159,37 @@ class TxtParser(object):
                     raise ParseTxtError()
 
         if monthInt:
-            pattern = '(\d{1,2})\D+(\d{4})|(\d{4})\D+(\d{1,2})'
-            match = re.search(pattern, dateTxt)
-            if not match:
+            pattern = '(\d{1,4})\D+(\d{1,4})'
+            match = re.search(pattern, dateTxt)            
+            if not match:                
                 return None
             if match.group(1) != None:
-                dayInt = int(match.group(1))
-                yearInt = int(match.group(2))
-            else:
-                dayInt = int(match.group(4))
-                yearInt = int(match.group(3))
+                match1 = int(match.group(1))
+                match2 = int(match.group(2))
+
+                if match1 > 99:
+                    yearInt = match1
+                    dayInt = match2
+                elif match2 > 4:
+                    yearInt = match2
+                    dayInt = match1
+                else:
+                    if match1 < 31 and match2 < 31:
+                        if match1 > currentDecadeAndYear:
+                            dayInt = match1
+                            yearInt = match2
+                        elif match2 > currentDecadeAndYear:
+                            dayInt = match2
+                            yearInt = match1
+                        else:
+                            return None
+                    elif match1 != match2:
+                        yearInt = max((match1, match2))
+                        dayInt = min((match1, match2))
+                    else:
+                        # Can't tell which number if the year and which is the day
+                        return None
+                    
         else:
             pattern = '(\d{2,4})\D+(\d{2})\D+(\d{2,4})'            
             match = re.search(pattern, dateTxt)
@@ -186,19 +211,17 @@ class TxtParser(object):
             else:
                 return None # Can't tell which is the year
 
-            # If we only have two number for the year, make the following assumptions
-            # 1. The date is not in the future.  2. The more recent date is most likely meant
-            if yearInt <= 99:
-                currentYear = datetime.datetime.now().year
-                currentCentury = int(str(currentYear)[:2])
-                currentDecadeAndYear = int(str(currentYear)[2:])                
-                if yearInt > currentDecadeAndYear:
-                    yearInt = int(str(currentCentury - 1) + str(yearInt))
-                else:
-                    yearInt = int(str(currentCentury) + str(yearInt))
-
             # Consider the first number to be the month, unless it is too big
             monthInt, dayInt = (dateParts[0], dateParts[1]) if dateParts[0] < 13 else (dateParts[1], dateParts[0])
+
+        # If we only have two numbers for the year, make the following assumptions
+        # 1. The date is not in the future.
+        # 2. The more recent date is most likely the correct one.
+        if yearInt <= 99:
+            if yearInt > currentDecadeAndYear:
+                yearInt = int(str(currentCentury - 1) + str(yearInt))
+            else:
+                yearInt = int(str(currentCentury) + str(yearInt))
 
         try:
             dateObj = datetime.date(yearInt, monthInt, dayInt)

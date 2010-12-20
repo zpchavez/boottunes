@@ -108,20 +108,23 @@ class ParsetxtTestCase(unittest.TestCase):
         date = TxtParser(sampleTxt)._findDate()
         self.assertEquals("1980-12-01", date)
 
-        date = TxtParser("The Foo Bars\r12/01/80")._findDate()
+        date = TxtParser("The Foo Bars\n12/01/80")._findDate()
         self.assertEquals('12/01/80', date)
 
-        date = TxtParser("The Foo Bars\r05 05 1988")._findDate()
+        date = TxtParser("The Foo Bars\n05 05 1988")._findDate()
         self.assertEquals('05 05 1988', date)
 
-        date = TxtParser("The Foo Bars\r85.12.25")._findDate()
+        date = TxtParser("The Foo Bars\n85.12.25")._findDate()
         self.assertEquals('85.12.25', date)
 
-        date = TxtParser("The Foo Bars\rJuly 22nd, 1982")._findDate()
+        date = TxtParser("The Foo Bars\nJuly 22nd, 1982")._findDate()
         self.assertEquals("July 22nd, 1982", date)
 
-        date = TxtParser("The Foo Bars\r14th August, 1991")._findDate()
+        date = TxtParser("The Foo Bars\n14th August, 1991")._findDate()
         self.assertEquals("14th August, 1991", date)
+
+        date = TxtParser('The Foo Bars\n5 Nov 90')._findDate()
+        self.assertEquals('5 Nov 90', date)
 
     def testConvertDateToDateObjectWorksForVariousPermutations(self):
         # If ambigious which number is day and which is month, assume first number is month
@@ -149,6 +152,9 @@ class ParsetxtTestCase(unittest.TestCase):
         # If unclear which is the year (i.e. a recording from 1930), assume year is first
         date = TxtParser._convertDateToDateObject('30-12-25').isoformat()
         self.assertEquals('1930-12-25', date)
+
+        date = TxtParser._convertDateToDateObject('5 Nov 90').isoformat()
+        self.assertEquals('1990-11-05', date)
 
     def testConvertDateToDateObjectThrowsExceptionIfDateIsInvalid(self):
         self.assertRaises(ParseTxtError, TxtParser._convertDateToDateObject, '44th August, 1991')
