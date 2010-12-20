@@ -104,7 +104,11 @@ class TxtParser(object):
                 regex = re.compile('Artist:\s*', re.IGNORECASE)
                 match = regex.sub('', matches[0])
                 self.artist = match.strip()
-            
+
+        if not hasattr(self, 'artist'):
+            self.artist = ''
+            return self.artist
+
         self.artist = self.artist.replace(self._findDate(), '')
         self.artist = self.artist.replace(self._findLocation(), '')
         self.artist = self.artist.replace(self._findVenue(), '')
@@ -116,15 +120,15 @@ class TxtParser(object):
 
         @rtype:  string
         @return: The string as it appears in the file
-        """
-        if hasattr(self, 'date'): return self.date        
+        """        
+        if hasattr(self, 'date'): return self.date
 
         months = "(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*"
         pattern = "\d{1,4}.\d{1,2}.\d{2,4}|" + months + " \d{1,2}.*?\d{2,4}|\d{1,2}.*? " + months + ".*? \d{2,4}|" \
                   "\d{2,4}." + months + ".\d{1,2}"
         matches = re.findall(pattern, self.txt, re.IGNORECASE)        
         if len(matches) > 0:            
-            self.date = matches[0].strip()
+            self.date = matches[0].strip()            
             return matches[0].strip()
         self.date = ''
         return ''
@@ -141,7 +145,7 @@ class TxtParser(object):
         @param date: A string containing the day, month and year, in one of the
                      common formats
         @rtype: datetime.date
-        """
+        """        
         currentYear = datetime.datetime.now().year
         currentCentury = int(str(currentYear)[:2])
         currentDecadeAndYear = int(str(currentYear)[2:])
@@ -191,7 +195,7 @@ class TxtParser(object):
                         return None
                     
         else:
-            pattern = '(\d{2,4})\D+(\d{2})\D+(\d{2,4})'            
+            pattern = '(\d{1,4})\D+(\d{1,2})\D+(\d{1,4})'
             match = re.search(pattern, dateTxt)
             if not match:
                 return None            
@@ -208,9 +212,9 @@ class TxtParser(object):
             elif dateParts[2] > 12:
                 yearInt = dateParts[2]
                 dateParts = dateParts[:2]
-            else:
+            else:                
                 return None # Can't tell which is the year
-
+            
             # Consider the first number to be the month, unless it is too big
             monthInt, dayInt = (dateParts[0], dateParts[1]) if dateParts[0] < 13 else (dateParts[1], dateParts[0])
 
@@ -497,11 +501,11 @@ class TxtParser(object):
                     are strings.  "tracks" is a list of unicode strings and "date" is a
                     datetime.date object.
         """
-
-        dateTxt = self._findDate()        
+        
+        dateTxt = self._findDate()
         if dateTxt:            
             try:
-                dateObj = self._convertDateToDateObject(self._findDate())
+                dateObj = self._convertDateToDateObject(dateTxt)
             except ParseTxtError:
                 dateObj = None
         else:

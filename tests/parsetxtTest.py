@@ -156,6 +156,9 @@ class ParsetxtTestCase(unittest.TestCase):
         date = TxtParser._convertDateToDateObject('5 Nov 90').isoformat()
         self.assertEquals('1990-11-05', date)
 
+        date = TxtParser._convertDateToDateObject('5-10-2005').isoformat()
+        self.assertEquals('2005-05-10', date)
+
     def testConvertDateToDateObjectThrowsExceptionIfDateIsInvalid(self):
         self.assertRaises(ParseTxtError, TxtParser._convertDateToDateObject, '44th August, 1991')
         self.assertRaises(ParseTxtError, TxtParser._convertDateToDateObject, '99/99/99')
