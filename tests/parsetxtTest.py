@@ -110,6 +110,12 @@ class ParsetxtTestCase(unittest.TestCase):
         artist = TxtParser("\tThe Foo Bars\n1980-12-01\nTopeka, KS")._findArtist()
         self.assertEquals("The Foo Bars", artist)
 
+        artist = TxtParser("Chicago\n1985-12-01\nBoston, MA")._findArtist()
+        self.assertEquals("Chicago", artist)
+
+        artist = TxtParser('Architecture in Helsinki\n2003-03-03\nMelbourne\nVenue')._findArtist()
+        self.assertEquals('Architecture in Helsinki', artist)
+
     def testFindDateReturnsStringForFirstThingThatLooksLikeADate(self):
         date = TxtParser(sampleTxt)._findDate()
         self.assertEquals("1980-12-01", date)
@@ -307,6 +313,16 @@ class ParsetxtTestCase(unittest.TestCase):
         # City name must match the whole word ("Parish" not mistaken for "Paris").
         location = TxtParser('The Foo Bars\n1980-12-01\nThe New Parish\nOakland, CA')._findLocation()
         self.assertEquals('Oakland, CA', location)
+
+        # Handle confusing cases where the artist name is or contains a common city name
+        location = TxtParser("Chicago\n1985-12-01\nBoston, MA")._findLocation()
+        self.assertEquals("Boston, MA", location)
+
+        location = TxtParser("Boston\n1985-12-01\nChicago, IL\nVenue")._findLocation()
+        self.assertEquals("Chicago, IL", location)
+
+        location = TxtParser('Architecture in Helsinki\n2003-03-03\nMelbourne\nVenue')._findLocation()
+        self.assertEquals('Melbourne, Australia', location)
 
     def testFindVenueTriesToGetVenue(self):
         venue = TxtParser(sampleTxt)._findVenue()

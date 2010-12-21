@@ -109,9 +109,17 @@ class TxtParser(object):
             self.artist = ''
             return self.artist
 
-        self.artist = self.artist.replace(self._findDate(), '')
-        self.artist = self.artist.replace(self._findLocation(), '')
-        self.artist = self.artist.replace(self._findVenue(), '')
+        onSameLinePattern = '[\-|\\\/]+\s*{0}|{0}\s*[\-|\\\/]+'
+
+        for part in [self._findDate(), self._findLocation(True), self._findVenue()]:
+            if part:                
+                self.artist = re.sub(
+                    onSameLinePattern.format(part),
+                    '',
+                    self.artist
+                )
+
+        self.artist = self.artist.strip()
         return self.artist
 
     def _findDate(self):
@@ -325,7 +333,7 @@ class TxtParser(object):
                              than the default which is the detected metadata block.
 
         @rtype: string
-        """
+        """        
         if asIs and searchedText == None and hasattr(self, 'locationAsIs'):
             return self.locationAsIs
         elif not asIs and searchedText == None and hasattr(self, 'location'):
@@ -335,11 +343,13 @@ class TxtParser(object):
             metadataBlock = self._findMetadataBlock()
         else:
             metadataBlock = searchedText
-        
-        metadataBlock = self._findMetadataBlock()        
+
+        # Move artist name to bottom of metadata block, in case the artist name contains a city name
+        artist = self._findArtist()        
+        metadataBlock = metadataBlock.replace(artist, '')
 
         # Check for a city from the common-cities list
-        for city, cityDetails in cities.iteritems():
+        for city, cityDetails in cities.iteritems():            
             match = re.search('\W' + city + r'(\W|\Z)', metadataBlock)
             if match:                
                 if 'province' in cityDetails:
@@ -406,7 +416,7 @@ class TxtParser(object):
                                 self.location = city + ', ' + countryFull
                                 return self.location
 
-
+                            
         # If no match found from cities in the common city list, just search for a line that looks
         # like a location line, i.e. contains a comma
         matches = re.findall('^.+,.+$', metadataBlock, re.MULTILINE)
@@ -415,11 +425,11 @@ class TxtParser(object):
             return self.location
         lineTxt = ''        
         for match in matches:
-            # Don't mistake the date as the location
+            # Don't mistake the date as the location            
             if self._findDate() not in match:
                 lineTxt = match
                 break
-
+        
         labelMatch = re.match('Location:(.*)', lineTxt, re.IGNORECASE)
         if labelMatch:
             lineTxt = labelMatch.group(1)        
@@ -510,12 +520,17 @@ class TxtParser(object):
                 dateObj = None
         else:
             dateObj = None
+        
+        location  = self._findLocation()        
+        artist    = self._findArtist()                
+        venue     = self._findVenue()
+        tracklist = self._findTracklist()
 
-        return {'artist'    : unicode(self._findArtist()),
+        return {'artist'    : unicode(artist),
                 'date'      : dateObj,
-                'location'  : unicode(self._findLocation()),
-                'venue'     : unicode(self._findVenue()),
-                'tracklist' : self._findTracklist(),
+                'location'  : unicode(location),
+                'venue'     : unicode(venue),
+                'tracklist' : tracklist,
                 'comments'  : unicode(self.txt)}
     
 class ParseTxtError(Exception): pass
