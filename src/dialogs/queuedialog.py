@@ -123,8 +123,7 @@ class QueueDialog(QDialog, Ui_QueueDialog):
 
             if isinstance(metadata, tuple):
                 for metadatum in metadata:                    
-                    if not getSettings().isCompleted(metadatum['hash']):
-                        metadatum['cover'] = CoverArtRetriever.getCoverImageChoices(metadatum)[0][0]
+                    if not getSettings().isCompleted(metadatum['hash']):                        
                         self.addToQueue(metadatum)
                 self.queueListWidget.sortItems()
             else:
@@ -252,11 +251,11 @@ class QueueDialog(QDialog, Ui_QueueDialog):
                     fileHandle.seek(0)
                 except UnicodeDecodeError:
                     fileHandle = codecs.open(textFilePath, 'r', encoding)
-                
+
                 metadata = TxtParser(fileHandle.read()).parseTxt()
-                
+
                 fileHandle.close()
-                
+
                 foundCount = 0
                 for k, v in metadata.iteritems():
                     if v:
@@ -268,11 +267,11 @@ class QueueDialog(QDialog, Ui_QueueDialog):
 
                 # Must contain valid audio files
                 qDir.setNameFilters(validExtensions)
-                filePaths = []                
+                filePaths = []
                 fileNameEncoding = 'utf_8' if systemName == 'Darwin' else encoding
-                for file in qDir.entryList():                                                            
-                    filePath = unicode(qDir.absolutePath() + '/' + file).encode(fileNameEncoding)                    
-                    filePaths.append(filePath)                                    
+                for file in qDir.entryList():
+                    filePath = unicode(qDir.absolutePath() + '/' + file).encode(fileNameEncoding)
+                    filePaths.append(filePath)
                 # The show could be split up between folders, e.g. CD1 and CD2
                 if len(filePaths) == 0:
                     qDir.setNameFilters('*')
@@ -281,28 +280,31 @@ class QueueDialog(QDialog, Ui_QueueDialog):
                         qSubdir = QDir(qDir.absolutePath() + '/' + subdirStr)
                         qSubdir.setNameFilters(validExtensions)
                         for file in qSubdir.entryList():
-                            filePaths.append(unicode(qSubdir.absolutePath()) + '/' + unicode(file))                
+                            filePaths.append(unicode(qSubdir.absolutePath()) + '/' + unicode(file))
+
                 if len(filePaths) == 0:
                     raise QueueDialogError("Directory does not contain any supported audio files (FLAC, SHN, ALAC)");
-                
+
                 if metadata['tracklist'] == None:
                     metadata['tracklist'] = ['' for x in filePaths]
 
-                elif len(metadata['tracklist']) < len(filePaths):
+                if len(metadata['tracklist']) < len(filePaths):
                     raise QueueDialogError("More audio files found than tracks in the tracklist")
 
                 # If more tracks detected than files exist, assume the extra tracks are an error
                 del metadata['tracklist'][len(filePaths):]
 
-                metadata['audioFiles'] = filePaths
+                nonParsedMetadata = {}
 
-                metadata['dir'] = qDir
+                nonParsedMetadata['audioFiles'] = filePaths
+
+                nonParsedMetadata['dir'] = qDir
                 # Hash used for identicons and temp directory names
-                metadata['hash'] = hashlib.md5(metadata['comments'].encode('utf_8')).hexdigest()
+                nonParsedMetadata['hash'] = hashlib.md5(metadata['comments'].encode('utf_8')).hexdigest()
                 # The dir where all temporary files for this recording will be stored
-                metadata['tempDir'] = QDir(getSettings().settingsDir + '/' + metadata['hash'])
-                if not metadata['tempDir'].exists():
-                    metadata['tempDir'].mkpath(metadata['tempDir'].absolutePath())
+                nonParsedMetadata['tempDir'] = QDir(getSettings().settingsDir + '/' + nonParsedMetadata['hash'])
+                if not nonParsedMetadata['tempDir'].exists():
+                    nonParsedMetadata['tempDir'].mkpath(nonParsedMetadata['tempDir'].absolutePath())
 
                 try:
                     # Assume that an artist name found in the actual file metadata is more accurate
@@ -311,17 +313,24 @@ class QueueDialog(QDialog, Ui_QueueDialog):
                         if self.loadingMultipleShows:
                             raise QueueDialogError('Malformed FLAC files.  Load this show alone to fix.')
                         else:
+                            metadata.update(nonParsedMetadata)
                             self.fixBadFlacFiles(metadata)
                     else:
                         audioFileMetadata = audioFile.get_metadata()
-                        if audioFileMetadata and audioFileMetadata.artist_name:                                                        
-                            metadata['artist'] = audioFileMetadata.artist_name
+                        if audioFileMetadata and audioFileMetadata.artist_name:
+                            txtParser = TxtParser(metadata['comments'])
+                            txtParser.artist = audioFileMetadata.artist_name
+                            metadata = txtParser.parseTxt()
                 except audiotools.UnsupportedFile as e:
                     raise QueueDialogError(os.path.basename(filePaths[0]) + " is an unsupported file: ")
 
+                nonParsedMetadata['cover'] = CoverArtRetriever.getCoverImageChoices(nonParsedMetadata)[0][0]
+
+                metadata.update(nonParsedMetadata)
+                
                 return metadata
 
-            except IOError as e:                
+            except IOError as e:
                 raise QueueDialogError("Could not read file: " + txtFile + "<br /><br />" + e.args[1])
             except UnicodeDecodeError as e:
                 raise QueueDialogError("Could not read file: " + txtFile + "<br /><br />" + e.args[4])
@@ -356,7 +365,7 @@ class QueueDialog(QDialog, Ui_QueueDialog):
         """
         detectedArtist = metadata['artist']
 
-        defaults = getSettings().getArtistDefaults(detectedArtist)
+        defaults = getSettings().getArtistDefaults(detectedArtist)        
         if defaults:
             metadata['defaults'] = defaults
 
@@ -677,8 +686,10 @@ class ConvertFilesThread(QThread):
 
             if 'defaults' in metadata:
                 artistName = metadata['defaults']['preferred_name'].decode('utf_8')
+                genre = metadata['defaults']['genre']
             else:
                 artistName = metadata['artist']
+                genre = ''
 
             parent.currentTrackName = metadata['tracklist'][parent.currentTrack]
 
@@ -693,8 +704,7 @@ class ConvertFilesThread(QThread):
                 comment      = metadata['comments']
             )
             self.emit(SIGNAL("progress(int, QString)"), progressCounter, 'Converting "' + parent.currentTrackName + '"')
-
-            genre = metadata['defaults']['genre']
+                        
             imageData = currentRecording['imageData']
             sourcePcm = currentRecording['pcmReaders'][parent.currentTrack]
             targetFile = tempDirPath + '/' + unicode(parent.currentTrack) + u'.m4a'
