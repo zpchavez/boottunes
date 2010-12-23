@@ -252,9 +252,9 @@ class QueueDialog(QDialog, Ui_QueueDialog):
                     fileHandle.seek(0)
                 except UnicodeDecodeError:
                     fileHandle = codecs.open(textFilePath, 'r', encoding)
-
+                
                 metadata = TxtParser(fileHandle.read()).parseTxt()
-
+                
                 fileHandle.close()
                 
                 foundCount = 0
@@ -263,9 +263,6 @@ class QueueDialog(QDialog, Ui_QueueDialog):
                         foundCount += 1
                 if foundCount < 4 and not theFinalTxt:
                     continue
-                
-                if metadata['tracklist'] == None:
-                    raise QueueDialogError("Could not find a tracklist in " + txtFile)
 
                 validExtensions = ['*.flac', '*.shn', '*.m4a']
 
@@ -287,13 +284,17 @@ class QueueDialog(QDialog, Ui_QueueDialog):
                             filePaths.append(unicode(qSubdir.absolutePath()) + '/' + unicode(file))                
                 if len(filePaths) == 0:
                     raise QueueDialogError("Directory does not contain any supported audio files (FLAC, SHN, ALAC)");
+                
+                if metadata['tracklist'] == None:
+                    metadata['tracklist'] = ['' for x in filePaths]
+
                 elif len(metadata['tracklist']) < len(filePaths):
                     raise QueueDialogError("More audio files found than tracks in the tracklist")
 
                 # If more tracks detected than files exist, assume the extra tracks are an error
-                del metadata['tracklist'][len(filePaths):]                
+                del metadata['tracklist'][len(filePaths):]
 
-                metadata['audioFiles'] = filePaths                
+                metadata['audioFiles'] = filePaths
 
                 metadata['dir'] = qDir
                 # Hash used for identicons and temp directory names
@@ -313,7 +314,7 @@ class QueueDialog(QDialog, Ui_QueueDialog):
                             self.fixBadFlacFiles(metadata)
                     else:
                         audioFileMetadata = audioFile.get_metadata()
-                        if audioFileMetadata and audioFileMetadata.artist_name:
+                        if audioFileMetadata and audioFileMetadata.artist_name:                                                        
                             metadata['artist'] = audioFileMetadata.artist_name
                 except audiotools.UnsupportedFile as e:
                     raise QueueDialogError(os.path.basename(filePaths[0]) + " is an unsupported file: ")
@@ -396,6 +397,10 @@ class QueueDialog(QDialog, Ui_QueueDialog):
                     else:
                         albumTitle = albumTitle.replace('[' + placeHolder + ']', replacement)
 
+        if len(set(metadata['tracklist'])) == 1 and metadata['tracklist'][0] == '':
+            albumTitle += ' [empty tracklist]'
+            self.queueItemData[path]['valid'] = False
+
         if not artistName:
             artistName = '[missing artist]'
             self.queueItemData[path]['valid'] = False
@@ -403,8 +408,10 @@ class QueueDialog(QDialog, Ui_QueueDialog):
         listItem.setText(artistName + ' - ' + albumTitle)
         if self.queueItemData[path]['valid'] == False:
             listItem.setBackground(QBrush(QColor(255, 0, 0)))
+            listItem.setForeground(QBrush(QColor(255, 255, 255)))
         else:
             listItem.setBackground(QBrush(QColor(255, 255, 255)))
+            listItem.setForeground(QBrush(QColor(0, 0, 0)))
         metadata['albumTitle'] = albumTitle
 
     def addToITunes(self):
