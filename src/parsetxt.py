@@ -61,11 +61,13 @@ class TxtParser(object):
                     match.group(3) + '\n' +
                     match.group(4)
                 )
+                self.date = match.group(2)[0:10]
+                self.venue = match.group(3)                
                 return self.metadataBlock
 
         pattern = '\n?((^.{2,60}$\n?){3,6})'
         matches = re.findall(pattern, self.txt, re.MULTILINE)        
-
+        
         # Default will be the whole string.
         self.metadataBlock = self.txt
         
@@ -80,6 +82,13 @@ class TxtParser(object):
             if (self._findDate() or self._findLocation(searchedText = match[0])):                
                 self.metadataBlock = match[0]
                 break
+
+        if self.metadataBlock == self.txt:
+            # Check for the one line style metadata block
+            pattern = '^(.+[-|,]{1,}.+)'
+            match = re.search(pattern, self.txt)            
+            if match:                
+                self.metadataBlock = match.group(1)
         
         return self.metadataBlock
 
@@ -94,7 +103,7 @@ class TxtParser(object):
         # Artist listed by itself on one line at the top
         match = re.match('([^\n]{1,25})$[\r\n]{1,2}$', self.txt, re.MULTILINE | re.DOTALL)
         if match:
-            self.artist = match.group(1).strip()
+            self.artist = match.group(1).strip()            
         else:
             # Artist listed at the top of the metadata block
             matches = re.findall(r'(\S.+)\S*$', self._findMetadataBlock(), re.MULTILINE)
@@ -109,17 +118,17 @@ class TxtParser(object):
             self.artist = ''
             return self.artist
 
-        onSameLinePattern = '[\-|\\\/]+\s*{0}|{0}\s*[\-|\\\/]+'
+        onSameLinePattern = '[\-|\\\/,]+.*{0}|{0}.*[\-|\\\/,]+'
 
         for part in [self._findDate(), self._findLocation(True), self._findVenue()]:
-            if part:                
+            if part:            
                 self.artist = re.sub(
-                    onSameLinePattern.format(part),
+                    onSameLinePattern.format(re.escape(part)),
                     '',
                     self.artist
-                )
+                )                
 
-        self.artist = self.artist.strip()
+        self.artist = self.artist.strip()        
         return self.artist
 
     def _findDate(self):
@@ -157,7 +166,7 @@ class TxtParser(object):
         currentYear = datetime.datetime.now().year
         currentCentury = int(str(currentYear)[:2])
         currentDecadeAndYear = int(str(currentYear)[2:])
-
+        
         # If date contains a text month, get it as an integer
         monthInt = None
         if re.search('[a-z]', dateTxt, re.IGNORECASE):
@@ -341,15 +350,18 @@ class TxtParser(object):
 
         if searchedText == None:
             metadataBlock = self._findMetadataBlock()
+            artist = self._findArtist()
+            if metadataBlock != artist:
+                self.location = self._findLocation(searchedText=artist) # Fallback
+                if self.location:
+                    metadataBlock = metadataBlock.replace(artist, '')
+                else:
+                    del self.location
         else:
             metadataBlock = searchedText
-
-        # Move artist name to bottom of metadata block, in case the artist name contains a city name
-        artist = self._findArtist()        
-        metadataBlock = metadataBlock.replace(artist, '')
-
+        
         # Check for a city from the common-cities list
-        for city, cityDetails in cities.iteritems():            
+        for city, cityDetails in cities.iteritems():
             match = re.search('\W' + city + r'(\W|\Z)', metadataBlock)
             if match:                
                 if 'province' in cityDetails:
@@ -462,23 +474,27 @@ class TxtParser(object):
             return ''
 
         metadataBlock = self._findMetadataBlock()        
-        metadataBlock = metadataBlock.replace(self._findArtist(), '')                
-        metadataBlock = metadataBlock.replace(self._findDate(), '')        
-
+        if self._findArtist() != metadataBlock:
+            metadataBlock = metadataBlock.replace(self._findArtist(), '')
+        metadataBlock = metadataBlock.replace(self._findDate(), '')
+        
         matches = re.search(            
-            '((?:live at )?(.*)[,\s\-]*)?' + locationTxt + '((?: \(USA\))?(?:live at )?[,\s\-]*(.*))?',
+            '(?:([^,\-\n|]*)\s*[,\-\n]\s*)?' + locationTxt + '(?:(?: \(USA\))?\s*[,\-\n]\s*([^,\-\n|]*))?',
             metadataBlock,
             re.IGNORECASE | re.MULTILINE
         )
-
+        
         fullLocationText = self._findLocation(False)
         countryOrStateMatch = re.findall(', (.*)', fullLocationText)
         if countryOrStateMatch:
-            countryOrState = countryOrStateMatch[0]
+            countryOrState = countryOrStateMatch[0]        
 
         if matches:
             strippedChars = ' ,\r\t\n-'
-            possibilities = [matches.group(4).strip(strippedChars), matches.group(2).strip(strippedChars)]            
+            possibilities = []
+            possibilities.append(matches.group(1).strip(strippedChars) if matches.group(1) else '')
+            possibilities.append(matches.group(2).strip(strippedChars) if matches.group(2) else '')            
+            candidates = []
             for index, possibility in enumerate(possibilities):
                 if not possibility: # May be blank after stripped out insignificant characters
                     continue
@@ -490,13 +506,43 @@ class TxtParser(object):
                     continue
                 if re.search('\d{2}:\d{2}', possibility): # Probably the play length
                     continue
-                if re.search('\(.*\)', possibility): # If it's in parentheses, it's probably not the venue
+                if re.search('^\(.*\)$', possibility): # If it's in parentheses, it's probably not the venue
                     continue
                 if index == 0 and len(possibility) > 50: # A venue name that long wouldn't even fit on the sign
                     continue
-                else:                    
-                    self.venue = re.sub('^[tT]he ', '', possibility, 1) # Filter out "the"
-                    return self.venue
+                else:
+                    candidates.append(possibility)            
+
+            if len(candidates) == 1:
+                choice = candidates[0]
+            elif len(candidates) == 2:
+                # If one is capitalized, go with that, otherwise go with the one closest to 10 characters.
+                # If they are tied, go with the second one
+                wordsCapitalizedPattern = ('^([A-Z][a-z]* ?)*$')
+                capCount = 0
+                for candidate in candidates:
+                    match = re.search(wordsCapitalizedPattern, candidate)
+                    if match:
+                        matched = match.group(1)
+                        capCount += 1
+                if capCount == 2 or capCount == 0:
+                    tenCharProximity1 = 10 - len(candidates[0])
+                    tenCharProximity2 = 10 - len(candidates[1])
+                    if tenCharProximity1 < tenCharProximity2:
+                        choice = candidates[0]
+                    else:
+                        choice = candidates[1]
+                elif capCount == 1:                    
+                    choice = matched
+            else:
+                self.venue = ''
+                return self.venue
+
+            #self.venue = re.search('[\w\s]+', choice).
+            self.venue = choice.strip()
+            self.venue = re.sub('^[lL]ive at ', '', self.venue, 1) # Filter out "Live at"
+            self.venue = re.sub('^[tT]he ', '', self.venue, 1)      # Filter out "the"
+            return self.venue
                 
         self.venue = ''
         return self.venue
@@ -511,7 +557,7 @@ class TxtParser(object):
                     are strings.  "tracks" is a list of unicode strings and "date" is a
                     datetime.date object.
         """
-        
+        metadataBlock = self._findMetadataBlock()
         dateTxt = self._findDate()
         if dateTxt:            
             try:

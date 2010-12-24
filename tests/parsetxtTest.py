@@ -116,6 +116,9 @@ class ParsetxtTestCase(unittest.TestCase):
         artist = TxtParser('Architecture in Helsinki\n2003-03-03\nMelbourne\nVenue')._findArtist()
         self.assertEquals('Architecture in Helsinki', artist)
 
+        artist = TxtParser('The Foo Bars | Venue, New York, NY | 23.11.2010')._findArtist()
+        self.assertEquals('The Foo Bars', artist)
+
     def testFindDateReturnsStringForFirstThingThatLooksLikeADate(self):
         date = TxtParser(sampleTxt)._findDate()
         self.assertEquals("1980-12-01", date)
@@ -137,6 +140,9 @@ class ParsetxtTestCase(unittest.TestCase):
 
         date = TxtParser('The Foo Bars\n5 Nov 90')._findDate()
         self.assertEquals('5 Nov 90', date)
+
+        date = TxtParser('The Foo Bars | Venue, New York, NY | 23.11.2010')._findDate()
+        self.assertEquals('23.11.2010', date)
 
     def testConvertDateToDateObjectWorksForVariousPermutations(self):
         # If ambigious which number is day and which is month, assume first number is month
@@ -324,6 +330,13 @@ class ParsetxtTestCase(unittest.TestCase):
         location = TxtParser('Architecture in Helsinki\n2003-03-03\nMelbourne\nVenue')._findLocation()
         self.assertEquals('Melbourne, Australia', location)
 
+        location = TxtParser('The Foo Bars | Venue, New York, NY | 23.11.2010')._findLocation()
+        self.assertEquals('New York, NY', location)
+
+        location = TxtParser('Wilco\n2010-09-21\nCapitol\nOffenbach am Main, Germany')._findLocation()
+        self.assertEquals('Offenbach, Germany', location)
+
+
     def testFindVenueTriesToGetVenue(self):
         venue = TxtParser(sampleTxt)._findVenue()
         self.assertEquals('Venue', venue)
@@ -341,7 +354,9 @@ class ParsetxtTestCase(unittest.TestCase):
         self.assertEquals('Venue', venue)
 
         # "Live at" removed
-        venue = TxtParser('The Foo Bars\n1980-12-01\nLive at The Venue\nTopeka, KS (USA)\nLength: 01:02:33')._findVenue()
+        venue = TxtParser(
+            'The Foo Bars\n1980-12-01\nLive at The Venue\nTopeka, KS (USA)\nLength: 01:02:33'
+        )._findVenue()
         self.assertEquals('Venue', venue)
 
         # With no discernible location to search near, cannot ascertain the venue either
@@ -384,6 +399,16 @@ class ParsetxtTestCase(unittest.TestCase):
         venue = TxtParser('The Foo Bars\nVenue\nAustin, TX\n 1990-09-09 (Sunday)')._findVenue()
         self.assertEquals('Venue', venue)
 
+        venue = TxtParser('The Foo Bars | Venue, New York, NY | 23.11.2010')._findVenue()
+        self.assertEquals('Venue', venue)
+
+        # Capitalized option picked over non capitalized
+        venue = TxtParser('The Foo Bars\n1990-09-09\nVenue\nAustin, TX\nlower cased')._findVenue()
+        self.assertEquals('Venue', venue)
+
+        # Otherwise, the one closest to 10 characters
+        venue = TxtParser('The Foo Bars\n1990-09-09\nVenue\nAustin, TX\nTaper: Chip Dipson')._findVenue()
+        self.assertEquals('Venue', venue)
 
     def testParseTxtReturnsDictionaryWithAllFoundMetadata(self):
         txtParser = TxtParser(sampleTxt)
@@ -396,6 +421,6 @@ class ParsetxtTestCase(unittest.TestCase):
         self.assertEquals('Venue', metadata['venue'])
         self.assertEquals(['First Song', 'Second Song', 'Third Song'], metadata['tracklist'])
         self.assertEquals(sampleTxt, metadata['comments'])
-        
+
 if __name__ == '__main__':
     unittest.main()
