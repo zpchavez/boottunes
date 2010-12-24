@@ -42,56 +42,6 @@ class TxtParser(object):
         # Normlize all newlines to \n for simplicity.
         self.txt = txt.replace('\r\n', '\n').replace('\r', '\n')        
 
-    def _findMetadataBlock(self):
-        """
-        Find the section of self.txt that contains the
-        artist, date, and location
-
-        @rtype: string
-        """        
-        if hasattr(self, 'metadataBlock'): return self.metadataBlock
-
-        if re.search('MOTB Release', self.txt, re.IGNORECASE):            
-            pattern = 'Band: (.+)\nDate: (.+)\nVenue: (.+)\nLocation: (.+)'
-            match = re.search(pattern, self.txt, re.IGNORECASE | re.MULTILINE)
-            if match:                
-                self.metadataBlock = (
-                    match.group(1) + '\n' +
-                    match.group(2) + '\n' +
-                    match.group(3) + '\n' +
-                    match.group(4)
-                )
-                self.date = match.group(2)[0:10]
-                self.venue = match.group(3)                
-                return self.metadataBlock
-
-        pattern = '\n?((^.{2,60}$\n?){3,6})'
-        matches = re.findall(pattern, self.txt, re.MULTILINE)        
-        
-        # Default will be the whole string.
-        self.metadataBlock = self.txt
-        
-        # If a date and/or location is found in the block, use it
-        for match in matches:
-            if match[0] in self._findTracklistString():
-                continue            
-            # Delete any cached results, so that a new search is performed, rather
-            # than simply returning the previous result.
-            if hasattr(self, 'location'): del self.location
-            if hasattr(self, 'date'): del self.date            
-            if (self._findDate() or self._findLocation(searchedText = match[0])):                
-                self.metadataBlock = match[0]
-                break
-
-        if self.metadataBlock == self.txt:
-            # Check for the one line style metadata block
-            pattern = '^(.+[-|,]{1,}.+)'
-            match = re.search(pattern, self.txt)            
-            if match:                
-                self.metadataBlock = match.group(1)
-        
-        return self.metadataBlock
-
     def _findArtist(self):
         """
         Find the artist in self.txt
@@ -99,36 +49,20 @@ class TxtParser(object):
         @rtype: string
         """        
         if hasattr(self, 'artist'): return self.artist
-
-        # Artist listed by itself on one line at the top
-        match = re.match('([^\n]{1,25})$[\r\n]{1,2}$', self.txt, re.MULTILINE | re.DOTALL)
+        
+        # Artist listed after label
+        match = re.search('^\s*(?:Artist|Band)[\s:\-]+(.*)$', self.txt, re.MULTILINE)
         if match:
-            self.artist = match.group(1).strip()            
-        else:
-            # Artist listed at the top of the metadata block
-            matches = re.findall(r'(\S.+)\S*$', self._findMetadataBlock(), re.MULTILINE)
-            if len(matches) > 0:
-                # Remove, if present, the label for the line
-                match = matches[0]
-                regex = re.compile('Artist:\s*', re.IGNORECASE)
-                match = regex.sub('', matches[0])
-                self.artist = match.strip()
-
-        if not hasattr(self, 'artist'):
-            self.artist = ''
+            self.artist = match.group(1).strip()
             return self.artist
 
-        onSameLinePattern = '[\-|\\\/,]+.*{0}|{0}.*[\-|\\\/,]+'
+        # Probably the short line
+        match = re.search('^\s*(.{1,50}?)(\n| - |\|)', self.txt, re.MULTILINE)
+        if match:            
+            self.artist = match.group(1).strip()            
+            return self.artist
 
-        for part in [self._findDate(), self._findLocation(True), self._findVenue()]:
-            if part:            
-                self.artist = re.sub(
-                    onSameLinePattern.format(re.escape(part)),
-                    '',
-                    self.artist
-                )                
-
-        self.artist = self.artist.strip()        
+        self.artist = ''
         return self.artist
 
     def _findDate(self):
@@ -140,13 +74,22 @@ class TxtParser(object):
         """        
         if hasattr(self, 'date'): return self.date
 
+        match = re.search('^\s*Date: ([a-zA-Z0-9\-, ]+).*$', self.txt, re.MULTILINE)
+        if match:            
+            self.date = match.group(1).strip()
+            return self.date
+
         months = "(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*"
-        pattern = "\d{1,4}.\d{1,2}.\d{2,4}|" + months + " \d{1,2}.*?\d{2,4}|\d{1,2}.*? " + months + ".*? \d{2,4}|" \
-                  "\d{2,4}." + months + ".\d{1,2}"
+        pattern = (
+            "\d{1,4}.\d{1,2}.\d{2,4}|"
+            + months + " \d{1,2}.*?\d{2,4}|"
+            + "\d{1,2}.*? " + months + ".*? \d{2,4}|"
+            + "\d{2,4}." + months + ".\d{1,2}"
+        )
         matches = re.findall(pattern, self.txt, re.IGNORECASE)        
-        if len(matches) > 0:            
+        if len(matches) > 0:
             self.date = matches[0].strip()            
-            return matches[0].strip()
+            return self.date
         self.date = ''
         return ''
 
@@ -328,7 +271,7 @@ class TxtParser(object):
         self.tracklist = [match[1].strip() if match[1] else match[0] for match in matches]
         return self.tracklist
 
-    def _findLocation(self, asIs = False, searchedText = None):
+    def _findLocation(self, asIs = False):
         """
         Return the geographical location of the recording.
 
@@ -336,115 +279,111 @@ class TxtParser(object):
         @param asIs: Whether to return the location name exactly as it appears in the file
                      rather than shortening US state names to their abbreviations and expanding
                      country abbreviations to their full names.
-                     
-        @type  searchedText: string
-        @param searchedText: If specified, the search will be limited to this text, rather
-                             than the default which is the detected metadata block.
-
         @rtype: string
         """        
-        if asIs and searchedText == None and hasattr(self, 'locationAsIs'):
+        if asIs and hasattr(self, 'locationAsIs'):
             return self.locationAsIs
-        elif not asIs and searchedText == None and hasattr(self, 'location'):
+        elif not asIs and hasattr(self, 'location'):
             return self.location
 
-        if searchedText == None:
-            metadataBlock = self._findMetadataBlock()
-            artist = self._findArtist()
-            if metadataBlock != artist:
-                self.location = self._findLocation(searchedText=artist) # Fallback
-                if self.location:
-                    metadataBlock = metadataBlock.replace(artist, '')
-                else:
-                    del self.location
-        else:
-            metadataBlock = searchedText
-        
+        searchedText = self.txt.replace(self._findArtist(), '') \
+                               .replace(self._findDate(), '')
+
+        match = re.match('^\s*Location: (.*)$', searchedText, re.MULTILINE)
+        if match:
+            self.location = match.group(1)
+            return self.location
+
+        # Use the city with the lowest index
+        candidate = {'city': None, 'index': len(searchedText)}
+
         # Check for a city from the common-cities list
-        for city, cityDetails in cities.iteritems():
-            match = re.search('\W' + city + r'(\W|\Z)', metadataBlock)
+        for city, cityDetails in cities.iteritems():                            
+            match = re.search('\W(' + re.escape(city) + r')(\W|\Z)', searchedText)
             if match:                
                 if 'province' in cityDetails:
                     for provinceAbbr in cityDetails['province']:
                         provinceFull = provinces[provinceAbbr]
                         pattern = city + "[,\s]*" + provinceFull + "|" + city + "[,\s]*" + provinceAbbr + "|" \
                                 + city + "[,\s]*Canada"
-                        match = re.search(pattern, metadataBlock, re.IGNORECASE)
+                        match = re.search(pattern, searchedText, re.IGNORECASE)
                         if match:
-                            if asIs:
-                                self.locationAsIs = match.group(0)
-                                return self.locationAsIs
-                            else:
-                                self.location = city + ', ' + provinceFull + ', Canada'
-                                return self.location
+                            index = searchedText.find(match.group(0))
+                            if index < candidate['index']:
+                                candidate['index'] = index
+                                if asIs:
+                                    candidate['city'] = match.group(0)                                
+                                else:                                
+                                    candidate['city'] = city + ', ' + provinceFull + ', Canada'
                         # If the city isn't qualified, but the city only has one state or country associated
                         # with it, assume that city
                         elif len(cityDetails) == 1 and len(cityDetails['province']) == 1:
-                            if asIs:
-                                self.locationAsIs = city
-                                return self.locationAsIs
+                            index = searchedText.find(city)
+                            if asIs:                                
+                                if index < candidate['index']:
+                                    candidate['city'] = city
                             else:
-                                self.location = city + ', ' + provinceFull + ', Canada'
-                                return self.location
-                if 'state' in cityDetails:
+                                if index < candidate['index']:
+                                    candidate['city'] = city + ', ' + provinceFull + ', Canada'
+                            candidate['index'] = index                                
+                if 'state' in cityDetails:                    
                     for stateAbbr in cityDetails['state']:
                         stateFull = states[stateAbbr]
                         pattern = city + "[,\s]*" + stateFull + "|" + city + "[,\s]*" + stateAbbr
-                        match = re.search(pattern, metadataBlock, re.IGNORECASE)
+                        match = re.search(pattern, searchedText, re.IGNORECASE)
                         if match:
-                            if asIs:
-                                self.locationAsIs = match.group(0)
-                                return self.locationAsIs
-                            else:
-                                self.location = city + ', ' + stateAbbr
-                                return self.location
+                            index = searchedText.find(match.group(0))
+                            if index < candidate['index']:
+                                candidate['index'] = index                            
+                                if asIs:
+                                    candidate['city'] = match.group(0)
+                                else:
+                                    candidate['city'] = city + ', ' + stateAbbr                            
                         # If the city isn't qualified, but the city only has one state or country associated
                         # with it, assume that city
                         elif len(cityDetails) == 1 and len(cityDetails['state']) == 1:
-                            if asIs:
-                                self.locationAsIs = city
-                                return self.locationAsIs
-                            else:
-                                self.location = city + ', ' + stateAbbr
-                                return self.location
-
+                            index = searchedText.find(city)                            
+                            if index < candidate['index']:
+                                candidate['index'] = index
+                                if asIs:
+                                    candidate['city'] = city
+                                else:
+                                    candidate['city'] = city + ', ' + stateAbbr
                 if 'country' in cityDetails:
                     for countryCode in cityDetails['country']:                                                
                         countryFull = countries[countryCode]
                         pattern = city + "[,\s]*" + countryFull + "|" + city + "[,\s]*" + countryCode
-                        match = re.search(pattern, metadataBlock, re.IGNORECASE)
+                        match = re.search(pattern, searchedText, re.IGNORECASE)
                         if match:
-                            if asIs:
-                                self.locationAsIs = match.group(0)
-                                return self.locationAsIs
-                            else:
-                                self.location = city + ', ' + countryFull
-                                return self.location
+                            index = searchedText.find(match.group(0))
+                            if index < candidate['index']:
+                                candidate['index'] = index
+                                if asIs:
+                                    candidate['city'] = match.group(0)
+                                else:
+                                    candidate['city'] = city + ', ' + countryFull                            
                         elif len(cityDetails) == 1 and len(cityDetails['country']) == 1:
-                            if asIs:
-                                self.locationAsIs = city
-                                return self.locationAsIs
-                            else:
-                                self.location = city + ', ' + countryFull
-                                return self.location
+                            index = searchedText.find(city)
+                            if index < candidate['index']:
+                                candidate['index'] = index
+                                if asIs:
+                                    candidate['city'] = city
+                                else:
+                                    candidate['city'] = city + ', ' + countryFull                            
 
+        if candidate['city']:
+            self.location = candidate['city']
+            return self.location
                             
         # If no match found from cities in the common city list, just search for a line that looks
         # like a location line, i.e. contains a comma
-        matches = re.findall('^.+,.+$', metadataBlock, re.MULTILINE)
-        if not matches:
+        match = re.search('^.+,.+$', searchedText, re.MULTILINE)
+        if not match:
             self.location = ''
             return self.location
-        lineTxt = ''        
-        for match in matches:
-            # Don't mistake the date as the location            
-            if self._findDate() not in match:
-                lineTxt = match
-                break
-        
-        labelMatch = re.match('Location:(.*)', lineTxt, re.IGNORECASE)
-        if labelMatch:
-            lineTxt = labelMatch.group(1)        
+        else:
+            lineTxt = match.group(0)
+
         cityStateMatch = re.search('([a-z ]+, [a-z]{2})(\s|,|$)', lineTxt, re.IGNORECASE)        
         if cityStateMatch:
             self.location = cityStateMatch.group(1).strip()
@@ -467,20 +406,23 @@ class TxtParser(object):
         """        
         if hasattr(self, 'venue'): return self.venue
 
+        match = re.search('^\s*Venue: (?:The )?(.*)\s*$', self.txt, re.MULTILINE)
+        if match:
+            self.venue = match.group(1).strip();
+            return self.venue
+
         # Venue is usually directly after or before the location line
         locationTxt = self._findLocation(True)
-        
+
         if not locationTxt:
             return ''
 
-        metadataBlock = self._findMetadataBlock()        
-        if self._findArtist() != metadataBlock:
-            metadataBlock = metadataBlock.replace(self._findArtist(), '')
-        metadataBlock = metadataBlock.replace(self._findDate(), '')
+        searchedText = self.txt.replace(self._findArtist(), '') \
+                               .replace(self._findDate(), '')
         
         matches = re.search(            
-            '(?:([^,\-\n|]*)\s*[,\-\n]\s*)?' + locationTxt + '(?:(?: \(USA\))?\s*[,\-\n]\s*([^,\-\n|]*))?',
-            metadataBlock,
+            '(?:(?: - )?([^,\n|]*)\s*[,\-\n]\s*)?' + locationTxt + '(?:(?: \(USA\))?\s*[,\-\n]\s*(?: - )?([^\n|]*))?',
+            searchedText,
             re.IGNORECASE | re.MULTILINE
         )
         
@@ -495,23 +437,24 @@ class TxtParser(object):
             possibilities.append(matches.group(1).strip(strippedChars) if matches.group(1) else '')
             possibilities.append(matches.group(2).strip(strippedChars) if matches.group(2) else '')            
             candidates = []
+
+            excludePatterns = [
+                '\W?USA\W?',
+                '\W?Canada\W?',
+                '\d{2}:\d{2}',  # Probably the running time
+                '^\(.*\)$',     # If it's in parentheses, it's probably not the venue
+                '.{50,}',       # A venue name that long wouldn't even fit on the sign
+                '^$'
+            ]
+
             for index, possibility in enumerate(possibilities):
-                if not possibility: # May be blank after stripped out insignificant characters
-                    continue
-                if countryOrStateMatch and (countryOrState in possibility):
-                    continue
-                if re.search('\W?USA\W?', possibility):
-                    continue
-                if re.search('\W?Canada\W?', possibility):
-                    continue
-                if re.search('\d{2}:\d{2}', possibility): # Probably the play length
-                    continue
-                if re.search('^\(.*\)$', possibility): # If it's in parentheses, it's probably not the venue
-                    continue
-                if index == 0 and len(possibility) > 50: # A venue name that long wouldn't even fit on the sign
-                    continue
-                else:
-                    candidates.append(possibility)            
+                isCandidate = True
+                for excludePattern in excludePatterns:
+                    if re.search(excludePattern, possibility, re.IGNORECASE):
+                        isCandidate = False
+                        break
+                if isCandidate:
+                    candidates.append(possibility)
 
             if len(candidates) == 1:
                 choice = candidates[0]
@@ -556,8 +499,7 @@ class TxtParser(object):
                     "location", "comments", and "tracks".  All but "tracks" and "date"
                     are strings.  "tracks" is a list of unicode strings and "date" is a
                     datetime.date object.
-        """
-        metadataBlock = self._findMetadataBlock()
+        """        
         dateTxt = self._findDate()
         if dateTxt:            
             try:

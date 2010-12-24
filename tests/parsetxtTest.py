@@ -36,45 +36,17 @@ Transfer By: Baz Bar
 Mastering By: Bar Foo
 
 Set 1
-d1t01 - One
-d1t02 - Two
-d1t03 - Three
+d1t01 - Barcelona
+d1t02 - Lisbon
+d1t03 - London
 
 Set 2
-d2t01 - Four
-d2t02 - Five
-d2t03 - Six
+d2t01 - Austin
+d2t02 - Dallas
+d2t03 - El Paso
 """
 
 class ParsetxtTestCase(unittest.TestCase):
-
-    def testFindMetadataBlockTriesToGetTheBlockOfBasicInfoWhichMayNotBeAtTheStartOfTheTxt(self):
-        expected = "The Foo Bars\n1980-12-01\nTopeka, KS\nThe Venue\n"
-
-        block = TxtParser(sampleTxt)._findMetadataBlock()
-        self.assertEquals(expected, block)
-
-        # A block of text may come first
-        line = "This is my long review of the show.  Man, what a great show.  Recording sounds great!\n"
-        txt = line * 5 + "\n\n" + sampleTxt
-        block = TxtParser(txt)._findMetadataBlock()
-        self.assertEquals(expected, block)
-
-        # If \r used instead of \n, block still detected
-        txt = txt.replace('\n', '\r')
-        block = TxtParser(txt)._findMetadataBlock()
-        self.assertEquals(expected, block)
-
-        # If there is no discernible block, the entire string will be returned unchanged
-        # Don't return the tracklist
-        txt = sampleTxt.replace(expected, '')
-        block = TxtParser(txt)._findMetadataBlock()
-        self.assertEquals(txt, block)
-
-        # Support for MOTB releases
-        block = TxtParser(motbText)._findMetadataBlock()
-        expected = 'The Foo Bars\n1980-12-01 (Monday)\nThe Venue\nNew York, NY'
-        self.assertEquals(expected, block)
 
     def testFindArtistTriesToGetTheArtist(self):
         artist = TxtParser(sampleTxt)._findArtist()
@@ -119,6 +91,9 @@ class ParsetxtTestCase(unittest.TestCase):
         artist = TxtParser('The Foo Bars | Venue, New York, NY | 23.11.2010')._findArtist()
         self.assertEquals('The Foo Bars', artist)
 
+        artist = TxtParser(motbText)._findArtist()
+        self.assertEquals('The Foo Bars', artist)
+
     def testFindDateReturnsStringForFirstThingThatLooksLikeADate(self):
         date = TxtParser(sampleTxt)._findDate()
         self.assertEquals("1980-12-01", date)
@@ -143,6 +118,9 @@ class ParsetxtTestCase(unittest.TestCase):
 
         date = TxtParser('The Foo Bars | Venue, New York, NY | 23.11.2010')._findDate()
         self.assertEquals('23.11.2010', date)
+
+        date = TxtParser(motbText)._findDate()
+        self.assertEquals('1980-12-01', date)
 
     def testConvertDateToDateObjectWorksForVariousPermutations(self):
         # If ambigious which number is day and which is month, assume first number is month
@@ -336,6 +314,15 @@ class ParsetxtTestCase(unittest.TestCase):
         location = TxtParser('Wilco\n2010-09-21\nCapitol\nOffenbach am Main, Germany')._findLocation()
         self.assertEquals('Offenbach, Germany', location)
 
+        # Go with the location that appears first, even if other city names in the file appear earlier in
+        # the common-cities.json file.
+        location = TxtParser(
+            'The Foo Bars\n1980-01-01\nTucson, AZ\nThe Venue\n\n01 New York\n02 London\n03 France'
+        )._findLocation()
+        self.assertEquals('Tucson, AZ', location)
+
+        location = TxtParser(motbText)._findLocation()
+        self.assertEquals('New York, NY', location)
 
     def testFindVenueTriesToGetVenue(self):
         venue = TxtParser(sampleTxt)._findVenue()
@@ -387,7 +374,13 @@ class ParsetxtTestCase(unittest.TestCase):
         venue = TxtParser('The Foo Bars\n1980-12-01\nTucson, Arizona, The Venue')._findVenue()
         self.assertEquals('Venue', venue)
 
-        venue = TxtParser('The Foo Bars\n1980-12-01\nTucson, The Venue')._findVenue()
+        venue = TxtParser('The Foo Bars\nThe Venue\n1980-12-01\nTucson')._findVenue()
+        self.assertEquals('Venue', venue)
+
+        venue = TxtParser('The Foo Bars\n1980-12-01\nTucson, AZ\nThe Merry-Go-Round')._findVenue()
+        self.assertEquals('Merry-Go-Round', venue)
+
+        venue = TxtParser(motbText)._findVenue()
         self.assertEquals('Venue', venue)
 
         venue = TxtParser('The Foo Bars\n1980-12-01\nThe Venue\nTucson\nArizona')._findVenue()
