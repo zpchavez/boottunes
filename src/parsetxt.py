@@ -51,7 +51,7 @@ class TxtParser(object):
         if hasattr(self, 'artist'): return self.artist
         
         # Artist listed after label
-        match = re.search('^\s*(?:Artist|Band)[\s:\-]+(.*)$', self.txt, re.MULTILINE)
+        match = re.search('^\s*(?:Artist|Band)\s?[:\-]+(.*)$', self.txt, re.MULTILINE)
         if match:
             self.artist = match.group(1).strip()
             return self.artist
@@ -436,8 +436,7 @@ class TxtParser(object):
             possibilities = []
             possibilities.append(matches.group(1).strip(strippedChars) if matches.group(1) else '')
             possibilities.append(matches.group(2).strip(strippedChars) if matches.group(2) else '')            
-            candidates = []
-
+            candidates = []            
             excludePatterns = [
                 '\W?USA\W?',
                 '\W?Canada\W?',
@@ -454,7 +453,7 @@ class TxtParser(object):
                         isCandidate = False
                         break
                 if isCandidate:
-                    candidates.append(possibility)
+                    candidates.append(possibility)            
 
             if len(candidates) == 1:
                 choice = candidates[0]
@@ -466,7 +465,7 @@ class TxtParser(object):
                 for candidate in candidates:
                     match = re.search(wordsCapitalizedPattern, candidate)
                     if match:
-                        matched = match.group(1)
+                        matched = match.group(0)
                         capCount += 1
                 if capCount == 2 or capCount == 0:
                     tenCharProximity1 = 10 - len(candidates[0])
