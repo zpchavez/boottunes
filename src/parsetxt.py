@@ -51,13 +51,13 @@ class TxtParser(object):
         if hasattr(self, 'artist'): return self.artist
         
         # Artist listed after label
-        match = re.search('^\s*(?:Artist|Band)\s?[:\-]+(.*)$', self.txt, re.MULTILINE)
+        match = re.search('^\s*(?:Artist|Band)\s?[:\-]+(.+)$', self.txt, re.MULTILINE)
         if match:
             self.artist = match.group(1).strip()
             return self.artist
 
         # Probably the short line
-        match = re.search('^\s*(.{1,50}?)(\n| - |\|)', self.txt, re.MULTILINE)
+        match = re.search('^\s*(.{1,50}?)(\n| - |\|)', self.txt, re.MULTILINE)        
         if match:            
             self.artist = match.group(1).strip()            
             return self.artist
