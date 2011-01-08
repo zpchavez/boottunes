@@ -122,15 +122,11 @@ class Settings:
 
         artist = artist.encode('utf_8')
 
-        defaultKeys = ['preferred_name', 'genre']
-
         if artist in self.artistNames:
             id = self.artistNames[artist]
             defaults = self.artistDefaults[id]
-            for defaultKey in defaultKeys:
-                if defaultKey not in defaults:
-                    defaults[defaultKey] = ''
-            return defaults
+            defaults['preferred_name'] = defaults['preferred_name']
+            return self.artistDefaults[id]
         return None
 
     def setArtistDefaults(self, name, defaults):

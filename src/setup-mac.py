@@ -16,7 +16,7 @@ os.system("rm -rf build")
 thisPath = os.path.dirname(os.path.realpath(__file__))
 
 NAME = 'BootTunes'
-VERSION = '0.1.8'
+VERSION = '0.1.7'
 APP = ['boottunes.pyw']
 DATA_FILES = ['data']
 OPTIONS = {

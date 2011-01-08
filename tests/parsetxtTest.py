@@ -19,34 +19,30 @@ Notes: B- Quality
 Don't encode in a lossy format, dude!
 """
 
-# Format used in MOTB releases
-motbText = \
-"""MOTB Release: 12345
-Release Date: 2010-01-01
-Band: The Foo Bars
-Date: 1980-12-01 (Monday)
-Venue: The Venue
-Location: New York, NY
-Analog Audience Sournce: X
-Medium Stock Brands: Y
-Analog Lineage: Z
-Analog Sound Preservation: XYZ
-Taped By: Foo Baz
-Transfer By: Baz Bar
-Mastering By: Bar Foo
-
-Set 1
-d1t01 - Barcelona
-d1t02 - Lisbon
-d1t03 - London
-
-Set 2
-d2t01 - Austin
-d2t02 - Dallas
-d2t03 - El Paso
-"""
-
 class ParsetxtTestCase(unittest.TestCase):
+
+    def testFindMetadataBlockTriesToGetTheBlockOfBasicInfoWhichMayNotBeAtTheStartOfTheTxt(self):        
+        expected = "The Foo Bars\n1980-12-01\nTopeka, KS\nThe Venue\n"
+
+        block = TxtParser(sampleTxt)._findMetadataBlock()
+        self.assertEquals(expected, block)
+
+        # A block of text may come first
+        line = "This is my long review of the show.  Man, what a great show.  Recording sounds great!\n"
+        txt = line * 5 + "\n\n" + sampleTxt
+        block = TxtParser(txt)._findMetadataBlock()
+        self.assertEquals(expected, block)
+
+        # If \r used instead of \n, block still detected
+        txt = txt.replace('\n', '\r')        
+        block = TxtParser(txt)._findMetadataBlock()
+        self.assertEquals(expected, block)
+
+        # If there is no discernible block, the entire string will be returned unchanged
+        # Don't return the tracklist
+        txt = sampleTxt.replace(expected, '')
+        block = TxtParser(txt)._findMetadataBlock()        
+        self.assertEquals(txt, block)        
 
     def testFindArtistTriesToGetTheArtist(self):
         artist = TxtParser(sampleTxt)._findArtist()
@@ -75,52 +71,25 @@ class ParsetxtTestCase(unittest.TestCase):
         artist = TxtParser("The Foo Bars\n\nThe Venue\n1980-12-01\nTopeka, KS\nRunning Time: 60:00")._findArtist()
         self.assertEquals('The Foo Bars', artist)
 
-        # Artist can begin with whitespace
-        artist = TxtParser("  The Foo Bars\n1980-12-01\nTopeka, KS")._findArtist()
-        self.assertEquals("The Foo Bars", artist)
-
-        artist = TxtParser("\tThe Foo Bars\n1980-12-01\nTopeka, KS")._findArtist()
-        self.assertEquals("The Foo Bars", artist)
-
-        artist = TxtParser("Chicago\n1985-12-01\nBoston, MA")._findArtist()
-        self.assertEquals("Chicago", artist)
-
-        artist = TxtParser('Architecture in Helsinki\n2003-03-03\nMelbourne\nVenue')._findArtist()
-        self.assertEquals('Architecture in Helsinki', artist)
-
-        artist = TxtParser('The Foo Bars | Venue, New York, NY | 23.11.2010')._findArtist()
-        self.assertEquals('The Foo Bars', artist)
-
-        artist = TxtParser(motbText)._findArtist()
-        self.assertEquals('The Foo Bars', artist)
 
     def testFindDateReturnsStringForFirstThingThatLooksLikeADate(self):
         date = TxtParser(sampleTxt)._findDate()
         self.assertEquals("1980-12-01", date)
 
-        date = TxtParser("The Foo Bars\n12/01/80")._findDate()
+        date = TxtParser("The Foo Bars\r12/01/80")._findDate()
         self.assertEquals('12/01/80', date)
 
-        date = TxtParser("The Foo Bars\n05 05 1988")._findDate()
+        date = TxtParser("The Foo Bars\r05 05 1988")._findDate()
         self.assertEquals('05 05 1988', date)
 
-        date = TxtParser("The Foo Bars\n85.12.25")._findDate()
+        date = TxtParser("The Foo Bars\r85.12.25")._findDate()
         self.assertEquals('85.12.25', date)
 
-        date = TxtParser("The Foo Bars\nJuly 22nd, 1982")._findDate()
+        date = TxtParser("The Foo Bars\rJuly 22nd, 1982")._findDate()
         self.assertEquals("July 22nd, 1982", date)
 
-        date = TxtParser("The Foo Bars\n14th August, 1991")._findDate()
+        date = TxtParser("The Foo Bars\r14th August, 1991")._findDate()
         self.assertEquals("14th August, 1991", date)
-
-        date = TxtParser('The Foo Bars\n5 Nov 90')._findDate()
-        self.assertEquals('5 Nov 90', date)
-
-        date = TxtParser('The Foo Bars | Venue, New York, NY | 23.11.2010')._findDate()
-        self.assertEquals('23.11.2010', date)
-
-        date = TxtParser(motbText)._findDate()
-        self.assertEquals('1980-12-01', date)
 
     def testConvertDateToDateObjectWorksForVariousPermutations(self):
         # If ambigious which number is day and which is month, assume first number is month
@@ -148,12 +117,6 @@ class ParsetxtTestCase(unittest.TestCase):
         # If unclear which is the year (i.e. a recording from 1930), assume year is first
         date = TxtParser._convertDateToDateObject('30-12-25').isoformat()
         self.assertEquals('1930-12-25', date)
-
-        date = TxtParser._convertDateToDateObject('5 Nov 90').isoformat()
-        self.assertEquals('1990-11-05', date)
-
-        date = TxtParser._convertDateToDateObject('5-10-2005').isoformat()
-        self.assertEquals('2005-05-10', date)
 
     def testConvertDateToDateObjectThrowsExceptionIfDateIsInvalid(self):
         self.assertRaises(ParseTxtError, TxtParser._convertDateToDateObject, '44th August, 1991')
@@ -217,20 +180,6 @@ class ParsetxtTestCase(unittest.TestCase):
         # Tracklists indented with spaces read correctly
         tracklist = TxtParser('    01. One\n    02. Two\n    03. Three')._findTracklist()
         self.assertEquals(['One', 'Two', 'Three'], tracklist)
-
-        # Format common for Grateful Dead shows
-        tracklist = TxtParser(
-            'Set1\nd1t01 - One >\nd1t02 - Two >\nd1t03 - Three\n\nSet2\nd2t01 - Four'
-          + '\nd2t02 - Five\nd2t03 - Six\n~encore~\nd2t04 - Seven'
-        )._findTracklist()
-        self.assertEquals(['One >', 'Two >', 'Three', 'Four', 'Five', 'Six', 'Seven'], tracklist)
-
-        # Another format common for Grateful Dead shows
-        tracklist = TxtParser(
-            'Set1\n101-d1t01 - One >\n102-d1t02 - Two >\n103-d1t03 - Three\n\nSet2\n201-d2t01 - Four'
-          + '\n202-d2t02 - Five\n203-d2t03 - Six\n~encore~\n204-d2t04 - Seven'
-        )._findTracklist()
-        self.assertEquals(['One >', 'Two >', 'Three', 'Four', 'Five', 'Six', 'Seven'], tracklist)
 
     def testFindLocationTriesToGetGeographicalLocationButNotVenue(self):
         """
@@ -298,32 +247,6 @@ class ParsetxtTestCase(unittest.TestCase):
         location = TxtParser('The Foo Bars\n1980-12-01\nThe New Parish\nOakland, CA')._findLocation()
         self.assertEquals('Oakland, CA', location)
 
-        # Handle confusing cases where the artist name is or contains a common city name
-        location = TxtParser("Chicago\n1985-12-01\nBoston, MA")._findLocation()
-        self.assertEquals("Boston, MA", location)
-
-        location = TxtParser("Boston\n1985-12-01\nChicago, IL\nVenue")._findLocation()
-        self.assertEquals("Chicago, IL", location)
-
-        location = TxtParser('Architecture in Helsinki\n2003-03-03\nMelbourne\nVenue')._findLocation()
-        self.assertEquals('Melbourne, Australia', location)
-
-        location = TxtParser('The Foo Bars | Venue, New York, NY | 23.11.2010')._findLocation()
-        self.assertEquals('New York, NY', location)
-
-        location = TxtParser('Wilco\n2010-09-21\nCapitol\nOffenbach am Main, Germany')._findLocation()
-        self.assertEquals('Offenbach, Germany', location)
-
-        # Go with the location that appears first, even if other city names in the file appear earlier in
-        # the common-cities.json file.
-        location = TxtParser(
-            'The Foo Bars\n1980-01-01\nTucson, AZ\nThe Venue\n\n01 New York\n02 London\n03 France'
-        )._findLocation()
-        self.assertEquals('Tucson, AZ', location)
-
-        location = TxtParser(motbText)._findLocation()
-        self.assertEquals('New York, NY', location)
-
     def testFindVenueTriesToGetVenue(self):
         venue = TxtParser(sampleTxt)._findVenue()
         self.assertEquals('Venue', venue)
@@ -341,9 +264,7 @@ class ParsetxtTestCase(unittest.TestCase):
         self.assertEquals('Venue', venue)
 
         # "Live at" removed
-        venue = TxtParser(
-            'The Foo Bars\n1980-12-01\nLive at The Venue\nTopeka, KS (USA)\nLength: 01:02:33'
-        )._findVenue()
+        venue = TxtParser('The Foo Bars\n1980-12-01\nLive at The Venue\nTopeka, KS (USA)\nLength: 01:02:33')._findVenue()
         self.assertEquals('Venue', venue)
 
         # With no discernible location to search near, cannot ascertain the venue either
@@ -374,13 +295,7 @@ class ParsetxtTestCase(unittest.TestCase):
         venue = TxtParser('The Foo Bars\n1980-12-01\nTucson, Arizona, The Venue')._findVenue()
         self.assertEquals('Venue', venue)
 
-        venue = TxtParser('The Foo Bars\nThe Venue\n1980-12-01\nTucson')._findVenue()
-        self.assertEquals('Venue', venue)
-
-        venue = TxtParser('The Foo Bars\n1980-12-01\nTucson, AZ\nThe Merry-Go-Round')._findVenue()
-        self.assertEquals('Merry-Go-Round', venue)
-
-        venue = TxtParser(motbText)._findVenue()
+        venue = TxtParser('The Foo Bars\n1980-12-01\nTucson, The Venue')._findVenue()
         self.assertEquals('Venue', venue)
 
         venue = TxtParser('The Foo Bars\n1980-12-01\nThe Venue\nTucson\nArizona')._findVenue()
@@ -392,16 +307,6 @@ class ParsetxtTestCase(unittest.TestCase):
         venue = TxtParser('The Foo Bars\nVenue\nAustin, TX\n 1990-09-09 (Sunday)')._findVenue()
         self.assertEquals('Venue', venue)
 
-        venue = TxtParser('The Foo Bars | Venue, New York, NY | 23.11.2010')._findVenue()
-        self.assertEquals('Venue', venue)
-
-        # Capitalized option picked over non capitalized
-        venue = TxtParser('The Foo Bars\n1990-09-09\nVenue\nAustin, TX\nlower cased')._findVenue()
-        self.assertEquals('Venue', venue)
-
-        # Otherwise, the one closest to 10 characters
-        venue = TxtParser('The Foo Bars\n1990-09-09\nVenue\nAustin, TX\nTaper: Chip Dipson')._findVenue()
-        self.assertEquals('Venue', venue)
 
     def testParseTxtReturnsDictionaryWithAllFoundMetadata(self):
         txtParser = TxtParser(sampleTxt)
@@ -414,6 +319,6 @@ class ParsetxtTestCase(unittest.TestCase):
         self.assertEquals('Venue', metadata['venue'])
         self.assertEquals(['First Song', 'Second Song', 'Third Song'], metadata['tracklist'])
         self.assertEquals(sampleTxt, metadata['comments'])
-
+        
 if __name__ == '__main__':
     unittest.main()
