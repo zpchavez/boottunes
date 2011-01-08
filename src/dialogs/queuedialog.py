@@ -44,6 +44,7 @@ class QueueDialog(QDialog, Ui_QueueDialog):
         """
         self.queueListWidget.setAcceptDrops(True)
         self.setAcceptDrops(True)
+        self.queueListWidget.setIconSize(QSize(32, 32))
 
         def dragEnterEvent(self, event):
             if event.mimeData().urls():
@@ -380,10 +381,17 @@ class QueueDialog(QDialog, Ui_QueueDialog):
         else:
             listItem = QListWidgetItem()
             self.queueListWidget.addItem(listItem)
-        icon = QIcon(QPixmap(metadata['cover']))
+        if metadata['cover'] == 'No Cover Art':
+            #blankPixmap = QPixmap(200, 200)
+            #blankPixmap.fill()
+            #icon = QIcon(blankPixmap)
+            noCoverArt = QPixmap(data.path + '/' + 'media' + '/' + 'no-cover.png')
+            icon = QIcon(noCoverArt)
+        else:
+            icon = QIcon(QPixmap(metadata['cover']))
         listItem.setIcon(icon)
         self.queueItemData[path] = {'item': listItem, 'metadata':metadata, 'valid':True}
-        listItem.setData(32, path)
+        listItem.setData(32, path)        
 
         # If title is set, use that, otherwise follow the albumTitleFormat in settings
         if 'title' in metadata and metadata['title'] != '':

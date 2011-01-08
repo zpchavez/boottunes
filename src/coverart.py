@@ -79,7 +79,7 @@ class CoverArtRetriever():
         if getSettings()['defaultArt'] in ['Visicon', 'Image File => Visicon']:
             optionsList.insert(0, optionsList.pop(1))
             pixMapList.insert(0, pixMapList.pop(1))
-        elif getSettings()['defaultArt'] == 'No Cover Art':
+        elif getSettings()['defaultArt'] in ['No Cover Art', 'Image File => No Cover Art']:
             optionsList.insert(0, optionsList.pop(2))
             pixMapList.insert(0, pixMapList.pop(2))
 

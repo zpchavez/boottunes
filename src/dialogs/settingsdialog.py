@@ -39,16 +39,19 @@ class SettingsDialog(QDialog, Ui_SettingsDialog):
 
         self.albumTitleFormatLineEdit.setText(getSettings()['albumTitleFormat'])
 
-        if getSettings()['defaultArt'] == 'Image File => Identicon':
-            self.defaultArtRadioButtonImageFileIdenticon.setChecked(True)
-        elif getSettings()['defaultArt'] == 'Image File => Visicon':
-            self.defaultArtRadioButtonImageFileVisicon.setChecked(True)
-        elif getSettings()['defaultArt'] == 'Visicon':
-            self.defaultArtRadioButtonVisicon.setChecked(True)
-        elif getSettings()['defaultArt'] == 'No Cover Art':
-            self.defaultArtRadioButtonNoCoverArt.setChecked(True)            
-        else:
-            self.defaultArtRadioButtonIdenticon.setChecked(True)
+        self.defaultArtRadioButtons = {
+            'Identicon'                 : self.defaultArtRadioButtonIdenticon,
+            'Visicon'                   : self.defaultArtRadioButtonVisicon,
+            'No Cover Art'              : self.defaultArtRadioButtonNoCoverArt,
+            'Image File => Identicon'   : self.defaultArtRadioButtonImageFileIdenticon,
+            'Image File => Visicon'     : self.defaultArtRadioButtonImageFileVisicon,
+            'Image File => No Cover Art': self.defaultArtRadioButtonImageFileNoCoverArt
+        }
+
+        for value, button in self.defaultArtRadioButtons.iteritems():
+            if getSettings()['defaultArt'] == value:
+                button.setChecked(True)
+                break
 
         if getSettings()['checkForUpdates']:
             self.checkForUpdatesCheckBox.setChecked(True)
@@ -67,16 +70,10 @@ class SettingsDialog(QDialog, Ui_SettingsDialog):
     def accept(self):
         getSettings()['albumTitleFormat'] = unicode(self.albumTitleFormatLineEdit.text())
         getSettings()['dateFormat'] = unicode(self.dateOptionsFormat[self.dateFormatComboBox.currentIndex()])
-        if self.defaultArtRadioButtonImageFileIdenticon.isChecked():
-            getSettings()['defaultArt'] = u'Image File => Identicon'
-        elif self.defaultArtRadioButtonImageFileVisicon.isChecked():
-            getSettings()['defaultArt'] = u'Image File => Visicon'
-        elif self.defaultArtRadioButtonVisicon.isChecked():
-            getSettings()['defaultArt'] = u'Visicon'
-        elif self.defaultArtRadioButtonNoCoverArt.isChecked():
-            getSettings()['defaultArt'] = u'No Cover Art'
-        else:
-            getSettings()['defaultArt'] = u'Identicon'
+
+        for value, button in self.defaultArtRadioButtons.iteritems():
+            if button.isChecked():
+                getSettings()['defaultArt'] = value
 
         getSettings()['checkForUpdates'] = self.checkForUpdatesCheckBox.isChecked()
 

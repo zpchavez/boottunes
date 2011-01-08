@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'settings.ui'
 #
-# Created: Fri Jan  7 22:19:55 2011
+# Created: Sat Jan  8 11:40:05 2011
 #      by: PyQt4 UI code generator 4.7.6
 #
 # WARNING! All changes made in this file will be lost!
@@ -18,7 +18,7 @@ class Ui_SettingsDialog(object):
     def setupUi(self, SettingsDialog):
         SettingsDialog.setObjectName(_fromUtf8("SettingsDialog"))
         SettingsDialog.setWindowModality(QtCore.Qt.WindowModal)
-        SettingsDialog.resize(432, 337)
+        SettingsDialog.resize(432, 356)
         sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Preferred, QtGui.QSizePolicy.Preferred)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -84,15 +84,18 @@ class Ui_SettingsDialog(object):
         self.defaultArtRadioButtonVisicon = QtGui.QRadioButton(SettingsDialog)
         self.defaultArtRadioButtonVisicon.setObjectName(_fromUtf8("defaultArtRadioButtonVisicon"))
         self.verticalLayout.addWidget(self.defaultArtRadioButtonVisicon)
+        self.defaultArtRadioButtonNoCoverArt = QtGui.QRadioButton(SettingsDialog)
+        self.defaultArtRadioButtonNoCoverArt.setObjectName(_fromUtf8("defaultArtRadioButtonNoCoverArt"))
+        self.verticalLayout.addWidget(self.defaultArtRadioButtonNoCoverArt)
         self.defaultArtRadioButtonImageFileIdenticon = QtGui.QRadioButton(SettingsDialog)
         self.defaultArtRadioButtonImageFileIdenticon.setObjectName(_fromUtf8("defaultArtRadioButtonImageFileIdenticon"))
         self.verticalLayout.addWidget(self.defaultArtRadioButtonImageFileIdenticon)
         self.defaultArtRadioButtonImageFileVisicon = QtGui.QRadioButton(SettingsDialog)
         self.defaultArtRadioButtonImageFileVisicon.setObjectName(_fromUtf8("defaultArtRadioButtonImageFileVisicon"))
         self.verticalLayout.addWidget(self.defaultArtRadioButtonImageFileVisicon)
-        self.defaultArtRadioButtonNoCoverArt = QtGui.QRadioButton(SettingsDialog)
-        self.defaultArtRadioButtonNoCoverArt.setObjectName(_fromUtf8("defaultArtRadioButtonNoCoverArt"))
-        self.verticalLayout.addWidget(self.defaultArtRadioButtonNoCoverArt)
+        self.defaultArtRadioButtonImageFileNoCoverArt = QtGui.QRadioButton(SettingsDialog)
+        self.defaultArtRadioButtonImageFileNoCoverArt.setObjectName(_fromUtf8("defaultArtRadioButtonImageFileNoCoverArt"))
+        self.verticalLayout.addWidget(self.defaultArtRadioButtonImageFileNoCoverArt)
         self.gridLayout.addLayout(self.verticalLayout, 4, 1, 1, 2)
         self.horizontalLayout_3 = QtGui.QHBoxLayout()
         self.horizontalLayout_3.setObjectName(_fromUtf8("horizontalLayout_3"))
@@ -138,9 +141,10 @@ class Ui_SettingsDialog(object):
         self.defaultArtRadioButtonIdenticon.setText(QtGui.QApplication.translate("SettingsDialog", "Identicon", None, QtGui.QApplication.UnicodeUTF8))
         self.defaultArtRadioButtonVisicon.setToolTip(QtGui.QApplication.translate("SettingsDialog", "A unique design based on the recording\'s text file.  Two-colored.", None, QtGui.QApplication.UnicodeUTF8))
         self.defaultArtRadioButtonVisicon.setText(QtGui.QApplication.translate("SettingsDialog", "Visicon", None, QtGui.QApplication.UnicodeUTF8))
+        self.defaultArtRadioButtonNoCoverArt.setText(QtGui.QApplication.translate("SettingsDialog", "No Cover Art", None, QtGui.QApplication.UnicodeUTF8))
         self.defaultArtRadioButtonImageFileIdenticon.setText(QtGui.QApplication.translate("SettingsDialog", "Image File (fallback to Identicon)", None, QtGui.QApplication.UnicodeUTF8))
         self.defaultArtRadioButtonImageFileVisicon.setText(QtGui.QApplication.translate("SettingsDialog", "Image File (fallback to Visicon)", None, QtGui.QApplication.UnicodeUTF8))
-        self.defaultArtRadioButtonNoCoverArt.setText(QtGui.QApplication.translate("SettingsDialog", "No Cover Art", None, QtGui.QApplication.UnicodeUTF8))
+        self.defaultArtRadioButtonImageFileNoCoverArt.setText(QtGui.QApplication.translate("SettingsDialog", "Image File (fallback to No Cover Art)", None, QtGui.QApplication.UnicodeUTF8))
         self.checkForUpdatesCheckBox.setText(QtGui.QApplication.translate("SettingsDialog", "Check For Updates On Startup", None, QtGui.QApplication.UnicodeUTF8))
         self.pushButton.setText(QtGui.QApplication.translate("SettingsDialog", "Restore Defaults", None, QtGui.QApplication.UnicodeUTF8))
 
