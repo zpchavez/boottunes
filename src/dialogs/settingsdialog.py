@@ -11,12 +11,26 @@ from ui.ui_settings import Ui_SettingsDialog
 
 class SettingsDialog(QDialog, Ui_SettingsDialog):
 
-    dateOptions = {datetime.date.today().strftime('%Y-%m-%d (YYYY-MM-DD)') : '%Y-%m-%d',
-                   datetime.date.today().strftime('%Y-%d-%m (YYYY-DD-MM)') : '%Y-%d-%m',
-                   datetime.date.today().strftime('%B %d, %Y'): '%B %d, %Y',
-                   datetime.date.today().strftime('%d %B, %Y'): '%d %B, %Y'}
-    """Map the ComboBox text values to the actual values saved"""
+    dateOptionsDisplay = [
+        datetime.date.today().strftime('%Y-%m-%d (YYYY-MM-DD)'),
+        datetime.date.today().strftime('%Y-%d-%m (YYYY-DD-MM)'),
+        datetime.date.today().strftime('%y-%m-%d (YY-MM-DD)'),
+        datetime.date.today().strftime('%y-%d-%m (YY-DD-MM)'),
+        datetime.date.today().strftime('%B %d, %Y'),
+        datetime.date.today().strftime('%d %B, %Y')
+    ]
+    """The displayed ComboBox values"""
 
+    dateOptionsFormat = [
+        '%Y-%m-%d',
+        '%Y-%d-%m',
+        '%y-%m-%d',
+        '%y-%d-%m',
+        '%B %d, %Y',
+        '%d %B, %Y'
+    ]
+    """The actual values saved in settings"""
+        
     def __init__(self, parent=None):
         super(SettingsDialog, self).__init__(parent)
         self.setupUi(self)
@@ -40,8 +54,8 @@ class SettingsDialog(QDialog, Ui_SettingsDialog):
         self.addToITunesPathTextEdit.setText(getSettings()['addToITunesPath'])
 
         # Set the ComboBox values
-        for k, v in self.dateOptions.iteritems():
-            self.dateFormatComboBox.addItem(k, v)
+        for index, display in enumerate(self.dateOptionsDisplay):
+            self.dateFormatComboBox.addItem(display, self.dateOptionsFormat[index])
 
         # Select the value saved in settings
         self.dateFormatComboBox.setCurrentIndex(
@@ -50,7 +64,7 @@ class SettingsDialog(QDialog, Ui_SettingsDialog):
 
     def accept(self):
         getSettings()['albumTitleFormat'] = unicode(self.albumTitleFormatLineEdit.text())
-        getSettings()['dateFormat'] = unicode(self.dateOptions[str(self.dateFormatComboBox.currentText())])
+        getSettings()['dateFormat'] = unicode(self.dateOptionsFormat[self.dateFormatComboBox.currentIndex()])
         if self.defaultArtRadioButtonImageFileIdenticon.isChecked():
             getSettings()['defaultArt'] = u'Image File => Identicon'
         elif self.defaultArtRadioButtonImageFileVisicon.isChecked():
