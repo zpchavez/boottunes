@@ -45,6 +45,8 @@ class SettingsDialog(QDialog, Ui_SettingsDialog):
             self.defaultArtRadioButtonImageFileVisicon.setChecked(True)
         elif getSettings()['defaultArt'] == 'Visicon':
             self.defaultArtRadioButtonVisicon.setChecked(True)
+        elif getSettings()['defaultArt'] == 'No Cover Art':
+            self.defaultArtRadioButtonNoCoverArt.setChecked(True)            
         else:
             self.defaultArtRadioButtonIdenticon.setChecked(True)
 
@@ -71,6 +73,8 @@ class SettingsDialog(QDialog, Ui_SettingsDialog):
             getSettings()['defaultArt'] = u'Image File => Visicon'
         elif self.defaultArtRadioButtonVisicon.isChecked():
             getSettings()['defaultArt'] = u'Visicon'
+        elif self.defaultArtRadioButtonNoCoverArt.isChecked():
+            getSettings()['defaultArt'] = u'No Cover Art'
         else:
             getSettings()['defaultArt'] = u'Identicon'
 

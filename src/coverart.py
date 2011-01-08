@@ -50,7 +50,7 @@ class CoverArtRetriever():
         )
         identiconPath = unicode(tempDirPath + '/' + 'identicon.png')
         identiconImage.save(identiconPath, 'PNG')
-
+        
         visiconImage = visicon.Visicon(hash, 'seed', size=384)
         visiconPath = unicode(tempDirPath + '/' + 'visicon.png')
         visiconImage.draw_image().save(visiconPath, 'PNG')
@@ -63,17 +63,25 @@ class CoverArtRetriever():
             for imageFile in list(subDirQDir.entryList()):
                 imageFiles.append(subDir + '/' + imageFile)
 
-        pathList = [
+        optionsList = [
             unicode(tempDirPath + '/' + 'identicon.png'),
-            unicode(tempDirPath + '/' + 'visicon.png')
+            unicode(tempDirPath + '/' + 'visicon.png'),
+            u'No Cover Art'
         ]
+
         pixMapList = [
-            QPixmap(pathList[0]),
-            QPixmap(pathList[1])
+            QPixmap(optionsList[0]),
+            QPixmap(optionsList[1]),
+            None
         ]
+
+        # Reverse order if Visicon is the preferred
         if getSettings()['defaultArt'] in ['Visicon', 'Image File => Visicon']:
-            pixMapList.reverse()
-            pathList.reverse()
+            optionsList.insert(0, optionsList.pop(1))
+            pixMapList.insert(0, pixMapList.pop(1))
+        elif getSettings()['defaultArt'] == 'No Cover Art':
+            optionsList.insert(0, optionsList.pop(2))
+            pixMapList.insert(0, pixMapList.pop(2))
 
         if 'Image File' in getSettings()['defaultArt']:
             for file in imageFiles:
@@ -81,13 +89,13 @@ class CoverArtRetriever():
                     pixMapList.insert(0, QPixmap(
                         unicode(dir.absolutePath() + '/' + file)
                     ))
-                    pathList.insert(0, unicode(dir.absolutePath() + '/' + file))
+                    optionsList.insert(0, unicode(dir.absolutePath() + '/' + file))
         else:
             for file in imageFiles:
                 if file not in ['identicon.png','visicon.png']:
                     pixMapList.append(QPixmap(
                         unicode(dir.absolutePath() + '/' + file)
                     ))
-                    pathList.append(unicode(dir.absolutePath() + '/' + file))
+                    optionsList.append(unicode(dir.absolutePath() + '/' + file))
 
-        return tuple([(pathList[i], pixMapList[i]) for i in range(len(pathList))])
+        return tuple([(optionsList[i], pixMapList[i]) for i in range(len(optionsList))])

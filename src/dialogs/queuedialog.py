@@ -672,9 +672,12 @@ class ConvertFilesThread(QThread):
             metadata = currentRecording['metadata']
 
             if 'imageData' not in currentRecording:
-                imageFile = open(metadata['cover'], 'rb')
-                currentRecording['imageData'] = imageFile.read()
-                imageFile.close()
+                if metadata['cover'] == 'No Cover Art':
+                    currentRecording['imageData'] = None
+                else:
+                    imageFile = open(metadata['cover'], 'rb')
+                    currentRecording['imageData'] = imageFile.read()
+                    imageFile.close()
 
             tempDirPath = metadata['tempDir'].absolutePath()
 
@@ -773,7 +776,8 @@ class ConvertFilesThread(QThread):
         alacFile.set_metadata(metadata)
         # Separately attempt to set the cover art, since a MemoryError may occur in large files
         try:
-            metadata.add_image(audiotools.Image.new(imageData, 'cover', 0))
+            if imageData is not None:
+                metadata.add_image(audiotools.Image.new(imageData, 'cover', 0))
             alacFile.set_metadata(metadata)
         except MemoryError:
             pass

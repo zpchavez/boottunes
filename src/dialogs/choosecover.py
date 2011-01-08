@@ -30,9 +30,12 @@ class ChooseCoverDialog(QDialog, Ui_ChooseCoverDialog):
         Slot for currentIndexChanges(int) on self.chooseCoverComboBox
         """        
         image = self.coverImageChoices[index][1]
-        image = image.scaledToWidth(384)
-        image = image.scaledToHeight(384)
-        self.imageLabel.setPixmap(image)
+        if not image:
+            self.imageLabel.setPixmap(QPixmap())
+        else:
+            image = image.scaledToWidth(384)
+            image = image.scaledToHeight(384)
+            self.imageLabel.setPixmap(image)
 
     def accept(self):
         index = self.chooseCoverComboBox.currentIndex()
