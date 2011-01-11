@@ -241,8 +241,7 @@ class TxtParser(object):
         for trackLine in trackLines:
             # Don't count if the line contains an md5 hash            
             if re.search('[0-9a-f]{32}', trackLine, re.IGNORECASE):
-                continue            
-            #match = re.search('(?:(\d{3}-)?d\dt)?(\d{1,2}).*', trackLine)
+                continue                        
             match = re.search('(?:(?:\d{3}-)?d\dt)?(\d{1,2}).*', trackLine)
             actualTrackNum = int(match.group(1)) if match else None            
             # Allow for common mistakes of repeating track numbers and skipping track numbers

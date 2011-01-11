@@ -289,12 +289,17 @@ class QueueDialog(QDialog, Ui_QueueDialog):
                 if metadata['tracklist'] == None:
                     metadata['tracklist'] = ['' for x in filePaths]
 
-                if len(metadata['tracklist']) < len(filePaths):
-                    raise QueueDialogError("More audio files found than tracks in the tracklist")
+                # If one more file than tracks in tracklist, assume first track is "Intro"
+                if (len(metadata['tracklist']) == (len(filePaths) - 1)):
+                    metadata['tracklist'].insert(0, 'Intro')
+                # Otherwise, leave titles for remaining files blank
+                elif (len(filePaths) > len(metadata['tracklist'])):
+                    for i in range(0, len(filePaths) - len(metadata['tracklist'])):
+                        metadata['tracklist'].append(' ')
 
                 # If more tracks detected than files exist, assume the extra tracks are an error
                 del metadata['tracklist'][len(filePaths):]
-
+                
                 nonParsedMetadata = {}
 
                 nonParsedMetadata['audioFiles'] = filePaths
@@ -306,29 +311,32 @@ class QueueDialog(QDialog, Ui_QueueDialog):
                 nonParsedMetadata['tempDir'] = QDir(getSettings().settingsDir + '/' + nonParsedMetadata['hash'])
                 if not nonParsedMetadata['tempDir'].exists():
                     nonParsedMetadata['tempDir'].mkpath(nonParsedMetadata['tempDir'].absolutePath())
-
+                
                 try:
                     # Assume that an artist name found in the actual file metadata is more accurate
-                    audioFile = audiotools.open(filePaths[0])
+                    audioFile = audiotools.open(filePaths[0])                    
                     if isinstance(audioFile, audiotools.tracklint.BrokenFlacAudio):
                         if self.loadingMultipleShows:
                             raise QueueDialogError('Malformed FLAC files.  Load this show alone to fix.')
                         else:
                             metadata.update(nonParsedMetadata)
                             self.fixBadFlacFiles(metadata)
-                    else:
+                    else:                        
                         audioFileMetadata = audioFile.get_metadata()
-                        if audioFileMetadata and audioFileMetadata.artist_name:
+                        if audioFileMetadata and audioFileMetadata.artist_name:                            
                             txtParser = TxtParser(metadata['comments'])
                             txtParser.artist = audioFileMetadata.artist_name
+                            # Don't lose values added to tracklist since last parsing it
+                            tracklist = metadata['tracklist']
                             metadata = txtParser.parseTxt()
+                            metadata['tracklist'] = tracklist
                 except audiotools.UnsupportedFile as e:
                     raise QueueDialogError(os.path.basename(filePaths[0]) + " is an unsupported file: ")
-
-                nonParsedMetadata['cover'] = CoverArtRetriever.getCoverImageChoices(nonParsedMetadata)[0][0]
-
-                metadata.update(nonParsedMetadata)
                 
+                nonParsedMetadata['cover'] = CoverArtRetriever.getCoverImageChoices(nonParsedMetadata)[0][0]                
+
+                metadata.update(nonParsedMetadata)                
+
                 return metadata
 
             except IOError as e:
