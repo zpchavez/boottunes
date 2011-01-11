@@ -403,6 +403,13 @@ class ParsetxtTestCase(unittest.TestCase):
         venue = TxtParser('The Foo Bars\n1990-09-09\nVenue\nAustin, TX\nTaper: Chip Dipson')._findVenue()
         self.assertEquals('Venue', venue)
 
+        # If neither candidate is capitalized, pick the one closest to 10 characters
+        txt = "The Foo Bars\n23 March 2010\n" \
+            + "actual venue\nWashington DC\n" \
+            + "LINEAGE: iRiver h320 > USB > wavelab > DSP > FLAC"
+        venue = TxtParser(txt)._findVenue()
+        self.assertEquals('actual venue', venue)
+
     def testParseTxtReturnsDictionaryWithAllFoundMetadata(self):
         txtParser = TxtParser(sampleTxt)
         metadata = txtParser.parseTxt()

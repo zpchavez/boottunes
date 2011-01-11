@@ -449,7 +449,7 @@ class TxtParser(object):
                 '.{50,}',       # A venue name that long wouldn't even fit on the sign
                 '^$'
             ]
-
+            
             for index, possibility in enumerate(possibilities):
                 isCandidate = True
                 for excludePattern in excludePatterns:
@@ -458,7 +458,7 @@ class TxtParser(object):
                         break
                 if isCandidate:
                     candidates.append(possibility)            
-
+            
             if len(candidates) == 1:
                 choice = candidates[0]
             elif len(candidates) == 2:
@@ -468,12 +468,12 @@ class TxtParser(object):
                 capCount = 0
                 for candidate in candidates:
                     match = re.search(wordsCapitalizedPattern, candidate)
-                    if match:
+                    if match:                        
                         matched = match.group(0)
                         capCount += 1
                 if capCount == 2 or capCount == 0:
-                    tenCharProximity1 = 10 - len(candidates[0])
-                    tenCharProximity2 = 10 - len(candidates[1])
+                    tenCharProximity1 = abs(10 - len(candidates[0]))
+                    tenCharProximity2 = abs(10 - len(candidates[1]))
                     if tenCharProximity1 < tenCharProximity2:
                         choice = candidates[0]
                     else:
