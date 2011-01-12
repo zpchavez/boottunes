@@ -100,14 +100,12 @@ class QueueDialogTestCase(unittest.TestCase):
         self.assertEquals(['Track 1', 'Track 2', 'Track 3'], metadata['tracklist'])
         self.assertEquals(showPath, metadata['dir'].absolutePath())
         
-    def testIfThereAreMoreAudioFilesThanThereAreTracksInTheTextFileRaiseQueueDialogError(self):
+    def testIfThereAreMoreAudioFilesThanThereAreTracksInTheTextFileLaterTracksAreFilledWithASpace(self):
         showPath = self.showPath + '/' + 'show4'
-        self.assertRaises(QueueDialogError, self.queuedialog.getMetadataFromDir, showPath)
-        # Make sure the exception has the correct message
-        try:
-            self.queuedialog.getMetadataFromDir(showPath)
-        except QueueDialogError as e:
-            self.assertEquals(e[0], "More audio files found than tracks in the tracklist")
+        metadata = self.queuedialog.getMetadataFromDir(showPath)
+        self.assertEquals(3, len(metadata['tracklist']))
+        self.assertEquals(' ', metadata['tracklist'][2])
+        
 
     def testGetMetadataFromDirAndSubDirsGetsMetadataForAllValidShowsInSubDirectoriesWithinTheTargetDir(self):
         metadataTuple = self.queuedialog.getMetadataFromDirAndSubDirs(self.showPath)        

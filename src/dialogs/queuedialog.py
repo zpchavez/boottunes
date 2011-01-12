@@ -289,11 +289,8 @@ class QueueDialog(QDialog, Ui_QueueDialog):
                 if metadata['tracklist'] == None:
                     metadata['tracklist'] = ['' for x in filePaths]
 
-                # If one more file than tracks in tracklist, assume first track is "Intro"
-                if (len(metadata['tracklist']) == (len(filePaths) - 1)):
-                    metadata['tracklist'].insert(0, 'Intro')
                 # Otherwise, leave titles for remaining files blank
-                elif (len(filePaths) > len(metadata['tracklist'])):
+                if (len(filePaths) > len(metadata['tracklist'])):
                     for i in range(0, len(filePaths) - len(metadata['tracklist'])):
                         metadata['tracklist'].append(' ')
 
