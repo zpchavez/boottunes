@@ -7,6 +7,9 @@ http://www.gnu.org/licenses/gpl-2.0.html
 """
 import datetime
 import difflib
+import os
+import platform
+import re
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 from settings import getSettings
@@ -90,3 +93,30 @@ class ConfirmMetadataDialog(QDialog, Ui_ConfirmMetadataDialog):
         self.metadata['title'] = unicode(self.titleLineEdit.text())
         self.close()        
         ChooseCoverDialog(self.metadata, parent=self.parentWidget()).exec_()
+
+    def openSelected(self):
+        """
+        Open the selected track's file using the default application for that file type.
+        """
+        items = self.tracklistTableWidget.selectedItems()
+        for item in items:
+            cmd = 'open ' if platform.system() == 'Darwin' else 'start '
+            cmd += re.escape(self.metadata['audioFiles'][item.row()])
+            os.system(cmd)
+        pass
+
+    def refreshTracks(self):
+        """
+        Reload the tracklist from the current contents of the "comments" field.
+        """
+        import parsetxt
+        tracklist = parsetxt.TxtParser(unicode(self.commentsTextEdit.toPlainText()))._findTracklist()        
+        
+        for i in range(0, self.tracklistTableWidget.rowCount()):            
+            if i < len(tracklist):
+                self.tracklistTableWidget.setItem(i, 0, QTableWidgetItem(tracklist[i]))
+            else:
+                tracklist.append(' ')
+                self.tracklistTableWidget.setItem(i, 0, QTableWidgetItem(u' '))
+
+        self.metadata['tracklist'] = tracklist
