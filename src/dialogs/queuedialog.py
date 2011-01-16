@@ -268,10 +268,22 @@ class QueueDialog(QDialog, Ui_QueueDialog):
 
                 # Must contain valid audio files
                 qDir.setNameFilters(validExtensions)
-                filePaths = []
+
+                # If the single digits tracks are numbered like 1, 2, 3 instead of 01, 02, 03,
+                # make sure they are sorted correctly, so that track 10 does not follow track 1, etc.
+                sortedFiles = []
+                [sortedFiles.append('') for x in range(len(qDir.entryList()))]                
+                for index, file in enumerate(qDir.entryList()):
+                    match = re.search('^(\d{1,2})([^\d].*)?$', file, re.IGNORECASE)
+                    if not match:
+                        sortedFiles = list(qDir.entryList())
+                        break
+                    sortedFiles[int(match.group(1)) - 1] = unicode(file)
+
                 fileNameEncoding = 'utf_8' if systemName == 'Darwin' else encoding
-                for file in qDir.entryList():
-                    filePath = unicode(qDir.absolutePath() + '/' + file).encode(fileNameEncoding)
+                filePaths = []
+                for file in sortedFiles:
+                    filePath = unicode(qDir.absolutePath() + '/' + file).encode(fileNameEncoding)                    
                     filePaths.append(filePath)
                 # The show could be split up between folders, e.g. CD1 and CD2
                 if len(filePaths) == 0:
