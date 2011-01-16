@@ -10,6 +10,9 @@ import difflib
 import os
 import platform
 import re
+import audiotools
+import pyaudio.pyaudio as pyaudio
+import wave
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 from settings import getSettings
@@ -98,12 +101,22 @@ class ConfirmMetadataDialog(QDialog, Ui_ConfirmMetadataDialog):
         """
         Open the selected track's file using the default application for that file type.
         """
-        items = self.tracklistTableWidget.selectedItems()
-        for item in items:
-            cmd = 'open ' if platform.system() == 'Darwin' else 'start '
-            cmd += re.escape(self.metadata['audioFiles'][item.row()])
-            os.system(cmd)
-        pass
+        self.stopAudio()
+        
+        row = self.tracklistTableWidget.selectedItems()[0].row()        
+        audiofileObj = audiotools.open(self.metadata['audioFiles'][row])
+
+        self.pyaudioObj = pyaudio.PyAudio()
+
+        self.stream = self.pyaudioObj.open(
+            format = pyaudio.paInt16,
+            channels = audiofileObj.channels(),
+            rate = audiofileObj.sample_rate(),
+            output = True
+        )
+
+        self.playAudioThread = PlayAudioThread(self, audiofileObj, self.stream)
+        self.playAudioThread.start()
 
     def refreshTracks(self):
         """
@@ -120,3 +133,26 @@ class ConfirmMetadataDialog(QDialog, Ui_ConfirmMetadataDialog):
                 self.tracklistTableWidget.setItem(i, 0, QTableWidgetItem(u' '))
 
         self.metadata['tracklist'] = tracklist
+
+    def stopAudio(self):
+        """
+        Stop currently playing audio
+        """
+        if hasattr(self, 'playAudioThread'):            
+            self.playAudioThread.terminate()
+            self.stream.close()
+
+    def closeEvent(self, event):
+        self.stopAudio()
+        
+class PlayAudioThread(QThread):
+    def __init__(self, parent, audiofileObj, stream):
+        self.parent = parent
+        self.audiofileObj = audiofileObj
+        self.stream = stream
+        super(PlayAudioThread, self).__init__(parent)
+
+    def run(self):
+        self.audiofileObj.play_wave(self.stream)
+        self.stream.close()
+        p.terminate()

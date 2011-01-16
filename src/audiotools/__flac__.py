@@ -18,7 +18,7 @@
 #Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 
 
-from audiotools import AudioFile,MetaData,InvalidFile,PCMReader,construct,transfer_data,transfer_framelist_data,subprocess,BIN,BUFFER_SIZE,cStringIO,os,open_files,Image,sys,WaveAudio,ReplayGain,ignore_sigint,sheet_to_unicode,EncodingError,UnsupportedChannelMask,DecodingError,Messenger,BufferedPCMReader,calculate_replay_gain,ChannelMask
+from audiotools import AudioFile,MetaData,InvalidFile,PCMReader,construct,transfer_data,transfer_framelist_data,subprocess,BIN,BUFFER_SIZE,cStringIO,os,open_files,Image,sys,WaveAudio,ReplayGain,ignore_sigint,sheet_to_unicode,EncodingError,UnsupportedChannelMask,DecodingError,Messenger,BufferedPCMReader,calculate_replay_gain,ChannelMask,PCMConverter
 from __vorbiscomment__ import *
 from __id3__ import ID3v2Comment
 from __vorbis__ import OggStreamReader,OggStreamWriter
@@ -815,7 +815,7 @@ class FlacAudio(AudioFile):
         else:
             return None
 
-    def to_pcm(self):
+    def to_pcm(self):        
         from . import decoders
 
         return decoders.FlacDecoder(self.filename,
@@ -956,6 +956,16 @@ class FlacAudio(AudioFile):
                                        self.riff_wave_chunks())
         else:
             WaveAudio.from_pcm(wave_filename,self.to_pcm())
+
+
+    def play_wave(self, stream):
+        """
+        @param stream: A pyaudio.Stream object
+        """        
+        pcm = self.to_pcm()
+        if self.bits_per_sample() != 16:            
+            pcm = PCMConverter(pcm, self.sample_rate(), self.channels(), self.channel_mask(), 16)            
+        WaveAudio.from_pcm_to_stream(pcm, stream)
 
     @classmethod
     def from_wave(cls, filename, wave_filename, compression="8"):

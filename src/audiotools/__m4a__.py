@@ -1223,6 +1223,15 @@ class ALACAudio(M4AAudio):
     def to_wave(self, wave_filename):
         WaveAudio.from_pcm(wave_filename,self.to_pcm())
 
+    def play_wave(self, stream):
+        """
+        @param stream: A pyaudio.Stream object
+        """
+        pcm = self.to_pcm()
+        if self.bits_per_sample() != 16:
+            pcm = PCMConverter(pcm, self.sample_rate(), self.channels(), self.channel_mask(), 16)
+        WaveAudio.from_pcm_to_stream(pcm, stream)
+
     @classmethod
     def from_wave(cls, filename, wave_filename, compression=None):
         return cls.from_pcm(

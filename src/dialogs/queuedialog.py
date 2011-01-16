@@ -387,9 +387,6 @@ class QueueDialog(QDialog, Ui_QueueDialog):
             listItem = QListWidgetItem()
             self.queueListWidget.addItem(listItem)
         if metadata['cover'] == 'No Cover Art':
-            #blankPixmap = QPixmap(200, 200)
-            #blankPixmap.fill()
-            #icon = QIcon(blankPixmap)
             noCoverArt = QPixmap(data.path + '/' + 'media' + '/' + 'no-cover.png')
             icon = QIcon(noCoverArt)
         else:
