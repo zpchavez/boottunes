@@ -268,10 +268,6 @@ class TxtParser(object):
     
         # If the second group is empty, assume that what looked like the track time was actually the track title
         self.tracklist = [match[1].strip() if match[1] else match[0] for match in matches]
-        # Replace empty strings with a single space character, otherwise iTunes sets the file name as the title
-        for key, value in enumerate(self.tracklist):
-            if value == u'':                
-                self.tracklist[key] = u' '
         return self.tracklist
 
     def _findLocation(self, asIs = False):

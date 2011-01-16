@@ -707,7 +707,8 @@ class ConvertFilesThread(QThread):
             parent.currentTrackName = metadata['tracklist'][parent.currentTrack]
 
             alacMetadata = audiotools.MetaData(
-                track_name   = parent.currentTrackName,
+                # if track name is empty iTunes will use the filename, which we don't want, so replace with a space
+                track_name   = parent.currentTrackName if parent.currentTrackName != '' else ' ',
                 track_number = parent.currentTrack + 1,
                 track_total  = len(metadata['tracklist']),
                 album_name   = metadata['albumTitle'],
