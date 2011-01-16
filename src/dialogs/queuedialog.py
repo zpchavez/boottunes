@@ -292,7 +292,7 @@ class QueueDialog(QDialog, Ui_QueueDialog):
                 # Otherwise, leave titles for remaining files blank
                 if (len(filePaths) > len(metadata['tracklist'])):
                     for i in range(0, len(filePaths) - len(metadata['tracklist'])):
-                        metadata['tracklist'].append(' ')
+                        metadata['tracklist'].append('')
 
                 # If more tracks detected than files exist, assume the extra tracks are an error
                 del metadata['tracklist'][len(filePaths):]
@@ -416,9 +416,9 @@ class QueueDialog(QDialog, Ui_QueueDialog):
                     else:
                         albumTitle = albumTitle.replace('[' + placeHolder + ']', replacement)
 
-        if len(set(metadata['tracklist'])) == 1 and metadata['tracklist'][0] == '':
-            albumTitle += ' [empty tracklist]'
-            self.queueItemData[path]['valid'] = False
+        if '' in set(metadata['tracklist']):
+            albumTitle += ' [contains untitled tracks]'
+            listItem.setBackground(QBrush(QColor(255, 255, 0)))
 
         if not artistName:
             artistName = '[missing artist]'
@@ -428,8 +428,7 @@ class QueueDialog(QDialog, Ui_QueueDialog):
         if self.queueItemData[path]['valid'] == False:
             listItem.setBackground(QBrush(QColor(255, 0, 0)))
             listItem.setForeground(QBrush(QColor(255, 255, 255)))
-        else:
-            listItem.setBackground(QBrush(QColor(255, 255, 255)))
+        else:            
             listItem.setForeground(QBrush(QColor(0, 0, 0)))
         metadata['albumTitle'] = albumTitle
 
