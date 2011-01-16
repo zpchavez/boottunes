@@ -372,14 +372,7 @@ class WaveAudio(AudioFile):
             data_header = construct.Container()
             data_header.chunk_id = 'data'
             data_header.chunk_length = 0
-            
-            #write out the basic headers first
-            #we'll be back later to clean up the sizes
-            stream.write(WaveAudio.WAVE_HEADER.build(header))
-            stream.write(WaveAudio.CHUNK_HEADER.build(fmt_header))
-            stream.write(WaveAudio.FMT_CHUNK.build(fmt))
-            stream.write(WaveAudio.CHUNK_HEADER.build(data_header))
-            
+                        
             #dump pcmreader's FrameLists into the file as little-endian
             framelist = pcmreader.read(BUFFER_SIZE)
             
@@ -405,19 +398,6 @@ class WaveAudio(AudioFile):
             except DecodingError:
                 raise EncodingError()            
             
-            #go back to the beginning the re-write the header
-            stream.seek(0,0)
-            header.wave_size = 4 + \
-                WaveAudio.CHUNK_HEADER.sizeof() + \
-                fmt_header.chunk_length + \
-                WaveAudio.CHUNK_HEADER.sizeof() + \
-                data_header.chunk_length
-            
-            stream.write(WaveAudio.WAVE_HEADER.build(header))
-            stream.write(WaveAudio.CHUNK_HEADER.build(fmt_header))
-            stream.write(WaveAudio.FMT_CHUNK.build(fmt))
-            stream.write(WaveAudio.CHUNK_HEADER.build(data_header))
-
         finally:
             stream.close()
             

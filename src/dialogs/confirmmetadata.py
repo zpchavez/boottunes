@@ -7,12 +7,9 @@ http://www.gnu.org/licenses/gpl-2.0.html
 """
 import datetime
 import difflib
-import os
-import platform
-import re
 import audiotools
 import pyaudio.pyaudio as pyaudio
-import wave
+import data
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 from settings import getSettings
@@ -34,6 +31,7 @@ class ConfirmMetadataDialog(QDialog, Ui_ConfirmMetadataDialog):
         self.metadata = metadata
         self.setupUi(self)
         self.setWindowFlags(Qt.Window)
+        self.playing = False # The track currently playing (0-indexed)
 
         artistDefaults = getSettings().getArtistDefaults(metadata['artist'])
         if artistDefaults:            
@@ -54,7 +52,16 @@ class ConfirmMetadataDialog(QDialog, Ui_ConfirmMetadataDialog):
         self.tracklistTableWidget.setColumnCount(1)
         self.tracklistTableWidget.setColumnWidth(0, 2000)
         self.tracklistTableWidget.setHorizontalHeaderLabels(['']) # Don't label the column header
+        self.connect(
+            self.tracklistTableWidget.verticalHeader(), SIGNAL('sectionPressed(int)'), self.playOrStopSelected)
+
+        self.playButtonIcon = QIcon(QPixmap(data.path + '/' + 'media' + '/' + 'play.png'))
+        self.stopButtonIcon = QIcon(QPixmap(data.path + '/' + 'media' + '/' + 'stop.png'))
+
         for track, title in enumerate(metadata['tracklist']):
+            item = QTableWidgetItem(str(track + 1))
+            item.setIcon(self.playButtonIcon)
+            self.tracklistTableWidget.setVerticalHeaderItem(track, item)
             self.tracklistTableWidget.setItem(track, 0, QTableWidgetItem(title))
         self.commentsTextEdit.setText(metadata['comments'])
 
@@ -97,14 +104,19 @@ class ConfirmMetadataDialog(QDialog, Ui_ConfirmMetadataDialog):
         self.close()        
         ChooseCoverDialog(self.metadata, parent=self.parentWidget()).exec_()
 
-    def openSelected(self):
+    def playOrStopSelected(self, rowClicked):
         """
-        Open the selected track's file using the default application for that file type.
+        Play the selected track's file using the default application for that file type.
         """
-        self.stopAudio()
+        rowStopped = self.stopAudio()        
+        if rowStopped is rowClicked:
+            return
         
-        row = self.tracklistTableWidget.selectedItems()[0].row()        
-        audiofileObj = audiotools.open(self.metadata['audioFiles'][row])
+        item = QTableWidgetItem(str(rowClicked + 1))
+        item.setIcon(self.stopButtonIcon)
+        self.tracklistTableWidget.setVerticalHeaderItem(rowClicked, item)
+
+        audiofileObj = audiotools.open(self.metadata['audioFiles'][rowClicked])
 
         self.pyaudioObj = pyaudio.PyAudio()
 
@@ -115,7 +127,9 @@ class ConfirmMetadataDialog(QDialog, Ui_ConfirmMetadataDialog):
             output = True
         )
 
+        self.playing = rowClicked
         self.playAudioThread = PlayAudioThread(self, audiofileObj, self.stream)
+        self.connect(self.playAudioThread, SIGNAL('done()'), self.stopAudio)
         self.playAudioThread.start()
 
     def refreshTracks(self):
@@ -136,11 +150,20 @@ class ConfirmMetadataDialog(QDialog, Ui_ConfirmMetadataDialog):
 
     def stopAudio(self):
         """
-        Stop currently playing audio
+        Stop currently playing audio, and set row icon back to the play button
+
+        @return: The row stopped
         """
-        if hasattr(self, 'playAudioThread'):            
+        rowStopped = False
+        if hasattr(self, 'playAudioThread') and not self.playAudioThread.isStopped():                        
             self.playAudioThread.terminate()
-            self.stream.close()
+        if self.playing is not False:
+            rowStopped = self.playing
+            item = QTableWidgetItem(str(self.playing + 1))
+            item.setIcon(self.playButtonIcon)
+            self.tracklistTableWidget.setVerticalHeaderItem(self.playing, item)
+            self.playing = False
+        return rowStopped
 
     def closeEvent(self, event):
         self.stopAudio()
@@ -150,9 +173,19 @@ class PlayAudioThread(QThread):
         self.parent = parent
         self.audiofileObj = audiofileObj
         self.stream = stream
+        self.mutex = QMutex()
+        self.stopped = False
         super(PlayAudioThread, self).__init__(parent)
 
     def run(self):
-        self.audiofileObj.play_wave(self.stream)
-        self.stream.close()
-        p.terminate()
+        self.audiofileObj.play_wave(self.stream)        
+        self.stop()
+        self.emit(SIGNAL('done()'))
+
+    def stop(self):
+        with QMutexLocker(self.mutex):
+            self.stopped = True
+
+    def isStopped(self):
+        with QMutexLocker(self.mutex):
+            return self.stopped
