@@ -100,11 +100,11 @@ class QueueDialogTestCase(unittest.TestCase):
         self.assertEquals(['Track 1', 'Track 2', 'Track 3'], metadata['tracklist'])
         self.assertEquals(showPath, metadata['dir'].absolutePath())
         
-    def testIfThereAreMoreAudioFilesThanThereAreTracksInTheTextFileLaterTracksAreEmptyStrings(self):
+    def testIfThereAreMoreAudioFilesThanThereAreTracksInTheTextFileLaterTracksAreFilledWithASpace(self):
         showPath = self.showPath + '/' + 'show4'
         metadata = self.queuedialog.getMetadataFromDir(showPath)
         self.assertEquals(3, len(metadata['tracklist']))
-        self.assertEquals('', metadata['tracklist'][2])
+        self.assertEquals(' ', metadata['tracklist'][2])
         
 
     def testGetMetadataFromDirAndSubDirsGetsMetadataForAllValidShowsInSubDirectoriesWithinTheTargetDir(self):

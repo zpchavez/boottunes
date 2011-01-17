@@ -171,7 +171,7 @@ class ParsetxtTestCase(unittest.TestCase):
         self.assertEquals(['One', 'Two', 'Three'], tracklist);
 
         # Unknown tracks may just be left blank, but those will be captured too as empty strings
-        tracklist = TxtParser('01 Song I Know\n02    \n03\n04 Another Song I Know')._findTracklist()
+        tracklist = TxtParser('01 Song I Know\n02\n03\n04 Another Song I Know')._findTracklist()
         self.assertEquals(['Song I Know', '', '', 'Another Song I Know'], tracklist)
 
         # An encore may be split up from the rest of the track list
