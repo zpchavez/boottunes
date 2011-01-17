@@ -16,6 +16,8 @@ VERSION = '0.2.0'
 APP = ['boottunes.pyw']
 DATA_FILES = [('data/media', [
                   'data/media/logo.png',
+                  'data/media/play.png',
+                  'data/media/stop.png',
                   'data/media/complete.wav']),
               ('data/json', [
                   'data/json/common-cities.json',
