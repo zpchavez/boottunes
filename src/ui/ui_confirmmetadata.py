@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'confirmmetadata.ui'
 #
-# Created: Sat Jan 15 23:05:06 2011
+# Created: Sun Jan 16 18:33:22 2011
 #      by: PyQt4 UI code generator 4.7.6
 #
 # WARNING! All changes made in this file will be lost!
@@ -18,7 +18,7 @@ class Ui_ConfirmMetadataDialog(object):
     def setupUi(self, ConfirmMetadataDialog):
         ConfirmMetadataDialog.setObjectName(_fromUtf8("ConfirmMetadataDialog"))
         ConfirmMetadataDialog.setWindowModality(QtCore.Qt.ApplicationModal)
-        ConfirmMetadataDialog.resize(453, 790)
+        ConfirmMetadataDialog.resize(434, 702)
         ConfirmMetadataDialog.setModal(False)
         self.gridLayout_2 = QtGui.QGridLayout(ConfirmMetadataDialog)
         self.gridLayout_2.setObjectName(_fromUtf8("gridLayout_2"))
