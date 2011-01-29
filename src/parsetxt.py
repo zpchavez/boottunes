@@ -284,12 +284,12 @@ class TxtParser(object):
             return self.locationAsIs
         elif not asIs and hasattr(self, 'location'):
             return self.location
-
+        
         searchedText = self.txt.replace(self._findArtist(), '') \
                                .replace(self._findDate(), '')
-
-        match = re.match('^\s*Location: (.*)$', searchedText, re.MULTILINE)
-        if match:
+        
+        match = re.search('^\s*Location:\s*(.*)$', searchedText, re.MULTILINE)
+        if match:            
             self.location = match.group(1)
             return self.location
 
