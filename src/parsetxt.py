@@ -9,29 +9,30 @@ http://www.gnu.org/licenses/gpl-2.0.html
 import re
 import datetime
 import json
+import urllib2
 import data
 
-# Load JSON files with city, state, and country names into global variables
+# Load JSON files with city, state, and country names into global variables.
+# Try to get cities list from the web first, falling back to the local json file.
 jsonPath = data.path + '/' + 'json' + '/'
-fileCities = open(jsonPath + 'common-cities.json')
+try:    
+    jsonString = urllib2.urlopen(
+        'http://zacharychavez.com/boottunes/json/common-cities.json',
+        timeout=3
+    ).read()
+    cities = json.loads(jsonString)    
+except:    
+    fileCities = open(jsonPath + 'common-cities.json')
+    cities = json.loads(fileCities.read())    
+
 fileStates = open(jsonPath + 'states.json')
 fileProvinces = open(jsonPath + 'provinces.json')
 fileCountries = open(jsonPath + 'countries.json')
-
-cities = json.loads(fileCities.read())
-"""Example entry: {'Birmingham': {'state': ['AL']}, {'country': ['UK']}}"""
-
 states = json.loads(fileStates.read())
-"""Contains state abbreviation as key and full name as value"""
-
 provinces = json.loads(fileProvinces.read())
-"""Contains province abbreviation as key and full name as value"""
-
 countries = json.loads(fileCountries.read())
-"""Contains 2-character code as key and full country name as value"""
-
-fileCities.close()
 fileStates.close()
+fileProvinces.close()
 fileCountries.close()
 
 class TxtParser(object):
@@ -297,7 +298,7 @@ class TxtParser(object):
         candidate = {'city': None, 'index': len(searchedText)}
 
         # Check for a city from the common-cities list
-        for city, cityDetails in cities.iteritems():                            
+        for city, cityDetails in cities.iteritems():                    
             match = re.search('\W(' + re.escape(city) + r')(\W|\Z)', searchedText)
             if match:                
                 if 'province' in cityDetails:
