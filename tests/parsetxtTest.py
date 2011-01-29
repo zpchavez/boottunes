@@ -194,6 +194,10 @@ class ParsetxtTestCase(unittest.TestCase):
         tracklist = TxtParser('01. [1:11] One\n02. Two (2:22)\n03. Three 3:33\n04. 4:44')._findTracklist()
         self.assertEquals(['One', 'Two', 'Three', '4:44'], tracklist) # 4:44 is the actual song name.
 
+        # Track times with hundredths of seconds removed
+        tracklist = TxtParser('01. [1:11.05] One\n02. Two (2:22.33)\n03. Three 3:33.55\n04. 4:44')._findTracklist()
+        self.assertEquals(['One', 'Two', 'Three', '4:44'], tracklist) # 4:44 is the actual song name.
+        
         anotherTest = (
             "1. Funk (Prelude, part 1) (12:39)\r\n2. Ife (17:25)\r\n"
           + "3. Moja (03:16)\r\n4. Willie Nelson on Tune in 5 (05:48)"

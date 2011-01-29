@@ -255,8 +255,8 @@ class TxtParser(object):
             elif match and expectedTrackNum != 1 and actualTrackNum in [0, 1]:
                 # If tracklist seperated into multiple discs, the counting may start over
                 tracklistStr += trackLine
-                expectedTrackNum = int(match.group(1)) + 1        
-        trackTimePattern = '([([]?\d{1,2}:[0-6][0-9][)\]]?)'        
+                expectedTrackNum = int(match.group(1)) + 1                
+        trackTimePattern = '([([]?\d{1,2}:[0-6][0-9](?:\.\d{2})?[)\]]?)'
         # Filter out the track numbers and, if present, track times, to get just the titles
         pattern = r"""^(?:(?:\d{3}-)?d\dt)?              # Possible prefix like d1t01 or 101-d1t01
                       [\t\s]*[0-9]{1,2}[ .\-)]*          # Track number, separator, and whitespace
