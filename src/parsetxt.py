@@ -257,7 +257,17 @@ class TxtParser(object):
                 # If tracklist seperated into multiple discs, the counting may start over
                 tracklistStr += trackLine
                 expectedTrackNum = int(match.group(1)) + 1                
-        trackTimePattern = '([([]?\d{1,2}:[0-6][0-9](?:\.\d{2})?[)\]]?)'
+        trackTimePattern = """
+            (
+                [([]?          # Possible opening enclosures
+                \d{1,2}        # Minutes, with optional opening 0
+                [:\']          # Colon separator or ' minutes symbol
+                [0-6][0-9]     # Minutes
+                (?:\.\d{2})?   # Possible hundredths of seconds
+                (?:"|'')?             # Possible " seconds symbol (may be made up of 2 apostrophes)
+                [)\]]?         # Possible closing enclosure                
+            )
+            """
         # Filter out the track numbers and, if present, track times, to get just the titles
         pattern = r"""^(?:(?:\d{3}-)?d\dt)?              # Possible prefix like d1t01 or 101-d1t01
                       [\t\s]*[0-9]{1,2}[ .\-)]*          # Track number, separator, and whitespace
