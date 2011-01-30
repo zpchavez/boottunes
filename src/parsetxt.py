@@ -203,7 +203,20 @@ class TxtParser(object):
         """
         if hasattr(self, 'tracklistStr'): return self.tracklistStr
 
-        pattern = r"""\n?((^[\t\s]*((\d{3}-)?d\dt)?[0-9]{1,2}[\W](.*)$\n?){1,})"""
+        pattern = r"""            
+            (
+                ^[\t\s]*           # May start with whitespace
+                (                  # Begin of optional prefix
+                    (\d{3}-)?      # Prefix may start 101, 201, etc.
+                    d\dt           # May contain prefix d1t, d2t, etc.
+                )?                 # End of optional prefix
+                [0-9]{1,2}         # One or two numbers
+                [\W]               # Some sort of separator
+                (.*)               # The actual track name
+                $                  # The end of the line
+                \n?                # Doesn't work right without this.  Not sure why.
+            ){1,}                  # 1 or more track lines
+        """
  
         # There may be line breaks with text in between signifying an encore, so
         # look through and get all the pieces that look like a tracklist segments,
@@ -212,7 +225,7 @@ class TxtParser(object):
         previousTxt = None
         tracklistStr = ''
         while txt != previousTxt:
-            match = re.search(pattern, txt, re.MULTILINE)
+            match = re.search(pattern, txt, re.MULTILINE | re.VERBOSE)
             if match == None:
                 break;
             tracklistStr += match.group(0)            
@@ -257,14 +270,14 @@ class TxtParser(object):
                 # If tracklist seperated into multiple discs, the counting may start over
                 tracklistStr += trackLine
                 expectedTrackNum = int(match.group(1)) + 1                
-        trackTimePattern = """
+        trackTimePattern = r"""
             (
                 [([]?          # Possible opening enclosures
                 \d{1,2}        # Minutes, with optional opening 0
                 [:\']          # Colon separator or ' minutes symbol
                 [0-6][0-9]     # Minutes
                 (?:\.\d{2})?   # Possible hundredths of seconds
-                (?:"|'')?             # Possible " seconds symbol (may be made up of 2 apostrophes)
+                (?:"|'')?      # Possible " seconds symbol (may be made up of 2 apostrophes)
                 [)\]]?         # Possible closing enclosure                
             )
             """
@@ -429,11 +442,24 @@ class TxtParser(object):
 
         searchedText = self.txt.replace(self._findArtist(), '') \
                                .replace(self._findDate(), '')
+
+        pattern = r"""
+            (?:                
+                ([^,\n|]*)      # Venue candidate
+                \s*[,\-\n]\s*   # Dash, comma, or newline separator
+            )?
+            """ + re.escape(locationTxt) + r"""
+            (?:
+                (?:\s\(USA\))?  # US locations something end with (USA)
+                \s*[,\-\n]\s*   # Dash, comma, or newline separator
+                ([^\n|]*)       # Venue candidate 2
+            )?
+        """
         
         matches = re.search(            
-            '(?:(?: - )?([^,\n|]*)\s*[,\-\n]\s*)?' + locationTxt + '(?:(?: \(USA\))?\s*[,\-\n]\s*(?: - )?([^\n|]*))?',
+            pattern,
             searchedText,
-            re.IGNORECASE | re.MULTILINE
+            re.IGNORECASE | re.MULTILINE | re.VERBOSE
         )
         
         fullLocationText = self._findLocation(False)
