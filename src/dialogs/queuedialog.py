@@ -431,18 +431,19 @@ class QueueDialog(QDialog, Ui_QueueDialog):
         if not artistName:
             artistName = '[missing artist]'
             self.queueItemData[path]['valid'] = False
-
-        listItem.setText(artistName + ' - ' + albumTitle)
+        
         if self.queueItemData[path]['valid'] == False:
             listItem.setBackground(QBrush(QColor(255, 0, 0)))
             listItem.setForeground(QBrush(QColor(255, 255, 255)))
         else:            
             listItem.setForeground(QBrush(QColor(0, 0, 0)))
             if '' in set(metadata['tracklist']):
-                albumTitle += ' [contains untitled tracks]'
+                albumTitle += ' [contains untitled tracks]'                
                 listItem.setBackground(QBrush(QColor(255, 255, 0)))
             else:
                 listItem.setBackground(QBrush(QColor(255, 255, 255)))
+
+        listItem.setText(artistName + ' - ' + albumTitle)
         metadata['albumTitle'] = albumTitle
 
     def addToITunes(self):
