@@ -401,13 +401,13 @@ class TxtParser(object):
         # If no match found from cities in the common city list, just search for a line that looks
         # like a location line, i.e. contains a comma
         match = re.search('^.+,.+$', searchedText, re.MULTILINE)
-        if not match:
+        if not match or (match and len(match.group(0)) > 30):
             self.location = ''
             return self.location
         else:
             lineTxt = match.group(0)
 
-        cityStateMatch = re.search('([a-z ]+, [a-z]{2})(\s|,|$)', lineTxt, re.IGNORECASE)        
+        cityStateMatch = re.search('([a-z ]+, [a-z]{2})(\s|,|$)', lineTxt, re.IGNORECASE)
         if cityStateMatch:
             self.location = cityStateMatch.group(1).strip()
             return self.location
