@@ -60,6 +60,7 @@ appPath = thisPath + '/dist/BootTunes.app/Contents'
 os.system('rm ' + appPath + '/MacOS/python')
 shutil.copy('/usr/bin/python', appPath + '/MacOS/python')
 shutil.copy('/usr/bin/python2.6', appPath + '/MacOS/python2.6')
+# Use copytree to replace all symlinks with the actual targets
 shutil.copytree(appPath + '/Resources/include', appPath + '/Resources/include2')
 os.system('rm ' + appPath + '/Resources/include')
 os.rename(appPath + '/Resources/include2', appPath + '/Resources/include')
