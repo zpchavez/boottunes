@@ -322,7 +322,6 @@ class QueueDialog(QDialog, Ui_QueueDialog):
                     nonParsedMetadata['tempDir'].mkpath(nonParsedMetadata['tempDir'].absolutePath())
                 
                 try:
-                    # Assume that an artist name found in the actual file metadata is more accurate
                     audioFile = audiotools.open(filePaths[0])                    
                     if isinstance(audioFile, audiotools.tracklint.BrokenFlacAudio):
                         if self.loadingMultipleShows:
@@ -331,8 +330,15 @@ class QueueDialog(QDialog, Ui_QueueDialog):
                             metadata.update(nonParsedMetadata)
                             self.fixBadFlacFiles(metadata)
                     else:                        
+                        # Assume that an artist name found in the actual file metadata is more accurate
+                        # unless that title is "Unknown Artist"
                         audioFileMetadata = audioFile.get_metadata()
-                        if audioFileMetadata and audioFileMetadata.artist_name:                            
+                        artistFoundInFileMetadata = (
+                            audioFileMetadata
+                            and audioFileMetadata.artist_name
+                            and audioFileMetadata.artist_name != 'Unknown Artist'
+                        )
+                        if artistFoundInFileMetadata:
                             txtParser = TxtParser(metadata['comments'])
                             txtParser.artist = audioFileMetadata.artist_name
                             # Don't lose values added to tracklist since last parsing it
