@@ -15,13 +15,13 @@ import data
 # Load JSON files with city, state, and country names into global variables.
 # Try to get cities list from the web first, falling back to the local json file.
 jsonPath = data.path + '/' + 'json' + '/'
-try:    
+try:
     jsonString = urllib2.urlopen(
         'http://zacharychavez.com/boottunes/json/common-cities.json',
         timeout=3
     ).read()
     cities = json.loads(jsonString)    
-except:    
+except:
     fileCities = open(jsonPath + 'common-cities.json')
     cities = json.loads(fileCities.read())    
 
@@ -397,28 +397,31 @@ class TxtParser(object):
         if candidate['city']:
             self.location = candidate['city']
             return self.location
-                            
+
+        self.location = ''
+                          
         # If no match found from cities in the common city list, just search for a line that looks
         # like a location line, i.e. contains a comma
         match = re.search('^.+,.+$', searchedText, re.MULTILINE)
-        if not match or (match and len(match.group(0)) > 30):
-            self.location = ''
+        if not match:            
             return self.location
-        else:
-            lineTxt = match.group(0)
 
-        cityStateMatch = re.search('([a-z ]+, [a-z]{2})(\s|,|$)', lineTxt, re.IGNORECASE)
+        self.location = match.group(0).strip()
+
+        cityStateMatch = re.search('([a-z ]+, [a-z]{2})(\s|,|$)', self.location, re.IGNORECASE)
         if cityStateMatch:
-            self.location = cityStateMatch.group(1).strip()
-            return self.location
+            self.location = cityStateMatch.group(1).strip()            
 
         # If a venue is included on the same line after a dash, isolate the location
-        locationMatch = re.search('(.*)( - .*)', lineTxt)
+        locationMatch = re.search('(.*)( - .*)', self.location)
         if locationMatch:
-            self.location = locationMatch.group(1).strip()
-            return self.location
+            self.location = locationMatch.group(1).strip()            
 
-        self.location = lineTxt.strip()
+        if len(self.location) > 30:
+            self.location = ''
+        else:
+            self.location = self.location.strip()
+            
         return self.location
 
     def _findVenue(self):
@@ -462,11 +465,6 @@ class TxtParser(object):
             re.IGNORECASE | re.MULTILINE | re.VERBOSE
         )
         
-        fullLocationText = self._findLocation(False)
-        countryOrStateMatch = re.findall(', (.*)', fullLocationText)
-        if countryOrStateMatch:
-            countryOrState = countryOrStateMatch[0]        
-
         if matches:
             strippedChars = ' ,\r\t\n-'
             possibilities = []
