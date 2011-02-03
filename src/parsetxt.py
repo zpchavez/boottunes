@@ -17,7 +17,7 @@ import data
 jsonPath = data.path + '/' + 'json' + '/'
 try:
     jsonString = urllib2.urlopen(
-        'http://zacharychavez.com/boottunes/json/common-cities.json',
+        'http://boottunes.googlecode.com/svn/trunk/src/data/json/common-cities.json',
         timeout=3
     ).read()
     cities = json.loads(jsonString)    
