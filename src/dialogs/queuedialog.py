@@ -272,13 +272,15 @@ class QueueDialog(QDialog, Ui_QueueDialog):
                 # If the single digits tracks are numbered like 1, 2, 3 instead of 01, 02, 03,
                 # make sure they are sorted correctly, so that track 10 does not follow track 1, etc.
                 sortedFiles = []
-                [sortedFiles.append('') for x in range(len(qDir.entryList()))]                
-                for index, file in enumerate(qDir.entryList()):
-                    match = re.search('^(\d{1,2})([^\d].*)?$', file, re.IGNORECASE)
-                    if not match:
+                [sortedFiles.append('') for x in range(len(qDir.entryList()))]
+                foundTrackNumbers = []
+                for index, file in enumerate(qDir.entryList()):                    
+                    match = re.search('^(\d{1,2})([^\d].*)?$', file, re.IGNORECASE)                                                            
+                    if not match or match.group(1) in foundTrackNumbers:
                         sortedFiles = list(qDir.entryList())
-                        break
+                        break                    
                     sortedFiles[int(match.group(1)) - 1] = unicode(file)
+                    foundTrackNumbers.append(match.group(1))
 
                 fileNameEncoding = 'utf_8' if systemName == 'Darwin' else encoding
                 filePaths = []
@@ -470,7 +472,7 @@ class QueueDialog(QDialog, Ui_QueueDialog):
             """For reasons unknown, Windows 7 crashes when PCMReader objects go out of scope.
                My inelegant solution is to keep those objects in this antiCrashBin so that
                if the user converts multiple batches in one session the program won't crash.
-            """
+            """        
 
         # Count all tracks for the progress bar and load recording data into self.validRecordings
         # in the order that the items appear in the queue.
