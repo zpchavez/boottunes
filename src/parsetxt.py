@@ -203,18 +203,18 @@ class TxtParser(object):
         """
         if hasattr(self, 'tracklistStr'): return self.tracklistStr
 
-        pattern = r"""            
+        pattern = r"""
             (
                 ^[\t\s]*           # May start with whitespace
-                (                  # Begin of optional prefix
-                    (\d{3}-)?      # Prefix may start 101, 201, etc.
+                (?:                # Begin of optional prefix
+                    (?:\d{3}-)?      # Prefix may start 101, 201, etc.
                     d\dt           # May contain prefix d1t, d2t, etc.
-                )?                 # End of optional prefix
-                [0-9]{1,2}         # One or two numbers
+                )?                 # End of optional prefix                                
+                [0-9]{1,3}         # One or two numbers
                 [\W]               # Some sort of separator
                 (.*)               # The actual track name
                 $                  # The end of the line
-                \n?                # Doesn't work right without this.  Not sure why.
+                \n?                # Doesn't work right without this.  Not sure why.                
             ){1,}                  # 1 or more track lines
         """
  
@@ -228,9 +228,9 @@ class TxtParser(object):
             match = re.search(pattern, txt, re.MULTILINE | re.VERBOSE)
             if match == None:
                 break;
-            tracklistStr += match.group(0)            
+            tracklistStr += match.group(0)
             previousTxt = txt                        
-            txt = txt.replace(match.group(0), '')            
+            txt = txt.replace(match.group(0), '')
         
         self.tracklistStr = unicode(tracklistStr)                
         return self.tracklistStr
@@ -256,8 +256,8 @@ class TxtParser(object):
             # Don't count if the line contains an md5 hash            
             if re.search('[0-9a-f]{32}', trackLine, re.IGNORECASE):
                 continue                        
-            match = re.search('(?:(?:\d{3}-)?d\dt)?(\d{1,2}).*', trackLine)
-            actualTrackNum = int(match.group(1)) if match else None            
+            match = re.search('(?:(?:\d{3}-)?d\dt)?\d?(\d{1,2}).*', trackLine)
+            actualTrackNum = int(match.group(1)) if match else None                        
             # Allow for common mistakes of repeating track numbers and skipping track numbers
             expectedTrackNums = [expectedTrackNum, expectedTrackNum - 1, expectedTrackNum + 1]
             if match and actualTrackNum in expectedTrackNums:
@@ -283,7 +283,7 @@ class TxtParser(object):
             """
         # Filter out the track numbers and, if present, track times, to get just the titles
         pattern = r"""^(?:(?:\d{3}-)?d\dt)?              # Possible prefix like d1t01 or 101-d1t01
-                      [\t\s]*[0-9]{1,2}[ .\-)]*          # Track number, separator, and whitespace
+                      [\t\s]*[0-9]{1,3}[ .\-)]*          # Track number, separator, and whitespace
                       """ + trackTimePattern + """?      # Track time if present before the title
                       (.*?)                              # The actual title
                       (?:[ -]*?)                         # White space or dash separator
