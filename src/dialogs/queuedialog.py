@@ -164,6 +164,7 @@ class QueueDialog(QDialog, Ui_QueueDialog):
         indexOfSavedData = item.data(32).toString() # 32 is the start of user-space
         data = self.queueItemData[unicode(indexOfSavedData)]['metadata']
         ConfirmMetadataDialog(data, self).exec_()
+        self.queueListWidget.sortItems()
 
     def openSettingsDialog(self):
         SettingsDialog(self).exec_()
