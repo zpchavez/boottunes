@@ -21,9 +21,15 @@ class ChooseCoverDialog(QDialog, Ui_ChooseCoverDialog):
         self.setWindowFlags(Qt.Window)
         self.metadata = metadata                
         self.coverImageChoices = CoverArtRetriever().getCoverImageChoices(metadata)
-
+        
+        chosenIndex = None
         for index, fileTuple in enumerate(self.coverImageChoices):
+            if fileTuple[0] == metadata['cover']:
+                chosenIndex = index
             self.chooseCoverComboBox.addItem(os.path.basename(fileTuple[0]), index)
+
+        if chosenIndex:
+            self.chooseCoverComboBox.setCurrentIndex(chosenIndex)
 
     def chooseCover(self, index):
         """
