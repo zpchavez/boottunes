@@ -7,6 +7,7 @@ import sys
 import os
 import tempfile
 import urllib2
+import urllib
 import json
 from PyQt4.QtGui import *
 from PyQt4.QtCore import *
@@ -136,6 +137,9 @@ app.setOrganizationName('Zachary Chavez')
 app.setOrganizationDomain('zacharychavez.com')
 app.setApplicationName('BootTunes')
 
+errorLogFilePath = getSettings().settingsDir + os.sep + 'errorlog.log'
+sys.stderr = open(errorLogFilePath, 'w')
+
 window = MainWindow()
 window.show()
 
@@ -147,5 +151,11 @@ if getSettings()['checkForUpdates']:
     window.checkForUpdate()
 
 app.exec_()
+
+sys.stderr.close()
+if (os.path.getsize(getSettings().settingsDir + os.sep + 'errorlog.log')):    
+    queryDict = {'body': open(errorLogFilePath, 'r').read()}
+    urllib2.urlopen('http://zacharychavez.com/error-report.php?' + urllib.urlencode(queryDict))
+
 getSettings().pickleAndStore()
 getSettings().clearTempFiles()
