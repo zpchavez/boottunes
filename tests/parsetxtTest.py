@@ -231,12 +231,6 @@ class ParsetxtTestCase(unittest.TestCase):
           + '\n202-d2t02 - Five\n203-d2t03 - Six\n~encore~\n204-d2t04 - Seven'
         )._findTracklist()
         self.assertEquals(['One >', 'Two >', 'Three', 'Four', 'Five', 'Six', 'Seven'], tracklist)
-        
-        tracklist = TxtParser('101 One\n102 Two\n103 Three')._findTracklist()
-        self.assertEquals(['One', 'Two', 'Three'], tracklist);
-
-        tracklist = TxtParser('101. One\n102. Two\n103. Three')._findTracklist()
-        self.assertEquals(['One', 'Two', 'Three'], tracklist);
 
     def testFindLocationTriesToGetGeographicalLocationButNotVenue(self):
         """

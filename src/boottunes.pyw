@@ -7,7 +7,6 @@ import sys
 import os
 import tempfile
 import urllib2
-import urllib
 import json
 from PyQt4.QtGui import *
 from PyQt4.QtCore import *
@@ -17,7 +16,7 @@ from dialogs.newversion import NewVersionDialog
 from settings import getSettings, SettingsError
 import data
 
-__version__ = "0.2.2"
+__version__ = "0.2.1"
 
 class MainWindow(QMainWindow):
     def __init__(self, parent=None):        
@@ -137,9 +136,6 @@ app.setOrganizationName('Zachary Chavez')
 app.setOrganizationDomain('zacharychavez.com')
 app.setApplicationName('BootTunes')
 
-errorLogFilePath = getSettings().settingsDir + os.sep + 'errorlog.log'
-sys.stderr = open(errorLogFilePath, 'w')
-
 window = MainWindow()
 window.show()
 
@@ -151,24 +147,5 @@ if getSettings()['checkForUpdates']:
     window.checkForUpdate()
 
 app.exec_()
-
-sys.stderr.close()
-if (getSettings()['sendErrorReports'] and os.path.getsize(errorLogFilePath)):
-    if sys.platform == 'win32':
-        body = unicode(sys.getwindowsversion())
-    elif sys.platform == 'darwin':
-        sysInfo = os.uname()
-        # Remove nodename
-        sysInfo = list(sysInfo)
-        del sysInfo[1]
-        body = unicode(sysInfo)
-    body += '\n\n' + 'BootTunes Version: ' + __version__
-    body += ('\n\n' + open(errorLogFilePath, 'r').read())    
-    queryDict = {'body': body}
-    try:        
-        urllib2.urlopen('http://zacharychavez.com/error-report.php?' + urllib.urlencode(queryDict))
-    except:
-        pass
-
 getSettings().pickleAndStore()
 getSettings().clearTempFiles()
