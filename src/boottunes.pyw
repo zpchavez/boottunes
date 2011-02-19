@@ -153,9 +153,21 @@ if getSettings()['checkForUpdates']:
 app.exec_()
 
 sys.stderr.close()
-if (os.path.getsize(getSettings().settingsDir + os.sep + 'errorlog.log')):    
-    queryDict = {'body': open(errorLogFilePath, 'r').read()}
-    urllib2.urlopen('http://zacharychavez.com/error-report.php?' + urllib.urlencode(queryDict))
+if (os.path.getsize(getSettings().settingsDir + os.sep + 'errorlog.log')):        
+    if sys.platform == 'win32':
+        body = unicode(sys.getwindowsversion())
+    elif sys.platform == 'darwin':
+        sysInfo = os.uname()
+        # Remove nodename
+        sysInfo = list(sysInfo)
+        del sysInfo[1]
+        body = unicode(sysInfo)        
+    body += ('\n\n' + open(errorLogFilePath, 'r').read())    
+    queryDict = {'body': body}
+    try:        
+        urllib2.urlopen('http://zacharychavez.com/error-report.php?' + urllib.urlencode(queryDict))
+    except:
+        pass
 
 getSettings().pickleAndStore()
 getSettings().clearTempFiles()
