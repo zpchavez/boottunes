@@ -56,6 +56,9 @@ class SettingsDialog(QDialog, Ui_SettingsDialog):
         if getSettings()['checkForUpdates']:
             self.checkForUpdatesCheckBox.setChecked(True)
 
+        if getSettings()['sendErrorReports']:
+            self.sendErrorReportsCheckBox.setChecked(True)
+
         self.addToITunesPathTextEdit.setText(getSettings()['addToITunesPath'])
 
         # Set the ComboBox values
@@ -76,7 +79,9 @@ class SettingsDialog(QDialog, Ui_SettingsDialog):
                 getSettings()['defaultArt'] = value
 
         getSettings()['checkForUpdates'] = self.checkForUpdatesCheckBox.isChecked()
-
+        
+        getSettings()['sendErrorReports'] = self.sendErrorReportsCheckBox.isChecked()
+        
         getSettings()['addToITunesPath'] = unicode(self.addToITunesPathTextEdit.toPlainText())
 
         self.parentWidget().refreshQueue()
@@ -95,6 +100,7 @@ class SettingsDialog(QDialog, Ui_SettingsDialog):
             self.defaultArtRadioButtonIdenticon.setChecked(True)
     
         self.checkForUpdatesCheckBox.setChecked(getSettings().defaults['checkForUpdates'])
+        self.sendErrorReportsCheckBox.setChecked(getSettings().defaults['sendErrorReports'])
 
         defaultAddToITunesPath = getSettings().getDetectedAddToITunesPath()
         if defaultAddToITunesPath:

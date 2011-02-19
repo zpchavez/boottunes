@@ -15,12 +15,13 @@ class Settings:
     Set and retrieve settings as if the instance were a dict.
     """
 
-    defaults = {'albumTitleFormat': '[date] - [location] - [venue]',
-                'defaultFolder'   : '/',
-                'dateFormat'      : '%Y-%m-%d',
-                'defaultArt'      : 'Visicon',
-                'checkForUpdates' : True,
-                'skipVersion'     : ''}
+    defaults = {'albumTitleFormat' : '[date] - [location] - [venue]',
+                'defaultFolder'    : '/',
+                'dateFormat'       : '%Y-%m-%d',
+                'defaultArt'       : 'Visicon',
+                'checkForUpdates'  : True,
+                'sendErrorReports' : True,
+                'skipVersion'      : ''}
 
     def __getitem__(self, key):
         if key not in self.settings:

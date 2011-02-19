@@ -153,7 +153,7 @@ if getSettings()['checkForUpdates']:
 app.exec_()
 
 sys.stderr.close()
-if (os.path.getsize(getSettings().settingsDir + os.sep + 'errorlog.log')):        
+if (getSettings()['sendErrorReports'] and os.path.getsize(errorLogFilePath)):
     if sys.platform == 'win32':
         body = unicode(sys.getwindowsversion())
     elif sys.platform == 'darwin':
@@ -161,7 +161,8 @@ if (os.path.getsize(getSettings().settingsDir + os.sep + 'errorlog.log')):
         # Remove nodename
         sysInfo = list(sysInfo)
         del sysInfo[1]
-        body = unicode(sysInfo)        
+        body = unicode(sysInfo)
+    body += '\n\n' + 'BootTunes Version: ' + __version__
     body += ('\n\n' + open(errorLogFilePath, 'r').read())    
     queryDict = {'body': body}
     try:        
