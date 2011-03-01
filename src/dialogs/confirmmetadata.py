@@ -138,7 +138,10 @@ class ConfirmMetadataDialog(QDialog, Ui_ConfirmMetadataDialog):
         """
         import parsetxt
         tracklist = parsetxt.TxtParser(unicode(self.commentsTextEdit.toPlainText()))._findTracklist()        
-        
+
+        if not tracklist:
+            tracklist = []
+
         for i in range(0, self.tracklistTableWidget.rowCount()):            
             if i < len(tracklist):
                 self.tracklistTableWidget.setItem(i, 0, QTableWidgetItem(tracklist[i]))
