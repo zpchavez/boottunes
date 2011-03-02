@@ -283,7 +283,7 @@ class TxtParser(object):
             """
         # Filter out the track numbers and, if present, track times, to get just the titles
         pattern = r"""^(?:(?:\d{3}-)?d\dt)?              # Possible prefix like d1t01 or 101-d1t01
-                      [\t\s]*[0-9]{1,3}[ .\-)]*          # Track number, separator, and whitespace
+                      [\t\s]*[0-9]{1,3}[ .\-:)]*          # Track number, separator, and whitespace
                       """ + trackTimePattern + """?      # Track time if present before the title
                       (.*?)                              # The actual title
                       (?:[ -]*?)                         # White space or dash separator
