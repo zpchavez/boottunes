@@ -61,7 +61,7 @@ class TxtParser(object):
         date = self._findDate()        
 
         # Probably the short line
-        match = re.search('^\s*(.{1,100}?)(\n| - |\|)', self.txt, re.MULTILINE)
+        match = re.search('^\s*(.{1,80}?)(\n| - |\|)', self.txt, re.MULTILINE)
         if match and match.group(1) != date:            
             self.artist = match.group(1).strip().replace(date, '')            
             return self.artist
@@ -410,7 +410,7 @@ class TxtParser(object):
             return self.location
 
         self.location = match.group(0).strip()
-
+        
         cityStateMatch = re.search('([a-z ]+, [a-z]{2})(\s|,|$)', self.location, re.IGNORECASE)
         if cityStateMatch:
             self.location = cityStateMatch.group(1).strip()            
