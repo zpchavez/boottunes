@@ -48,19 +48,22 @@ class TxtParser(object):
         Find the artist in self.txt
 
         @rtype: string
-        """        
-        if hasattr(self, 'artist'): return self.artist
-        
+        """                
+        if hasattr(self, 'artist'): return self.artist        
+
+
         # Artist listed after label
         match = re.search('^\s*(?:Artist|Band)\s?[:\-]+(.+)$', self.txt, re.MULTILINE)
-        if match:
+        if match:            
             self.artist = match.group(1).strip()
             return self.artist
 
+        date = self._findDate()        
+
         # Probably the short line
-        match = re.search('^\s*(.{1,50}?)(\n| - |\|)', self.txt, re.MULTILINE)        
-        if match:            
-            self.artist = match.group(1).strip()            
+        match = re.search('^\s*(.{1,100}?)(\n| - |\|)', self.txt, re.MULTILINE)
+        if match and match.group(1) != date:            
+            self.artist = match.group(1).strip().replace(date, '')            
             return self.artist
 
         self.artist = ''
@@ -283,7 +286,7 @@ class TxtParser(object):
             """
         # Filter out the track numbers and, if present, track times, to get just the titles
         pattern = r"""^(?:(?:\d{3}-)?d\dt)?              # Possible prefix like d1t01 or 101-d1t01
-                      [\t\s]*[0-9]{1,3}[ .\-:)]*          # Track number, separator, and whitespace
+                      [\t\s]*[0-9]{1,3}[ .\-:)]*         # Track number, separator, and whitespace
                       """ + trackTimePattern + """?      # Track time if present before the title
                       (.*?)                              # The actual title
                       (?:[ -]*?)                         # White space or dash separator
