@@ -273,15 +273,17 @@ class QueueDialog(QDialog, Ui_QueueDialog):
                 # If the single digits tracks are numbered like 1, 2, 3 instead of 01, 02, 03,
                 # make sure they are sorted correctly, so that track 10 does not follow track 1, etc.
                 sortedFiles = []
-                [sortedFiles.append('') for x in range(len(qDir.entryList()))]
+                [sortedFiles.append('') for x in range(len(qDir.entryList()))]                
                 foundTrackNumbers = []
                 for index, file in enumerate(qDir.entryList()):                    
-                    match = re.search('^(\d{1,2})([^\d].*)?$', file, re.IGNORECASE)                                                            
+                    match = re.search('^(\d{1,2})([^\d].*)?$', file, re.IGNORECASE)                    
                     if not match or match.group(1) in foundTrackNumbers:
                         sortedFiles = list(qDir.entryList())
-                        break                    
-                    sortedFiles[int(match.group(1)) - 1] = unicode(file)
-                    foundTrackNumbers.append(match.group(1))
+                        break
+                    trackNum = int(match.group(1)) - 1
+                    if trackNum < len(sortedFiles):
+                        sortedFiles[int(match.group(1)) - 1] = unicode(file)
+                        foundTrackNumbers.append(match.group(1))
 
                 fileNameEncoding = 'utf_8' if systemName == 'Darwin' else encoding
                 filePaths = []
