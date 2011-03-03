@@ -155,6 +155,13 @@ class ParsetxtTestCase(unittest.TestCase):
         date = TxtParser._convertDateToDateObject('5-10-2005').isoformat()
         self.assertEquals('2005-05-10', date)
 
+        # If ambiguous, assume MM-DD-YY over YY-DD-MM.
+        date = TxtParser._convertDateToDateObject('10-14-01').isoformat()
+        self.assertEquals('2001-10-14', date)
+
+        date = TxtParser._convertDateToDateObject(TxtParser('06.nov.2010')._findDate()).isoformat()
+        self.assertEquals('2010-11-06', date)
+
     def testConvertDateToDateObjectThrowsExceptionIfDateIsInvalid(self):
         self.assertRaises(ParseTxtError, TxtParser._convertDateToDateObject, '44th August, 1991')
         self.assertRaises(ParseTxtError, TxtParser._convertDateToDateObject, '99/99/99')
@@ -231,7 +238,7 @@ class ParsetxtTestCase(unittest.TestCase):
           + '\n202-d2t02 - Five\n203-d2t03 - Six\n~encore~\n204-d2t04 - Seven'
         )._findTracklist()
         self.assertEquals(['One >', 'Two >', 'Three', 'Four', 'Five', 'Six', 'Seven'], tracklist)
-        
+
         tracklist = TxtParser('101 One\n102 Two\n103 Three')._findTracklist()
         self.assertEquals(['One', 'Two', 'Three'], tracklist);
 

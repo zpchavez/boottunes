@@ -83,13 +83,14 @@ class TxtParser(object):
             self.date = match.group(1).strip()
             return self.date
 
+        dateSep = '(?:|nd|rd|st|th)?[' + re.escape('-/\.|, ') + ']+'
+
         months = "(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*"
         pattern = (
-            "\d{1,4}.\d{1,2}.\d{2,4}|"
-            + months + " \d{1,2}.*?\d{2,4}|"
-            + "\d{1,2}.*? " + months + ".*? \d{2,4}|"
-            + "\d{2,4}." + months + ".\d{1,2}"
-        )
+            "\d{1,4}" + dateSep + "\d{1,2}" + dateSep + "\d{2,4}|"
+            + months + " \d{1,2}" + dateSep + "\d{2,4}|"
+            + "\d{1,4}" + dateSep + months + dateSep + "\d{2,4}"
+        )        
         matches = re.findall(pattern, self.txt, re.IGNORECASE)        
         if len(matches) > 0:
             self.date = matches[0].strip()            
@@ -110,8 +111,9 @@ class TxtParser(object):
                      common formats
         @rtype: datetime.date
         """        
-        currentYear = datetime.datetime.now().year
-        currentCentury = int(str(currentYear)[:2])
+        currentYear = datetime.datetime.now().year        
+        currentCentury = int(str(currentYear)[:2]) * 100
+        previousCentury = currentCentury - 100
         currentDecadeAndYear = int(str(currentYear)[2:])
         
         # If date contains a text month, get it as an integer
@@ -176,8 +178,9 @@ class TxtParser(object):
             elif dateParts[2] > 12:
                 yearInt = dateParts[2]
                 dateParts = dateParts[:2]
-            else:                
-                return None # Can't tell which is the year
+            else:
+                yearInt = dateParts[2]
+                dateParts = dateParts[:2]                
             
             # Consider the first number to be the month, unless it is too big
             monthInt, dayInt = (dateParts[0], dateParts[1]) if dateParts[0] < 13 else (dateParts[1], dateParts[0])
@@ -186,11 +189,11 @@ class TxtParser(object):
         # 1. The date is not in the future.
         # 2. The more recent date is most likely the correct one.
         if yearInt <= 99:
-            if yearInt > currentDecadeAndYear:
-                yearInt = int(str(currentCentury - 1) + str(yearInt))
-            else:
-                yearInt = int(str(currentCentury) + str(yearInt))
-
+            if yearInt > currentDecadeAndYear:                
+                yearInt = previousCentury + yearInt
+            else:                
+                yearInt = currentCentury + yearInt
+        
         try:
             dateObj = datetime.date(yearInt, monthInt, dayInt)
         except ValueError:
@@ -536,7 +539,7 @@ class TxtParser(object):
                     are strings.  "tracks" is a list of unicode strings and "date" is a
                     datetime.date object.
         """        
-        dateTxt = self._findDate()
+        dateTxt = self._findDate()        
         if dateTxt:            
             try:
                 dateObj = self._convertDateToDateObject(dateTxt)
