@@ -104,7 +104,7 @@ class QueueDialog(QDialog, Ui_QueueDialog):
                         metadata = [self.queueItemData[unicode(dir)]['metadata']]
                     else:
                         try:
-                            ret = self.getMetadataFromDirAndSubDirs(QDir(dir))
+                            ret = self.getMetadataFromDirAndSubDirs(dir)
                         except:
                             continue
                         if isinstance(ret, dict):
