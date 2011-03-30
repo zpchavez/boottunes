@@ -1,3 +1,4 @@
+# coding=utf-8
 """
 The main dialog of the main window.
 
@@ -511,7 +512,7 @@ class QueueDialog(QDialog, Ui_QueueDialog):
             validRecording['pcmReaders'] = []
             for audioFile in validRecording['metadata']['audioFiles']:
                 try:
-                    audiofileObj = audiotools.open(audioFile.encode(self.fileNameEncoding))
+                    audiofileObj = audiotools.open(audioFile.encode(self.fileNameEncoding))                    
                 except audiotools.UnsupportedFile:
                     MessageBox.critical(
                         self,
@@ -526,6 +527,14 @@ class QueueDialog(QDialog, Ui_QueueDialog):
                         'Could not open file ' + os.path.basename(audioFile) + "<br /><br />" + e[1]
                     )
                     return
+                except UnicodeDecodeError as e:
+                    MessageBox.critical(
+                        self,
+                        'Error opening file',
+                        'Unicode decode error <br /><br />' + e[1]
+                    )
+                    return
+
                 # If ALAC already, set the reader to None.
                 if isinstance(audiofileObj, audiotools.ALACAudio):
                     validRecording['pcmReaders'].append(None)
