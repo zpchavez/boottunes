@@ -35,7 +35,7 @@ systemName = platform.system()
 
 class QueueDialog(QDialog, Ui_QueueDialog):
 
-    fileNameEncoding = 'ascii'
+    fileNameEncoding = 'utf_8' if systemName == 'Darwin' else 'latin_1'
 
     def __init__(self):
         super(QueueDialog, self).__init__()
@@ -57,10 +57,11 @@ class QueueDialog(QDialog, Ui_QueueDialog):
 
         that = self
         def dropEvent(self, event):
-            if event.mimeData().urls():                
-                that.fileNameEncoding = chardet.detect(
-                    str(event.mimeData().urls()[0].toString().toLocal8Bit())
-                )['encoding']                
+            if event.mimeData().urls():
+                if systemName != 'Darwin':
+                    that.fileNameEncoding = chardet.detect(
+                        str(event.mimeData().urls()[0].toString().toLocal8Bit())
+                    )['encoding']
                 urlsString = '\n'.join([unicode(url.toString()) for url in event.mimeData().urls()])                
                 urlsString = re.sub('file://(/\w:)?', '', urlsString)                
                 dirList = urlsString.split('\n')
@@ -86,9 +87,12 @@ class QueueDialog(QDialog, Ui_QueueDialog):
         Open file dialog and handle the directory selected.
         """
         dirName = QFileDialog.getExistingDirectory(self, 'Locate Directory', getSettings()['defaultFolder'])
-        encoding = chardet.detect(str(dirName.toLocal8Bit()))['encoding']
-        dirName = str(dirName.toLocal8Bit()).decode(encoding)
-        self.fileNameEncoding = encoding
+        if systemName != 'Darwin':
+            encoding = chardet.detect(str(dirName.toLocal8Bit()))['encoding']
+            dirName = str(dirName.toLocal8Bit()).decode(encoding)
+            self.fileNameEncoding = encoding
+        else:
+            dirName = unicode(dirName)        
         if dirName:
             # Set the directory above the chosen one as the new default
             qDir = QDir(dirName)
