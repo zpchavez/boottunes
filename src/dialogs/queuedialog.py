@@ -54,17 +54,9 @@ class QueueDialog(QDialog, Ui_QueueDialog):
                 event.accept()
             else:
                 event.ignore()
-
-        that = self
+        
         def dropEvent(self, event):
             if event.mimeData().urls():
-                if systemName != 'Darwin':
-                    detected = chardet.detect(
-                        str(event.mimeData().urls()[0].toString().toLocal8Bit())
-                    )
-                    if detected['encoding'] is not None and detected['confidence'] > 0.5:
-                        that.fileNameEncoding = detected['encoding']
-                        
                 urlsString = '\n'.join([unicode(url.toString()) for url in event.mimeData().urls()])                
                 urlsString = re.sub('file://(/\w:)?', '', urlsString)                
                 dirList = urlsString.split('\n')
@@ -90,13 +82,6 @@ class QueueDialog(QDialog, Ui_QueueDialog):
         Open file dialog and handle the directory selected.
         """
         dirName = QFileDialog.getExistingDirectory(self, 'Locate Directory', getSettings()['defaultFolder'])
-        if systemName != 'Darwin':
-            detected = chardet.detect(str(dirName.toLocal8Bit()))
-            if detected['encoding'] is not None and detected['confidence'] > 0.5:
-                self.fileNameEncoding = detected['encoding']
-            dirName = str(dirName.toLocal8Bit()).decode(self.fileNameEncoding)
-        else:
-            dirName = unicode(dirName)        
         if dirName:
             # Set the directory above the chosen one as the new default
             qDir = QDir(dirName)
@@ -304,8 +289,16 @@ class QueueDialog(QDialog, Ui_QueueDialog):
                         foundTrackNumbers.append(match.group(1))
                 
                 filePaths = []
+                fileEncodings = []
                 for file in sortedFiles:                    
-                    filePath = unicode(qDir.absolutePath() + '/' + file)
+                    filePath = unicode(qDir.absolutePath() + '/' + file)                    
+                    detected = chardet.detect(str((qDir.absolutePath() + '/' + file).toLocal8Bit()))
+                    fileEncodings.append(
+                        detected['encoding'] if detected['encoding'] is not \
+                            None and detected['confidence'] > 0.5 else \
+                            self.fileNameEncoding
+                    )
+
                     filePaths.append(filePath)
                 # The show could be split up between folders, e.g. CD1 and CD2
                 if len(filePaths) == 0:
@@ -334,6 +327,7 @@ class QueueDialog(QDialog, Ui_QueueDialog):
                 nonParsedMetadata = {}
 
                 nonParsedMetadata['audioFiles'] = filePaths
+                nonParsedMetadata['encodings'] = fileEncodings
 
                 nonParsedMetadata['dir'] = qDir
                 # Hash used for identicons and temp directory names
@@ -513,9 +507,13 @@ class QueueDialog(QDialog, Ui_QueueDialog):
         # Prepare a list of PcmReader objects
         for validRecording in self.validRecordings:
             validRecording['pcmReaders'] = []
-            for audioFile in validRecording['metadata']['audioFiles']:
+            for index, audioFile in enumerate(validRecording['metadata']['audioFiles']):
                 try:
-                    audiofileObj = audiotools.open(audioFile.encode(self.fileNameEncoding))                    
+                    audiofileObj = audiotools.open(
+                        audioFile.encode(
+                            validRecording['metadata']['encodings'][index]
+                        )
+                    )
                 except audiotools.UnsupportedFile:
                     MessageBox.critical(
                         self,
