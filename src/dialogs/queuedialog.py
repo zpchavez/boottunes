@@ -31,11 +31,9 @@ class QueueDialogError(Exception): pass
 class LoadCanceledException(Exception): pass
 class TracklintFixableError(Exception): pass
 
-systemName = platform.system()
-
 class QueueDialog(QDialog, Ui_QueueDialog):
 
-    fileNameEncoding = 'utf_8' if systemName == 'Darwin' else 'latin_1'
+    fileNameEncoding = 'utf_8' if platform.system() == 'Darwin' else 'latin_1'
 
     def __init__(self):
         super(QueueDialog, self).__init__()
@@ -291,13 +289,14 @@ class QueueDialog(QDialog, Ui_QueueDialog):
                 filePaths = []
                 fileEncodings = []
                 for file in sortedFiles:                    
-                    filePath = unicode(qDir.absolutePath() + '/' + file)                    
-                    detected = chardet.detect(str((qDir.absolutePath() + '/' + file).toLocal8Bit()))
-                    fileEncodings.append(
-                        detected['encoding'] if detected['encoding'] is not \
-                            None and detected['confidence'] > 0.5 else \
-                            self.fileNameEncoding
-                    )
+                    filePath = unicode(qDir.absolutePath() + '/' + file)
+                    if platform.system() != 'Darwin':
+                        detected = chardet.detect(str((qDir.absolutePath() + '/' + file).toLocal8Bit()))
+                        fileEncodings.append(
+                            detected['encoding'] if detected['encoding'] is not \
+                                None and detected['confidence'] > 0.5 else \
+                                self.fileNameEncoding
+                        )
 
                     filePaths.append(filePath)
                 # The show could be split up between folders, e.g. CD1 and CD2
@@ -327,7 +326,8 @@ class QueueDialog(QDialog, Ui_QueueDialog):
                 nonParsedMetadata = {}
 
                 nonParsedMetadata['audioFiles'] = filePaths
-                nonParsedMetadata['encodings'] = fileEncodings
+                if platform.system() != 'Darwin':
+                    nonParsedMetadata['encodings'] = fileEncodings
 
                 nonParsedMetadata['dir'] = qDir
                 # Hash used for identicons and temp directory names
@@ -511,7 +511,9 @@ class QueueDialog(QDialog, Ui_QueueDialog):
                 try:
                     audiofileObj = audiotools.open(
                         audioFile.encode(
-                            validRecording['metadata']['encodings'][index]
+                            validRecording['metadata']['encodings'][index] \
+                                if platform.system() != 'Darwin' else \
+                                self.fileNameEncoding
                         )
                     )
                 except audiotools.UnsupportedFile:
@@ -620,7 +622,7 @@ class QueueDialog(QDialog, Ui_QueueDialog):
         Cancel the conversion process.  Called when "Cancel" is pressed in the progress bar dialog.
         """        
         self.processThread.stop()        
-        if systemName != 'Darwin':
+        if platform.system() != 'Darwin':
             self.processThread.terminate()
         if (hasattr(self, 'validRecordings')):
             self.removeCompletedRecordings()
@@ -678,7 +680,7 @@ class FixBadFlacsThread(QThread):
         for index, audioFile in enumerate(self.metadata['audioFiles']):
             audioObj = audiotools.open(audioFile)            
             if isinstance(audioObj, audiotools.tracklint.BrokenFlacAudio):
-                if systemName == 'Darwin':
+                if platform.system() == 'Darwin':
                     self.process = Process(target=self.fixProcess, args=(index, audioObj))
                     self.process.start()
                     while self.process.is_alive() and not self.isStopped():
@@ -703,7 +705,7 @@ class FixBadFlacsThread(QThread):
         
     def stop(self):
         self.stopped = True
-        if systemName == 'Darwin' and hasattr(self, 'process') and self.process.is_alive():
+        if platform.system() == 'Darwin' and hasattr(self, 'process') and self.process.is_alive():
             self.process.terminate()
 
     def isStopped(self):
@@ -771,7 +773,7 @@ class ConvertFilesThread(QThread):
             targetFile = tempDirPath + '/' + unicode(parent.currentTrack) + u'.m4a'
 
             # If on Mac, run as a separate process
-            if systemName == 'Darwin':
+            if platform.system() == 'Darwin':
                 self.process = Process(
                     target=self.encodeProcess,
                     args=(targetFile, sourcePcm, alacMetadata, genre, imageData)
@@ -843,7 +845,7 @@ class ConvertFilesThread(QThread):
     def stop(self):
         with QMutexLocker(self.mutex):
             self.stopped = True
-        if systemName == 'Darwin' and self.process.is_alive():
+        if platform.system() == 'Darwin' and self.process.is_alive():
             self.process.terminate()
 
     def isStopped(self):
