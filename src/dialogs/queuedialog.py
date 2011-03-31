@@ -1,4 +1,3 @@
-# coding=utf-8
 """
 The main dialog of the main window.
 
@@ -60,9 +59,12 @@ class QueueDialog(QDialog, Ui_QueueDialog):
         def dropEvent(self, event):
             if event.mimeData().urls():
                 if systemName != 'Darwin':
-                    that.fileNameEncoding = chardet.detect(
+                    detected = chardet.detect(
                         str(event.mimeData().urls()[0].toString().toLocal8Bit())
-                    )['encoding']
+                    )
+                    if detected['encoding'] is not None and detected['confidence'] > 0.5:
+                        that.fileNameEncoding = detected['encoding']
+                        
                 urlsString = '\n'.join([unicode(url.toString()) for url in event.mimeData().urls()])                
                 urlsString = re.sub('file://(/\w:)?', '', urlsString)                
                 dirList = urlsString.split('\n')
@@ -89,9 +91,10 @@ class QueueDialog(QDialog, Ui_QueueDialog):
         """
         dirName = QFileDialog.getExistingDirectory(self, 'Locate Directory', getSettings()['defaultFolder'])
         if systemName != 'Darwin':
-            encoding = chardet.detect(str(dirName.toLocal8Bit()))['encoding']
-            dirName = str(dirName.toLocal8Bit()).decode(encoding)
-            self.fileNameEncoding = encoding
+            detected = chardet.detect(str(dirName.toLocal8Bit()))
+            if detected['encoding'] is not None and detected['confidence'] > 0.5:
+                self.fileNameEncoding = detected['encoding']
+            dirName = str(dirName.toLocal8Bit()).decode(self.fileNameEncoding)
         else:
             dirName = unicode(dirName)        
         if dirName:
