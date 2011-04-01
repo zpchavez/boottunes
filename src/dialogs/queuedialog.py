@@ -7,6 +7,7 @@ http://www.gnu.org/licenses/gpl-2.0.html
 """
 import re
 import os
+import sys
 import shutil
 import codecs
 import hashlib
@@ -343,8 +344,12 @@ class QueueDialog(QDialog, Ui_QueueDialog):
                         if self.loadingMultipleShows:
                             raise QueueDialogError('Malformed FLAC files.  Load this show alone to fix.')
                         else:
-                            metadata.update(nonParsedMetadata)
-                            self.fixBadFlacFiles(metadata)
+                            metadata.update(nonParsedMetadata)                            
+                            self.fixBadFlacFiles(metadata)                            
+                            while hasattr(self, 'processThread') and not self.processThread.isStopped():                                
+                                pass                            
+                            if self.processThread.failed:
+                                raise QueueDialogError('Could not fix malformed FLAC files.')
                     else:                        
                         # Assume that an artist name found in the actual file metadata is more accurate
                         # unless that title is "Unknown Artist"
@@ -367,7 +372,7 @@ class QueueDialog(QDialog, Ui_QueueDialog):
                 nonParsedMetadata['cover'] = CoverArtRetriever.getCoverImageChoices(nonParsedMetadata)[0][0]                
 
                 metadata.update(nonParsedMetadata)                
-
+                
                 return metadata
 
             except IOError as e:
@@ -508,14 +513,12 @@ class QueueDialog(QDialog, Ui_QueueDialog):
         for validRecording in self.validRecordings:
             validRecording['pcmReaders'] = []
             for index, audioFile in enumerate(validRecording['metadata']['audioFiles']):
+                encoding = validRecording['metadata']['encodings'][index] \
+                    if platform.system() != 'Darwin' else \
+                    self.fileNameEncoding
+                fileNameString = audioFile.encode(encoding)
                 try:
-                    audiofileObj = audiotools.open(
-                        audioFile.encode(
-                            validRecording['metadata']['encodings'][index] \
-                                if platform.system() != 'Darwin' else \
-                                self.fileNameEncoding
-                        )
-                    )
+                    audiofileObj = audiotools.open(fileNameString)
                 except audiotools.UnsupportedFile:
                     MessageBox.critical(
                         self,
@@ -527,14 +530,14 @@ class QueueDialog(QDialog, Ui_QueueDialog):
                     MessageBox.critical(
                         self,
                         'Error opening file',
-                        'Could not open file ' + os.path.basename(audioFile) + "<br /><br />" + e[1]
+                        'Could not open file ' + os.path.basename(audioFile) + "<br /><br />" + e.args[1]
                     )
                     return
                 except UnicodeDecodeError as e:
                     MessageBox.critical(
                         self,
                         'Error opening file',
-                        'Unicode decode error <br /><br />' + e[1]
+                        'Unicode decode error <br /><br />' + e.args[1]
                     )
                     return
 
@@ -542,7 +545,17 @@ class QueueDialog(QDialog, Ui_QueueDialog):
                 if isinstance(audiofileObj, audiotools.ALACAudio):
                     validRecording['pcmReaders'].append(None)
                 else:
-                    pcmReader = audiofileObj.to_pcm()
+                    try:
+                        pcmReader = audiofileObj.to_pcm()
+                    except Exception as e:
+                        MessageBox.critical(
+                            self,
+                            'Error reading file',
+                            'Could not read file: %s <br /><br /> %s' % \
+                                (fileNameString, str(e))
+                        )
+                        return
+                    
                     if isinstance(pcmReader, audiotools.PCMReaderError):
                         MessageBox.critical(
                             self,
@@ -568,8 +581,20 @@ class QueueDialog(QDialog, Ui_QueueDialog):
         self.lock = QReadWriteLock()
         self.processThread = ConvertFilesThread(self.lock, self)
         self.connect(self.processThread, SIGNAL("progress(int, QString)"), self.updateProgress)
-        self.connect(self.processThread, SIGNAL("finished()"), self.conversionComplete)
+        self.connect(self.processThread, SIGNAL("success()"), self.conversionComplete)
+        self.connect(self.processThread, SIGNAL("error(QString)"), self.errorInThread)
         self.processThread.start()
+
+    def errorInThread(self, string):
+        """
+        Signaled if an exception is raised in a thread.
+        """
+        self.progressDialog.cancel()        
+        MessageBox.critical(
+            self,
+            'Error',
+            'Error encountered <br /><br />' + string
+        )
 
     def updateProgress(self, value, text):
         """
@@ -604,8 +629,7 @@ class QueueDialog(QDialog, Ui_QueueDialog):
         """
         Called on completion of FixBadFlacsThread.
         """
-        if hasattr(self, 'metadata') and self.metadata:
-            ConfirmMetadataDialog(self.metadata, self).exec_()
+        pass # Does nothing
 
     def removeCompletedRecordings(self):
         """
@@ -661,7 +685,8 @@ class QueueDialog(QDialog, Ui_QueueDialog):
         self.lock = QReadWriteLock()
         self.processThread = FixBadFlacsThread(self.lock, metadata, self)
         self.connect(self.processThread, SIGNAL("progress(int, QString)"), self.updateProgress)
-        self.connect(self.processThread, SIGNAL("finished()"), self.badFlacFixingComplete)
+        self.connect(self.processThread, SIGNAL("success()"), self.badFlacFixingComplete)
+        self.connect(self.processThread, SIGNAL("error(QString)"), self.errorInThread)
         self.processThread.start()
 
 class FixBadFlacsThread(QThread):
@@ -673,30 +698,36 @@ class FixBadFlacsThread(QThread):
         parent.metadata = None
         self.lock = lock
         self.metadata = metadata
+        self.failed = False
         self.stopped = False        
         self.completed = False
 
-    def run(self):        
-        for index, audioFile in enumerate(self.metadata['audioFiles']):
-            audioObj = audiotools.open(audioFile)            
-            if isinstance(audioObj, audiotools.tracklint.BrokenFlacAudio):
-                if platform.system() == 'Darwin':
-                    self.process = Process(target=self.fixProcess, args=(index, audioObj))
-                    self.process.start()
-                    while self.process.is_alive() and not self.isStopped():
-                        pass
-                else:
-                    self.fixProcess(index, audioObj)
-                self.metadata['audioFiles'][index] = unicode(
-                    self.metadata['tempDir'].absolutePath() + '/'
-                    + os.path.basename(self.metadata['audioFiles'][index])
-                )
-            if self.isStopped():
-                return
-            self.emit(SIGNAL("progress(int, QString)"), index, 'Temporarily removing ID3 tags')
-        self.parent().metadata = self.metadata
-        self.completed = True
-        self.stop()
+    def run(self):
+        try:            
+            for index, audioFile in enumerate(self.metadata['audioFiles']):
+                audioObj = audiotools.open(audioFile)
+                if isinstance(audioObj, audiotools.tracklint.BrokenFlacAudio):
+                    if platform.system() == 'Darwin':
+                        self.process = Process(target=self.fixProcess, args=(index, audioObj))
+                        self.process.start()                        
+                        while self.process.is_alive() and not self.isStopped():
+                            pass                        
+                    else:
+                        self.fixProcess(index, audioObj)
+                    self.metadata['audioFiles'][index] = unicode(
+                        self.metadata['tempDir'].absolutePath() + '/'
+                        + os.path.basename(self.metadata['audioFiles'][index])
+                    )
+                if self.isStopped():
+                    return
+                self.emit(SIGNAL("progress(int, QString)"), index, 'Temporarily removing ID3 tags')
+            self.parent().metadata = self.metadata
+            self.emit(SIGNAL("success()"))
+        except Exception as e:
+            self.failed = True
+        finally:
+            self.completed = True
+            self.stop()
 
     def fixProcess(self, index, audioObj):
         audioObj.fix_id3_preserve_originals(
@@ -724,94 +755,103 @@ class ConvertFilesThread(QThread):
         self.completed = False
 
     def run(self):
-        parent = self.parent()
-        progressCounter = 0
-        while progressCounter < parent.trackCount and not self.isStopped():
-            currentRecording = parent.validRecordings[parent.currentRecording]
-            metadata = currentRecording['metadata']
+        try:            
+            parent = self.parent()
+            progressCounter = 0
+            while progressCounter < parent.trackCount and not self.isStopped():
+                currentRecording = parent.validRecordings[parent.currentRecording]
+                metadata = currentRecording['metadata']
 
-            if 'imageData' not in currentRecording:
-                if metadata['cover'] == 'No Cover Art':
-                    currentRecording['imageData'] = None
+                if 'imageData' not in currentRecording:
+                    if metadata['cover'] == 'No Cover Art':
+                        currentRecording['imageData'] = None
+                    else:
+                        imageFile = open(metadata['cover'], 'rb')
+                        currentRecording['imageData'] = imageFile.read()
+                        imageFile.close()
+
+                tempDirPath = metadata['tempDir'].absolutePath()
+
+                filePath = metadata['audioFiles'][parent.currentTrack]
+                self.currentFile = filePath
+
+                extensionMatches = re.findall('\.([^.]+)$', filePath)
+                self.extension = extensionMatches[0] if extensionMatches else ''
+
+                if 'defaults' in metadata:
+                    artistName = metadata['defaults']['preferred_name'].decode('utf_8')
+                    genre = metadata['defaults']['genre']
                 else:
-                    imageFile = open(metadata['cover'], 'rb')
-                    currentRecording['imageData'] = imageFile.read()
-                    imageFile.close()
+                    artistName = metadata['artist']
+                    genre = ''
 
-            tempDirPath = metadata['tempDir'].absolutePath()
+                parent.currentTrackName = metadata['tracklist'][parent.currentTrack]
 
-            filePath = metadata['audioFiles'][parent.currentTrack]
-            self.currentFile = filePath
-
-            extensionMatches = re.findall('\.([^.]+)$', filePath)
-            self.extension = extensionMatches[0] if extensionMatches else ''
-
-            if 'defaults' in metadata:
-                artistName = metadata['defaults']['preferred_name'].decode('utf_8')
-                genre = metadata['defaults']['genre']
-            else:
-                artistName = metadata['artist']
-                genre = ''
-
-            parent.currentTrackName = metadata['tracklist'][parent.currentTrack]
-
-            alacMetadata = audiotools.MetaData(
-                # if track name is empty iTunes will use the filename, which we don't want, so replace with a space
-                track_name   = parent.currentTrackName if parent.currentTrackName != '' else ' ',
-                track_number = parent.currentTrack + 1,
-                track_total  = len(metadata['tracklist']),
-                album_name   = metadata['albumTitle'],
-                artist_name  = artistName,
-                year         = unicode(metadata['date'].year),
-                date         = unicode(metadata['date'].isoformat()),                
-                comment      = metadata['comments']
-            )
-            self.emit(SIGNAL("progress(int, QString)"), progressCounter, 'Converting "' + parent.currentTrackName + '"')
-                        
-            imageData = currentRecording['imageData']
-            sourcePcm = currentRecording['pcmReaders'][parent.currentTrack]
-            targetFile = tempDirPath + '/' + unicode(parent.currentTrack) + u'.m4a'
-
-            # If on Mac, run as a separate process
-            if platform.system() == 'Darwin':
-                self.process = Process(
-                    target=self.encodeProcess,
-                    args=(targetFile, sourcePcm, alacMetadata, genre, imageData)
+                alacMetadata = audiotools.MetaData(
+                    # if track name is empty iTunes will use the filename, which we don't want, so replace with a space
+                    track_name   = parent.currentTrackName if parent.currentTrackName != '' else ' ',
+                    track_number = parent.currentTrack + 1,
+                    track_total  = len(metadata['tracklist']),
+                    album_name   = metadata['albumTitle'],
+                    artist_name  = artistName,
+                    year         = unicode(metadata['date'].year),
+                    date         = unicode(metadata['date'].isoformat()),
+                    comment      = metadata['comments']
                 )
-                self.process.start()
-                while self.process.is_alive() and not self.isStopped():
-                    pass
-            else:
-                self.encodeProcess(targetFile, sourcePcm, alacMetadata, genre, imageData)
+                self.emit(SIGNAL("progress(int, QString)"), progressCounter, 'Converting "' + parent.currentTrackName + '"')
 
-            if self.isStopped():
-                return
+                imageData = currentRecording['imageData']
+                sourcePcm = currentRecording['pcmReaders'][parent.currentTrack]
+                targetFile = tempDirPath + '/' + unicode(parent.currentTrack) + u'.m4a'
 
-            progressCounter += 1
-
-            with ReadLocker(self.lock):
-                currentTrack = parent.currentTrack
-            if (currentTrack + 1) > (len(metadata['tracklist']) - 1):
-                with WriteLocker(self.lock):
-                    parent.currentTrack = 0
-                # Move files to addToITunesPath
-                metadata['tempDir'].setNameFilters(['*.m4a'])
-                QDir(getSettings()['addToITunesPath']).mkdir(metadata['hash'])
-                for audioFile in metadata['tempDir'].entryList():
-                    metadata['tempDir'].rename(
-                        audioFile,
-                        getSettings()['addToITunesPath'] + '/' + metadata['hash'] + '/' + audioFile
+                # If on Mac, run as a separate process
+                if platform.system() == 'Darwin':
+                    self.process = Process(
+                        target=self.encodeProcess,
+                        args=(targetFile, sourcePcm, alacMetadata, genre, imageData)
                     )
-                if not getSettings().isCompleted(metadata['hash']):
-                    getSettings().addCompleted(metadata['hash'])
-                with WriteLocker(self.lock):
-                    parent.currentRecording += 1
-            else:
-                parent.currentTrack += 1
+                    self.process.start()
+                    while self.process.is_alive() and not self.isStopped():
+                        pass
+                else:
+                    self.encodeProcess(targetFile, sourcePcm, alacMetadata, genre, imageData)
 
-        self.emit(SIGNAL("progress(int, QString)"), progressCounter, 'Finishing')
-        self.completed = True
-        self.stop()
+                if self.isStopped():
+                    return
+
+                progressCounter += 1
+
+                with ReadLocker(self.lock):
+                    currentTrack = parent.currentTrack
+                if (currentTrack + 1) > (len(metadata['tracklist']) - 1):
+                    with WriteLocker(self.lock):
+                        parent.currentTrack = 0
+                    # Move files to addToITunesPath
+                    metadata['tempDir'].setNameFilters(['*.m4a'])
+                    QDir(getSettings()['addToITunesPath']).mkdir(metadata['hash'])
+                    for audioFile in metadata['tempDir'].entryList():
+                        metadata['tempDir'].rename(
+                            audioFile,
+                            getSettings()['addToITunesPath'] + '/' + metadata['hash'] + '/' + audioFile
+                        )
+                    if not getSettings().isCompleted(metadata['hash']):
+                        getSettings().addCompleted(metadata['hash'])
+                    with WriteLocker(self.lock):
+                        parent.currentRecording += 1
+                else:
+                    parent.currentTrack += 1
+
+            self.emit(SIGNAL("progress(int, QString)"), progressCounter, 'Finishing')
+            self.emit(SIGNAL("success()"))
+        except Exception as e:            
+            self.emit(
+                SIGNAL("error(QString)"),
+                str(e)
+            )                        
+            raise # Re-raise so that it gets logged
+        finally:            
+            self.completed = True            
+            self.stop()
 
     def encodeProcess(self, targetFile, sourcePcm, alacMetadata, genre, imageData):
         """
@@ -845,7 +885,7 @@ class ConvertFilesThread(QThread):
     def stop(self):
         with QMutexLocker(self.mutex):
             self.stopped = True
-        if platform.system() == 'Darwin' and self.process.is_alive():
+        if platform.system() == 'Darwin' and hasattr(self, 'process') and self.process.is_alive():
             self.process.terminate()
 
     def isStopped(self):
