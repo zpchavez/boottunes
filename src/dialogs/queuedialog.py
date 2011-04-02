@@ -725,6 +725,7 @@ class FixBadFlacsThread(QThread):
             self.emit(SIGNAL("success()"))
         except Exception as e:
             self.failed = True
+            raise
         finally:
             self.completed = True
             self.stop()
