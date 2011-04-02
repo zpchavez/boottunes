@@ -1,0 +1,153 @@
+<changelog>
+    <changes version="0.2.2">
+        <bugfixes>
+            <bugfix>
+                Error information now sent to me so I can fix things (unless you
+                turn it off in settings).
+            </bugfix>
+            <bugfix>
+                Added support for tracklists numbered "101, 102, 103"...
+            </bugfix>
+            <bugfix>
+                Queue resorted when entry information is changed.
+            </bugfix>
+            <bugfix>
+                When editing an entry, the choose cover dialog displays
+                the previously chosen image instead of the image that is set as
+                the default.
+            </bugfix>
+            <bugfix>
+                Fixed error that occurred when multiple audio file names
+                began with the same single digit.
+            </bugfix>
+        </bugfixes>
+    </changes>
+    <changes version="0.2.1">
+        <bugfixes>
+            <bugfix>
+                Fixed bug where shows marked in red or yellow remain that way
+                even after the problem is fixed.
+            </bugfix>
+            <bugfix>
+                Track times in 4'44" format and track times which include 
+                hundredths of seconds are now recognized and removed from the
+                track name.
+            </bugfix>
+            <bugfix>
+                Various other text file parsing improvements.
+            </bugfix>
+        </bugfixes>
+        <features>
+            <feature>
+                The list of common cities used in text file parsing is now 
+                retrieved from the web so that it is always current.  (If web
+                access is unavailable, a local file will be used instead).
+            </feature>
+        </features>
+    </changes>
+    <changes version="0.2.0">        
+        <bugfixes>
+            <bugfix>
+                Shows with filenames numbered like "1, 2, 3" instead of "01, 02, 03" no longer
+                converted with mismatched tracks.
+            </bugfix>
+            <bugfix>
+                Untitled tracks no longer appear in iTunes with a single number
+                (the track number minus one) as the title, but instead appear blank.
+            </bugfix>
+        </bugfixes>
+        <features>
+            <feature>Files can now be played within the "confirm metadata" dialog.</feature>
+            <feature>
+                The new "Refresh Tracklist" button allows you to fix a malformed text file
+                directly in the program and apply the changes to the tracklist.
+            </feature>
+            <feature>
+                Shows no longer rejected if there is a mismatch between number of tracks
+                and number of files.
+            </feature>
+            <feature>Added the option to not use cover art.</feature>
+            <feature>Added date formats YY-MM-DD and YY-DD-MM</feature>
+        </features>
+    </changes>
+    <changes version="0.1.8">
+        <bugfixes>
+            <bugfix>Fixed Memory Error when converting large files.</bugfix>
+            <bugfix>Many improvements to text file parsing.</bugfix>
+            <bugfix>
+                Progress bar when loading multiple shows is more accurate 
+                (now the queue fills up immediately after it reaches 100%).
+            </bugfix>
+            <bugfix>Invalid items in queue are more legible.</bugfix>
+            <bugfix>Shows accepted even if no tracklist is found.</bugfix>
+        </bugfixes>
+    </changes>
+    <changes version="0.1.7">
+        <bugfixes>
+            <bugfix>Added support for indented tracklists.</bugfix>
+            <bugfix>
+                Fixed bug that prevented FLAC files with ID3 tags from being added to the queue.
+            </bugfix>
+            <bugfix>
+                Fixed Mac bug that prevented shows whose text files use multibyte encodings
+                from being added to the queue.
+            </bugfix>
+            <bugfix>Fixed occasional "Interrupted system call" error on Mac.</bugfix>
+            <bugfix>Various improvements to text file parsing.</bugfix>
+            <bugfix>Various other fixes.</bugfix>
+        </bugfixes>
+        <features>
+            <feature>Added "genre" field to "Confirm Metadata" dialog</feature>
+        </features>
+    </changes>
+    <changes version="0.1.6">
+        <bugfixes>
+            <bugfix>Converted shows no longer marked as "part of a compilation".</bugfix>
+            <bugfix>Cover art images now found in subfolders.</bugfix>
+            <bugfix>Load time for JPEGs shortened.</bugfix>
+            <bugfix>Support for GIFs fixed.</bugfix>
+            <bugfix>Tracklists with mistakenly skipped or repeated track numbers no longer invalid.</bugfix>
+        </bugfixes>
+    </changes>
+    <changes version="0.1.5">
+        <bugfixes>
+            <bugfix>Mac crash on startup fixed.</bugfix>
+            <bugfix>Text files using only carriage returns for newlines now read correctly.</bugfix>
+            <bugfix>Better handling of text files containing non-ascii characters.</bugfix>
+        </bugfixes>
+        <features>
+            <feature>Support for shows already in ALAC format.</feature>
+        </features>
+    </changes>
+    <changes version="0.1.4">
+        <bugfixes>
+            <bugfix>Converting SHN files no longer causes crashes or lockups.</bugfix>
+            <bugfix>
+                If settings files become corrupted or changed, BootTunes will start normally and replace them.
+            </bugfix>
+            <bugfix>Track lengths in tracklist no longer included in the track name.</bugfix>
+            <bugfix>Shows now converted in the order in which they appear in the queue.</bugfix>
+        </bugfixes>
+        <features>
+        </features>
+    </changes>
+    <changes version="0.1.3">
+        <bugfixes>
+            <bugfix>
+                When converting multiple shows at once when iTunes is not open,
+                output files from later shows will no longer overwrite earlier ones.
+            </bugfix>
+            <bugfix>
+                Fixed Windows 7 crash when starting a second batch in the same session.
+            </bugfix>
+            <bugfix>
+                Tracklist detection improved.
+            </bugfix>
+        </bugfixes>
+        <features>
+            <feature>
+                Added "Restore Defaults" button to settings dialog.
+            </feature>
+        </features>
+    </changes>
+</changelog>
