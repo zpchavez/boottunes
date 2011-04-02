@@ -1,4 +1,17 @@
 <changelog>
+    <changes version="0.2.4">
+        <bugfixes>
+            <bugfix>
+                Fixed error in Windows version that occurred when working with
+                non-ascii filenames.
+            </bugfix>
+            <bugfix>
+                Errors that occur during conversion now display an error dialog, instead
+                of failing silently.
+            </bugfix>
+            <bugfix>Various other small bug fixes and text file parsing tweaks.</bugfix>
+        </bugfixes>
+    </changes>
     <changes version="0.2.2">
         <bugfixes>
             <bugfix>
