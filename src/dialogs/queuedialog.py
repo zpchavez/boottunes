@@ -286,9 +286,8 @@ class QueueDialog(QDialog, Ui_QueueDialog):
         # is set to the full contents of the file), and there are more txt
         # files, keep trying.
         for index, txtFile in enumerate(qDir.entryList()):
-            isTheFinalTxt = (index == len(qDir.entryList()) - 1)
-            
-            textFilePath = self._qStringToUnicode(qDir.filePath(txtFile))
+            isTheFinalTxt = (index == len(qDir.entryList()) - 1)            
+            textFilePath, encoding = self._qStringToUnicode(qDir.filePath(txtFile))
             try:                
                 # Open file with open, detect the encoding, close it and open
                 # again with codec.open
@@ -321,9 +320,11 @@ class QueueDialog(QDialog, Ui_QueueDialog):
                 
                 filePaths = self._getFilePaths(qDir)                
                 filePaths = self._getSortedFiles(filePaths)                
-                filePaths = [
+                tuples = [
                     self._qStringToUnicode(filePath) for filePath in filePaths
                 ]
+                filePaths = [element[0] for element in tuples]
+                encodings = [element[1] for element in tuples]
                 
                 if len(filePaths) == 0:
                     raise QueueDialogError(
@@ -346,9 +347,10 @@ class QueueDialog(QDialog, Ui_QueueDialog):
                 # assume the extra tracks are an error
                 del metadata['tracklist'][len(filePaths):]
                 
-                nonParsedMetadata = {}
+                nonParsedMetadata = {}                
 
                 nonParsedMetadata['audioFiles'] = filePaths
+                nonParsedMetadata['encodings']  = encodings
                 nonParsedMetadata['dir'] = qDir
                 # Hash used for identicons and temp directory names
                 nonParsedMetadata['hash'] = hashlib.md5(metadata['comments'] \
@@ -435,19 +437,19 @@ class QueueDialog(QDialog, Ui_QueueDialog):
         """        
         filePaths = []
         for file in qDir.entryList():
-            filePaths.append(qDir.absolutePath() + '/' + file)
+            filePaths.append(qDir.filePath(file))
         
         if len(filePaths) == 0:
             validExtensions = qDir.nameFilters()
             qDir.setNameFilters('*')
             qDir.setFilter(QDir.Dirs | QDir.NoDotAndDotDot)
             for subdirStr in qDir.entryList():
-                qSubdir = QDir(qDir.absolutePath() + '/' + subdirStr)
+                qSubdir = QDir(qDir.filePath(subdirStr))
                 qSubdir.setNameFilters(validExtensions)
                 for file in qSubdir.entryList():
                     filePaths.append(
-                        qSubdir.absolutePath() + '/' + file
-                    )        
+                        qSubdir.filePath(file)
+                    )
         return filePaths
 
     def _getSortedFiles(self, filePaths):
@@ -488,6 +490,10 @@ class QueueDialog(QDialog, Ui_QueueDialog):
         Convert a QString to a unicode object, using a best
         guess at the encoding.
 
+        @rtype: tuple
+        @return: a tuple whose first element is the unicode object
+        and whose second element is the encoding used.
+
         """
         if platform.system() != 'Darwin':
             detected = chardet.detect(
@@ -499,7 +505,7 @@ class QueueDialog(QDialog, Ui_QueueDialog):
                 else self.fileNameEncoding
         else:
             encoding = self.fileNameEncoding
-        return unicode(qString.toLocal8Bit(), encoding)
+        return (unicode(qString.toLocal8Bit(), encoding), encoding)
         
 
     def removeSelectedItem(self):
@@ -666,11 +672,15 @@ class QueueDialog(QDialog, Ui_QueueDialog):
 
         # Prepare a list of PcmReader objects
         for validRecording in self.validRecordings:
-            validRecording['pcmReaders'] = []
+            validRecording['pcmReaders'] = []            
             audioFiles = validRecording['metadata']['audioFiles']
             for index, audioFile in enumerate(audioFiles):
                 try:
-                    audiofileObj = audiotools.open(audioFile)
+                    audiofileObj = audiotools.open(
+                        audioFile.encode(
+                            validRecording['metadata']['encodings'][index]
+                        )
+                    )
                 except audiotools.UnsupportedFile:
                     MessageBox.critical(
                         self,
