@@ -377,9 +377,6 @@ class QueueDialog(QDialog, Ui_QueueDialog):
                         else:
                             metadata.update(nonParsedMetadata)                            
                             self.fixBadFlacFiles(metadata)
-                            while hasattr(self, 'processThread') \
-                                    and not self.processThread.isStopped():
-                                pass                            
                             if self.processThread.failed:
                                 raise QueueDialogError(
                                     'Could not fix malformed FLAC files.'
@@ -819,7 +816,7 @@ class QueueDialog(QDialog, Ui_QueueDialog):
         Called on completion of FixBadFlacsThread.
         
         """
-        pass # Does nothing
+        ConfirmMetadataDialog(self.metadata, self).exec_()
 
     def removeCompletedRecordings(self):
         """
