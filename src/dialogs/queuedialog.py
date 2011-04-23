@@ -57,10 +57,11 @@ class QueueDialog(QDialog, Ui_QueueDialog):
         
         def dropEvent(self, event):
             if event.mimeData().urls():
-                urlsString = '\n'.join([unicode(url.toString()) \
-                    for url in event.mimeData().urls()])
-                urlsString = re.sub('file://(/\w:)?', '', urlsString)                
-                dirList = urlsString.split('\n')
+                regex = QRegExp('file://(/\w:)?')                
+                dirList = [
+                    url.toString().replace(regex, '') \
+                    for url in event.mimeData().urls()
+                ]                                
                 if len(dirList) == 0:
                     event.ignore()
                 else:
@@ -104,39 +105,39 @@ class QueueDialog(QDialog, Ui_QueueDialog):
         add them to the queue.  Display a message dialog if none could be
         added.
 
-        @type dirName: string or list of strings if multiple dirs are dragged
+        @type dirName: QString or list of QStrings if multiple dirs are dragged
         and dropped
 
-        """
+        """        
         self.loadingMultipleShows = False
         try:
             if isinstance(dirOrDirs, list):
                 metadata = []
                 self.loadingMultipleShows = True
-                for dir in dirOrDirs:
-                    if unicode(dir) in self.queueItemData:                        
+                for dirName in dirOrDirs:
+                    if dirName in self.queueItemData:
                         metadata = [
-                            self.queueItemData[unicode(dir)]['metadata']
+                            self.queueItemData[dirName]['metadata']
                         ]
                     else:
                         try:
-                            ret = self.getMetadataFromDirAndSubDirs(dir)
+                            ret = self.getMetadataFromDirAndSubDirs(dirName)
                         except:
                             continue
                         if isinstance(ret, dict):
                             metadata.append(ret)
-                        else: # Must be a tuple
+                        else: # It's not a dict, so it must be a tuple
                             metadata += ret
                 if len(metadata) == 1:
                     metadata = metadata[0]
                 else:
                     metadata = tuple(metadata)
             else:
-                dir = dirOrDirs
-                if unicode(dir) in self.queueItemData:                    
-                    metadata = self.queueItemData[unicode(dir)]['metadata']
+                dirName = dirOrDirs
+                if dirName in self.queueItemData:
+                    metadata = self.queueItemData[dirName]['metadata']
                 else:
-                    metadata = self.getMetadataFromDirAndSubDirs(QDir(dir));
+                    metadata = self.getMetadataFromDirAndSubDirs(dirName);
         except QueueDialogError as e:
             MessageBox.critical(
                 self,
@@ -197,7 +198,7 @@ class QueueDialog(QDialog, Ui_QueueDialog):
         Search dirName and the first level of subdirectories for valid
         recordings.
 
-        @type  dirName: string
+        @type  dirName: QString
         @param dirName: Full path of the directory
 
         @rtype:  tuple or dict
@@ -234,8 +235,8 @@ class QueueDialog(QDialog, Ui_QueueDialog):
                 for index, dir in enumerate(qDir.entryList()):                    
                     if progress.wasCanceled():
                         raise LoadCanceledException
-                    absoluteDirPath = unicode(qDir.absolutePath() + '/' + dir)
-                    if unicode(absoluteDirPath) in self.queueItemData:
+                    absoluteDirPath = qDir.filePath(dir)
+                    if absoluteDirPath in self.queueItemData:
                         metadataList.append(
                             self.queueItemData[absoluteDirPath]['metadata']
                         )
@@ -265,7 +266,7 @@ class QueueDialog(QDialog, Ui_QueueDialog):
         return a tuple of parameters to be passed to self.addToQueue().  If
         not found, raises QueueDialogError.
 
-        @type  dirName: string
+        @type  dirName: QString
         @param dirName: Full path of the directory
 
         @rtype:  dict
@@ -285,14 +286,15 @@ class QueueDialog(QDialog, Ui_QueueDialog):
         # is set to the full contents of the file), and there are more txt
         # files, keep trying.
         for index, txtFile in enumerate(qDir.entryList()):
-            theFinalTxt = (index == len(qDir.entryList()) - 1)
-            textFilePath = unicode(qDir.filePath(txtFile))
-            try:
+            isTheFinalTxt = (index == len(qDir.entryList()) - 1)
+            
+            textFilePath = self._qStringToUnicode(qDir.filePath(txtFile))
+            try:                
                 # Open file with open, detect the encoding, close it and open
                 # again with codec.open
-                fileHandle = open(textFilePath, 'r')
+                fileHandle = open(textFilePath, 'r')                
                 encoding = chardet.detect(fileHandle.read())['encoding']
-                fileHandle.close()
+                fileHandle.close()                
                 # Try UTF-8 first. If there's an error, try the chardet
                 # detected encoding. This seems to give the best results.
                 fileHandle = codecs.open(textFilePath, 'r', 'utf_8')
@@ -302,7 +304,7 @@ class QueueDialog(QDialog, Ui_QueueDialog):
                 except UnicodeDecodeError:
                     fileHandle = codecs.open(textFilePath, 'r', encoding)
 
-                metadata = TxtParser(fileHandle.read()).parseTxt()
+                metadata = TxtParser(fileHandle.read()).parseTxt()                
 
                 fileHandle.close()
 
@@ -310,63 +312,19 @@ class QueueDialog(QDialog, Ui_QueueDialog):
                 for k, v in metadata.iteritems():
                     if v:
                         foundCount += 1
-                if foundCount < 4 and not theFinalTxt:
+                if foundCount < 4 and not isTheFinalTxt:
                     continue
 
-                validExtensions = ['*.flac', '*.shn', '*.m4a']
-
                 # Must contain valid audio files
+                validExtensions = ['*.flac', '*.shn', '*.m4a']                
                 qDir.setNameFilters(validExtensions)
-
-                # If the single digits tracks are numbered like 1, 2, 3
-                # instead of 01, 02, 03, make sure they are sorted correctly,
-                # so that track 10 does not follow track 1, etc.
-                sortedFiles = []
-                [sortedFiles.append('') for x in range(len(qDir.entryList()))]                
-                foundTrackNumbers = []
-                for index, file in enumerate(qDir.entryList()):                    
-                    match = re.search(
-                        '^(\d{1,2})([^\d].*)?$',
-                        file,
-                        re.IGNORECASE
-                    )
-                    if not match or match.group(1) in foundTrackNumbers:
-                        sortedFiles = list(qDir.entryList())
-                        break
-                    trackNum = int(match.group(1)) - 1
-                    if trackNum < len(sortedFiles):
-                        sortedFiles[int(match.group(1)) - 1] = unicode(file)
-                        foundTrackNumbers.append(match.group(1))
                 
-                filePaths = []
-                fileEncodings = []
-                for file in sortedFiles:                    
-                    filePath = unicode(qDir.absolutePath() + '/' + file)
-                    if platform.system() != 'Darwin':
-                        detected = chardet.detect(
-                            str((qDir.absolutePath() + '/' + file)
-                                .toLocal8Bit())
-                        )
-                        fileEncodings.append(
-                            detected['encoding'] if detected['encoding'] is not \
-                                None and detected['confidence'] > 0.5 else \
-                                self.fileNameEncoding
-                        )
-
-                    filePaths.append(filePath)
-                # The show could be split up between folders, e.g. CD1 and CD2
-                if len(filePaths) == 0:
-                    qDir.setNameFilters('*')
-                    qDir.setFilter(QDir.Dirs | QDir.NoDotAndDotDot)
-                    for subdirStr in qDir.entryList():
-                        qSubdir = QDir(qDir.absolutePath() + '/' + subdirStr)
-                        qSubdir.setNameFilters(validExtensions)
-                        for file in qSubdir.entryList():
-                            filePaths.append(
-                                unicode(qSubdir.absolutePath()) + \
-                                '/' + unicode(file)
-                            )
-
+                filePaths = self._getFilePaths(qDir)                
+                filePaths = self._getSortedFiles(filePaths)                
+                filePaths = [
+                    self._qStringToUnicode(filePath) for filePath in filePaths
+                ]
+                
                 if len(filePaths) == 0:
                     raise QueueDialogError(
                         "Directory does not contain any supported audio " +
@@ -391,15 +349,11 @@ class QueueDialog(QDialog, Ui_QueueDialog):
                 nonParsedMetadata = {}
 
                 nonParsedMetadata['audioFiles'] = filePaths
-                if platform.system() != 'Darwin':
-                    nonParsedMetadata['encodings'] = fileEncodings
-
                 nonParsedMetadata['dir'] = qDir
                 # Hash used for identicons and temp directory names
                 nonParsedMetadata['hash'] = hashlib.md5(metadata['comments'] \
                     .encode('utf_8')).hexdigest()
-                # The dir where all temporary files for this
-                # recording will be stored
+                # The dir where all temp files for this show will be stored
                 nonParsedMetadata['tempDir'] = QDir(
                     getSettings().settingsDir + '/' + nonParsedMetadata['hash']
                 )
@@ -430,7 +384,7 @@ class QueueDialog(QDialog, Ui_QueueDialog):
                                 raise QueueDialogError(
                                     'Could not fix malformed FLAC files.'
                                 )
-                    else:                        
+                    else:
                         # Assume that an artist name found in the actual file
                         # metadata is more accurate unless that title is
                         # "Unknown Artist"
@@ -438,28 +392,118 @@ class QueueDialog(QDialog, Ui_QueueDialog):
                         artistFoundInFileMetadata = (
                             audioFileMetadata
                             and audioFileMetadata.artist_name
-                            and audioFileMetadata.artist_name != 'Unknown Artist'
+                            and audioFileMetadata.artist_name != \
+                            'Unknown Artist'
                         )
                         if artistFoundInFileMetadata:
                             txtParser = TxtParser(metadata['comments'])
                             txtParser.artist = audioFileMetadata.artist_name
-                            # Don't lose values added to tracklist since last parsing it
+                            # Don't lose values added to tracklist
+                            # since last parsing it
                             tracklist = metadata['tracklist']
                             metadata = txtParser.parseTxt()
                             metadata['tracklist'] = tracklist
                 except audiotools.UnsupportedFile as e:
-                    raise QueueDialogError(os.path.basename(filePaths[0]) + " is an unsupported file: ")
+                    raise QueueDialogError(
+                        os.path.basename(filePaths[0]) +
+                        " is an unsupported file: "
+                    )
                 
-                nonParsedMetadata['cover'] = CoverArtRetriever.getCoverImageChoices(nonParsedMetadata)[0][0]                
+                nonParsedMetadata['cover'] = CoverArtRetriever \
+                    .getCoverImageChoices(nonParsedMetadata)[0][0]
 
                 metadata.update(nonParsedMetadata)                
                 
                 return metadata
 
             except IOError as e:
-                raise QueueDialogError("Could not read file: " + txtFile + "<br /><br />" + e.args[1])
+                raise QueueDialogError(
+                    "Could not read file: %s<br /><br />%s" % \
+                    (txtFile, e.args[1])
+                )
             except UnicodeDecodeError as e:
-                raise QueueDialogError("Could not read file: " + txtFile + "<br /><br />" + e.args[4])
+                raise QueueDialogError(
+                    "Could not read file: %s<br /><br />%s" % \
+                    (txtFile, e.args[4])
+                )
+
+    def _getFilePaths(self, qDir):
+        """
+        Get a list of QStrings for every audio file in the specified folder.
+        If the audio files are split up between folders, e.g. CD1 and CD2,
+        get files from the subdirectories as well.
+
+        @type qDir: QDir
+
+        """        
+        filePaths = []
+        for file in qDir.entryList():
+            filePaths.append(qDir.absolutePath() + '/' + file)
+        
+        if len(filePaths) == 0:
+            validExtensions = qDir.nameFilters()
+            qDir.setNameFilters('*')
+            qDir.setFilter(QDir.Dirs | QDir.NoDotAndDotDot)
+            for subdirStr in qDir.entryList():
+                qSubdir = QDir(qDir.absolutePath() + '/' + subdirStr)
+                qSubdir.setNameFilters(validExtensions)
+                for file in qSubdir.entryList():
+                    filePaths.append(
+                        qSubdir.absolutePath() + '/' + file
+                    )        
+        return filePaths
+
+    def _getSortedFiles(self, filePaths):
+        """
+        Sort files in the correct order.
+
+        If the single digits tracks are numbered like 1, 2, 3
+        instead of 01, 02, 03, make sure they are sorted correctly,
+        so that track 10 does not follow track 1, etc.
+
+        @type filesPaths: list
+        @param filesPaths: A list of QStrings
+
+        @rtype:  list
+        @return: the sorted list
+
+        """
+        sortedFiles = []
+        [sortedFiles.append('') for x in range(len(filePaths))]
+        foundTrackNumbers = []
+        for index, file in enumerate(filePaths):
+            match = re.search(
+                '^(\d{1,2})([^\d].*)?$',
+                file,
+                re.IGNORECASE
+            )
+            if not match or match.group(1) in foundTrackNumbers:
+                sortedFiles = filePaths
+                break
+            trackNum = int(match.group(1)) - 1
+            if trackNum < len(sortedFiles):
+                sortedFiles[int(match.group(1)) - 1] = file
+                foundTrackNumbers.append(match.group(1))
+        return sortedFiles
+
+    def _qStringToUnicode(self, qString):
+        """
+        Convert a QString to a unicode object, using a best
+        guess at the encoding.
+
+        """
+        if platform.system() != 'Darwin':
+            detected = chardet.detect(
+                str(qString.toLocal8Bit())
+            )
+            
+            encoding = detected['encoding'] \
+                if detected and detected['confidence'] > 0.5 \
+                else self.fileNameEncoding
+        else:
+            encoding = self.fileNameEncoding
+        return unicode(qString.toLocal8Bit(), encoding)
+        
 
     def removeSelectedItem(self):
         """
@@ -498,7 +542,7 @@ class QueueDialog(QDialog, Ui_QueueDialog):
         if defaults:
             metadata['defaults'] = defaults
 
-        path = unicode(metadata['dir'].absolutePath())
+        path = metadata['dir'].absolutePath()
 
         artistName = metadata['defaults']['preferred_name'] \
             if 'defaults' in metadata \
@@ -627,12 +671,8 @@ class QueueDialog(QDialog, Ui_QueueDialog):
             validRecording['pcmReaders'] = []
             audioFiles = validRecording['metadata']['audioFiles']
             for index, audioFile in enumerate(audioFiles):
-                encoding = validRecording['metadata']['encodings'][index] \
-                    if platform.system() != 'Darwin' else \
-                    self.fileNameEncoding
-                fileNameString = audioFile.encode(encoding)
                 try:
-                    audiofileObj = audiotools.open(fileNameString)
+                    audiofileObj = audiotools.open(audioFile)
                 except audiotools.UnsupportedFile:
                     MessageBox.critical(
                         self,
@@ -668,7 +708,7 @@ class QueueDialog(QDialog, Ui_QueueDialog):
                             self,
                             'Error reading file',
                             'Could not read file: %s <br /><br /> %s' % \
-                                (fileNameString, str(e))
+                                (audioFile, str(e))
                         )
                         return
                     
@@ -791,7 +831,7 @@ class QueueDialog(QDialog, Ui_QueueDialog):
                 self.queueListWidget.takeItem(
                     self.queueListWidget.row(recording['item'])
                 )
-                key = unicode(recording['metadata']['dir'].absolutePath())
+                key = recording['metadata']['dir'].absolutePath()
                 del self.queueItemData[key]
 
     def cancelProcess(self):
@@ -875,22 +915,25 @@ class FixBadFlacsThread(QThread):
 
     def run(self):
         try:            
-            for index, audioFile in enumerate(self.metadata['audioFiles']):
-                audioObj = audiotools.open(audioFile)
+            for index, audioFile in enumerate(self.metadata['audioFiles']):                
+                audioObj = audiotools.open(audioFile)                
                 if isinstance(audioObj, audiotools.tracklint.BrokenFlacAudio):
                     if platform.system() == 'Darwin':
                         self.process = Process(
                             target=self.fixProcess,
                             args=(index, audioObj)
-                        )
+                        )                        
                         self.process.start()                        
                         while self.process.is_alive() and not self.isStopped():
                             pass                        
                     else:
                         self.fixProcess(index, audioObj)
-                    self.metadata['audioFiles'][index] = unicode(
-                        self.metadata['tempDir'].absolutePath() + '/'
-                        + os.path.basename(self.metadata['audioFiles'][index])
+                    self.metadata['audioFiles'][index] = (
+                        self.metadata['tempDir'].filePath(
+                            os.path.basename(
+                                self.metadata['audioFiles'][index]
+                            )
+                        )
                     )
                 if self.isStopped():
                     return

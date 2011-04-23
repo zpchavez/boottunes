@@ -44,7 +44,8 @@ class QueueDialogTestCase(unittest.TestCase):
         self.assertEquals('Venue', metadata['venue'])
         self.assertEquals(datetime.date(1970, 7, 7), metadata['date'])
         self.assertEquals(
-            'The Foo Bars\n1970-07-07\nThe Venue\nLondon\n\nDisc 1\n\n01 Track 1\n02 Track 2\n03 Track 3',
+            'The Foo Bars\n1970-07-07\nThe Venue\nLondon\n\nDisc 1\n\n' +
+            '01 Track 1\n02 Track 2\n03 Track 3',
             metadata['comments']
         )
         self.assertEquals('London, UK', metadata['location'])
@@ -111,6 +112,20 @@ class QueueDialogTestCase(unittest.TestCase):
         metadataTuple = self.queuedialog.getMetadataFromDirAndSubDirs(self.showPath)        
         self.assertTrue(isinstance(metadataTuple, tuple))
 
+    def testTracknamesWithNoLeadingZeroInTheTrackNumber(self):
+        """
+        Track names with no leading zero in the track number are sorted
+        correctly, so that track 2 follows track 1, and not track 10
+
+        """
+        self.fail('Write this test')
+
+    def testUmlautTest(self):
+        """
+        Umlauts in path names handled without error.
+
+        """
+        self.fail('Write this test')
 
 if __name__ == '__main__':    
     unittest.main()
