@@ -287,7 +287,7 @@ class QueueDialog(QDialog, Ui_QueueDialog):
         # files, keep trying.
         for index, txtFile in enumerate(qDir.entryList()):
             isTheFinalTxt = (index == len(qDir.entryList()) - 1)            
-            textFilePath, encoding = self._qStringToUnicode(qDir.filePath(txtFile))
+            textFilePath = self._qStringToUnicode(qDir.filePath(txtFile))
             try:                
                 # Open file with open, detect the encoding, close it and open
                 # again with codec.open
@@ -320,11 +320,9 @@ class QueueDialog(QDialog, Ui_QueueDialog):
                 
                 filePaths = self._getFilePaths(qDir)                
                 filePaths = self._getSortedFiles(filePaths)                
-                tuples = [
+                filePaths = [
                     self._qStringToUnicode(filePath) for filePath in filePaths
                 ]
-                filePaths = [element[0] for element in tuples]
-                encodings = [element[1] for element in tuples]
                 
                 if len(filePaths) == 0:
                     raise QueueDialogError(
@@ -349,8 +347,7 @@ class QueueDialog(QDialog, Ui_QueueDialog):
                 
                 nonParsedMetadata = {}                
 
-                nonParsedMetadata['audioFiles'] = filePaths
-                nonParsedMetadata['encodings']  = encodings
+                nonParsedMetadata['audioFiles'] = filePaths                
                 nonParsedMetadata['dir'] = qDir
                 # Hash used for identicons and temp directory names
                 nonParsedMetadata['hash'] = hashlib.md5(metadata['comments'] \
@@ -505,7 +502,7 @@ class QueueDialog(QDialog, Ui_QueueDialog):
                 else self.fileNameEncoding
         else:
             encoding = self.fileNameEncoding
-        return (unicode(qString.toLocal8Bit(), encoding), encoding)
+        return unicode(qString.toLocal8Bit(), encoding).encode(encoding)
         
 
     def removeSelectedItem(self):
@@ -676,11 +673,7 @@ class QueueDialog(QDialog, Ui_QueueDialog):
             audioFiles = validRecording['metadata']['audioFiles']
             for index, audioFile in enumerate(audioFiles):
                 try:
-                    audiofileObj = audiotools.open(
-                        audioFile.encode(
-                            validRecording['metadata']['encodings'][index]
-                        )
-                    )
+                    audiofileObj = audiotools.open(audioFile)
                 except audiotools.UnsupportedFile:
                     MessageBox.critical(
                         self,
