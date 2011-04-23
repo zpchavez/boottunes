@@ -16,16 +16,13 @@ from settings import getSettings
 from ui.ui_confirmmetadata import Ui_ConfirmMetadataDialog
 from dialogs.choosecover import ChooseCoverDialog
 
-
 class ConfirmMetadataDialog(QDialog, Ui_ConfirmMetadataDialog):
 
     def __init__(self, metadata, parent=None):
         """
         @type  metadata: dict
         @param metadata: The dict returned by parsetxt.TxtParser.parseTxt()
-
-        @type  dir: QDir
-        @param dir: The path to the selected directory
+        
         """
         super(ConfirmMetadataDialog, self).__init__(parent)
         self.metadata = metadata
@@ -35,7 +32,8 @@ class ConfirmMetadataDialog(QDialog, Ui_ConfirmMetadataDialog):
 
         artistDefaults = getSettings().getArtistDefaults(metadata['artist'])
         if artistDefaults:            
-            self.artistLineEdit.setText(artistDefaults['preferred_name'].decode('utf_8'))            
+            self.artistLineEdit.setText(artistDefaults['preferred_name'] \
+                .decode('utf_8'))
         else:
             self.artistLineEdit.setText(metadata['artist'])
 
@@ -45,27 +43,46 @@ class ConfirmMetadataDialog(QDialog, Ui_ConfirmMetadataDialog):
         self.dateEdit.setDate(QDate(pyDate.year, pyDate.month, pyDate.day))
         self.locationLineEdit.setText(metadata['location'])
         self.venueLineEdit.setText(metadata['venue'])
+        self.titleLineEdit.setText(
+            metadata['title'] if 'title' in metadata else ''
+        )        
         if artistDefaults and 'genre' in artistDefaults:
             self.genreLineEdit.setText(artistDefaults['genre'])
 
         self.tracklistTableWidget.setRowCount(len(metadata['tracklist']))
         self.tracklistTableWidget.setColumnCount(1)
         self.tracklistTableWidget.setColumnWidth(0, 2000)
-        self.tracklistTableWidget.setHorizontalHeaderLabels(['']) # Don't label the column header
+        # Don't label the column header
+        self.tracklistTableWidget.setHorizontalHeaderLabels([''])
         self.connect(
-            self.tracklistTableWidget.verticalHeader(), SIGNAL('sectionPressed(int)'), self.playOrStopSelected)
+            self.tracklistTableWidget.verticalHeader(),
+            SIGNAL('sectionPressed(int)'),
+            self.playOrStopSelected
+        )
 
-        self.playButtonIcon = QIcon(QPixmap(data.path + '/' + 'media' + '/' + 'play.png'))
-        self.stopButtonIcon = QIcon(QPixmap(data.path + '/' + 'media' + '/' + 'stop.png'))
+        self.playButtonIcon = QIcon(
+            QPixmap(data.path + '/' + 'media' + '/' + 'play.png')
+        )
+        self.stopButtonIcon = QIcon(
+            QPixmap(data.path + '/' + 'media' + '/' + 'stop.png')
+        )
 
         for track, title in enumerate(metadata['tracklist']):
             item = QTableWidgetItem(str(track + 1))
             item.setIcon(self.playButtonIcon)
             self.tracklistTableWidget.setVerticalHeaderItem(track, item)
-            self.tracklistTableWidget.setItem(track, 0, QTableWidgetItem(title))
+            self.tracklistTableWidget.setItem(
+                track,
+                0,
+                QTableWidgetItem(title)
+            )
         self.commentsTextEdit.setText(metadata['comments'])
 
-    def accept(self):                
+    def accept(self):
+        """
+        Save the selected values.
+
+        """
         suggestedArtist = unicode(self.metadata['artist'])
         submittedArtist = unicode(self.artistLineEdit.text()).strip()        
 
@@ -74,12 +91,18 @@ class ConfirmMetadataDialog(QDialog, Ui_ConfirmMetadataDialog):
             'genre'         : unicode(self.genreLineEdit.text()).strip()
         }
 
-        # If the entered name has little similarity to the original, assume the detected artist was
-        # completely wrong and is not synonymous with the submitted artist name.
-        diff = difflib.SequenceMatcher(None, suggestedArtist.lower(), submittedArtist.lower())
+        # If the entered name has little similarity to the original,
+        # assume the detected artist was completely wrong and is not
+        # synonymous with the submitted artist name.
+        diff = difflib.SequenceMatcher(
+            None,
+            suggestedArtist.lower(),
+            submittedArtist.lower()
+        )
 
         getSettings().setArtistDefaults(
-            suggestedArtist if suggestedArtist and diff.ratio() > 0.5 else submittedArtist,
+            suggestedArtist if suggestedArtist and diff.ratio() > 0.5
+                else submittedArtist,
             defaults
         )
 
@@ -91,10 +114,16 @@ class ConfirmMetadataDialog(QDialog, Ui_ConfirmMetadataDialog):
         self.metadata['defaults'] = defaults        
 
         qDate = self.dateEdit.date()
-        self.metadata['date'] = datetime.date(qDate.year(), qDate.month(), qDate.day())
-        self.metadata['location'] = unicode(self.locationLineEdit.text())
-        self.metadata['venue'] = unicode(self.venueLineEdit.text())
-
+        self.metadata['date'] = datetime.date(
+            qDate.year(),
+            qDate.month(),
+            qDate.day()
+        )
+        self.metadata['location']  = unicode(self.locationLineEdit.text())
+        self.metadata['venue']     = unicode(self.venueLineEdit.text())
+        self.metadata['comments']  = unicode(
+            self.commentsTextEdit.toPlainText()
+        )
         self.metadata['tracklist'] = [
             unicode(self.tracklistTableWidget.item(1, i).text())
             for i in range(-1, self.tracklistTableWidget.rowCount() - 1)
@@ -106,7 +135,9 @@ class ConfirmMetadataDialog(QDialog, Ui_ConfirmMetadataDialog):
 
     def playOrStopSelected(self, rowClicked):
         """
-        Play the selected track's file using the default application for that file type.
+        Play the selected track's file using the default
+        application for that file type.
+        
         """
         rowStopped = self.stopAudio()        
         if rowStopped is rowClicked:
@@ -135,16 +166,23 @@ class ConfirmMetadataDialog(QDialog, Ui_ConfirmMetadataDialog):
     def refreshTracks(self):
         """
         Reload the tracklist from the current contents of the "comments" field.
+
         """
         import parsetxt
-        tracklist = parsetxt.TxtParser(unicode(self.commentsTextEdit.toPlainText()))._findTracklist()        
+        tracklist = parsetxt.TxtParser(
+            unicode(self.commentsTextEdit.toPlainText())
+        )._findTracklist()
 
         if not tracklist:
             tracklist = []
 
         for i in range(0, self.tracklistTableWidget.rowCount()):            
             if i < len(tracklist):
-                self.tracklistTableWidget.setItem(i, 0, QTableWidgetItem(tracklist[i]))
+                self.tracklistTableWidget.setItem(
+                    i,
+                    0,
+                    QTableWidgetItem(tracklist[i])
+                )
             else:
                 tracklist.append(' ')
                 self.tracklistTableWidget.setItem(i, 0, QTableWidgetItem(u' '))
@@ -156,9 +194,11 @@ class ConfirmMetadataDialog(QDialog, Ui_ConfirmMetadataDialog):
         Stop currently playing audio, and set row icon back to the play button
 
         @return: The row stopped
+        
         """
         rowStopped = False
-        if hasattr(self, 'playAudioThread') and not self.playAudioThread.isStopped():                        
+        if hasattr(self, 'playAudioThread') \
+                and not self.playAudioThread.isStopped():
             self.playAudioThread.terminate()
         if self.playing is not False:
             rowStopped = self.playing
