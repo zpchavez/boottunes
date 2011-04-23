@@ -186,7 +186,7 @@ class QueueDialog(QDialog, Ui_QueueDialog):
         """
         # 32 is the start of user-space
         indexOfSavedData = item.data(32).toString() 
-        data = self.queueItemData[unicode(indexOfSavedData)]['metadata']
+        data = self.queueItemData[indexOfSavedData]['metadata']
         ConfirmMetadataDialog(data, self).exec_()
         self.queueListWidget.sortItems()
 
@@ -562,10 +562,10 @@ class QueueDialog(QDialog, Ui_QueueDialog):
         listItem.setIcon(icon)
         self.queueItemData[path] = {
             'item': listItem,
-            'metadata':metadata,
-            'valid':True
+            'metadata': metadata,
+            'valid': True
         }
-        listItem.setData(32, path)        
+        listItem.setData(32, path)
 
         # If title is set, use that, otherwise follow the albumTitleFormat
         # in settings
