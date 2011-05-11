@@ -287,7 +287,7 @@ class QueueDialog(QDialog, Ui_QueueDialog):
         # files, keep trying.
         for index, txtFile in enumerate(qDir.entryList()):
             isTheFinalTxt = (index == len(qDir.entryList()) - 1)            
-            textFilePath = self._qStringToUnicode(qDir.filePath(txtFile))
+            textFilePath = self._qStringToStr(qDir.filePath(txtFile))
             try:                
                 # Open file with open, detect the encoding, close it and open
                 # again with codec.open
@@ -321,7 +321,7 @@ class QueueDialog(QDialog, Ui_QueueDialog):
                 filePaths = self._getFilePaths(qDir)                
                 filePaths = self._getSortedFiles(filePaths)                
                 filePaths = [
-                    self._qStringToUnicode(filePath) for filePath in filePaths
+                    self._qStringToStr(filePath) for filePath in filePaths
                 ]
                 
                 if len(filePaths) == 0:
@@ -482,27 +482,15 @@ class QueueDialog(QDialog, Ui_QueueDialog):
                 foundTrackNumbers.append(match.group(1))
         return sortedFiles
 
-    def _qStringToUnicode(self, qString):
+    def _qStringToStr(self, qString):
         """
-        Convert a QString to a unicode object, using a best
-        guess at the encoding.
+        Convert a QString to a string.        
 
-        @rtype: tuple
-        @return: a tuple whose first element is the unicode object
-        and whose second element is the encoding used.
+        @param qString: QString
+        @rtype: str
 
         """
-        if platform.system() != 'Darwin':
-            detected = chardet.detect(
-                str(qString.toLocal8Bit())
-            )
-            
-            encoding = detected['encoding'] \
-                if detected and detected['confidence'] > 0.5 \
-                else self.fileNameEncoding
-        else:
-            encoding = self.fileNameEncoding
-        return unicode(qString.toLocal8Bit(), encoding).encode(encoding)
+        return str(qString.toLocal8Bit())
 
 
     def removeSelectedItem(self):
