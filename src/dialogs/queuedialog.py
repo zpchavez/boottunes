@@ -503,7 +503,7 @@ class QueueDialog(QDialog, Ui_QueueDialog):
         else:
             encoding = self.fileNameEncoding
         return unicode(qString.toLocal8Bit(), encoding).encode(encoding)
-        
+
 
     def removeSelectedItem(self):
         """
@@ -512,7 +512,7 @@ class QueueDialog(QDialog, Ui_QueueDialog):
         """
         for item in self.queueListWidget.selectedItems():
             self.queueListWidget.takeItem(self.queueListWidget.row(item))
-            del self.queueItemData[unicode(item.data(32).toString())]
+            del self.queueItemData[item.data(32).toString()]
 
     def refreshQueue(self):
         """
