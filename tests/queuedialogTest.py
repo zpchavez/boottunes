@@ -30,7 +30,7 @@ class QueueDialogTestCase(unittest.TestCase):
 
     def testGetMetadataFromDirGetsMetadataFromTheSpecifiedDirectory(self):
         showPath = self.showPath + '/' + 'show1'
-        metadata = self.queuedialog.getMetadataFromDir(showPath)        
+        metadata = self.queuedialog.getMetadataFromDir(showPath)
 
         self.assertEquals('576ef998d942f9ce90395321d5ae01a5', metadata['hash'])
         expectedAudioFiles = [
@@ -40,7 +40,7 @@ class QueueDialogTestCase(unittest.TestCase):
         ]
         expectedTempPath = self.settings.settingsDir + '/' + metadata['hash']
         self.assertEquals(expectedAudioFiles, metadata['audioFiles'])
-        self.assertEquals('The Foo Bars', metadata['artist'])        
+        self.assertEquals('The Foo Bars', metadata['artist'])
         self.assertEquals('Venue', metadata['venue'])
         self.assertEquals(datetime.date(1970, 7, 7), metadata['date'])
         self.assertEquals(
@@ -55,7 +55,7 @@ class QueueDialogTestCase(unittest.TestCase):
 
     def testGetMetadataFromDirWorksWhenAudioFilesAreSplitUpInSeparateSubFolders(self):
         showPath = self.showPath + '/' + 'show2'
-        metadata = self.queuedialog.getMetadataFromDir(showPath)        
+        metadata = self.queuedialog.getMetadataFromDir(showPath)
 
         self.assertEquals('78a7e838cef92aec7c4cf189864c58c6', metadata['hash'])
         expectedAudioFiles = [
@@ -66,7 +66,7 @@ class QueueDialogTestCase(unittest.TestCase):
         ]
         expectedTempPath = self.settings.settingsDir + '/' + metadata['hash']
         self.assertEquals(expectedAudioFiles, metadata['audioFiles'])
-        self.assertEquals('The Foo Bars', metadata['artist'])        
+        self.assertEquals('The Foo Bars', metadata['artist'])
         self.assertEquals('Venue', metadata['venue'])
         self.assertEquals(datetime.date(1970, 7, 8), metadata['date'])
         self.assertEquals(
@@ -92,7 +92,7 @@ class QueueDialogTestCase(unittest.TestCase):
         ]
         expectedTempPath = self.settings.settingsDir + '/' + metadata['hash']
         self.assertEquals(expectedAudioFiles, metadata['audioFiles'])
-        self.assertEquals('The Foo Bars', metadata['artist'])        
+        self.assertEquals('The Foo Bars', metadata['artist'])
         self.assertEquals('Venue', metadata['venue'])
         self.assertEquals(datetime.date(1970, 7, 7), metadata['date'])
 
@@ -100,25 +100,17 @@ class QueueDialogTestCase(unittest.TestCase):
         self.assertEquals(expectedTempPath, metadata['tempDir'].absolutePath())
         self.assertEquals(['Track 1', 'Track 2', 'Track 3'], metadata['tracklist'])
         self.assertEquals(showPath, metadata['dir'].absolutePath())
-        
+
     def testIfThereAreMoreAudioFilesThanThereAreTracksInTheTextFileLaterTracksAreEmptyStrings(self):
         showPath = self.showPath + '/' + 'show4'
         metadata = self.queuedialog.getMetadataFromDir(showPath)
         self.assertEquals(3, len(metadata['tracklist']))
         self.assertEquals('', metadata['tracklist'][2])
-        
+
 
     def testGetMetadataFromDirAndSubDirsGetsMetadataForAllValidShowsInSubDirectoriesWithinTheTargetDir(self):
-        metadataTuple = self.queuedialog.getMetadataFromDirAndSubDirs(self.showPath)        
+        metadataTuple = self.queuedialog.getMetadataFromDirAndSubDirs(self.showPath)
         self.assertTrue(isinstance(metadataTuple, tuple))
-
-    def testTracknamesWithNoLeadingZeroInTheTrackNumber(self):
-        """
-        Track names with no leading zero in the track number are sorted
-        correctly, so that track 2 follows track 1, and not track 10
-
-        """
-        self.fail('Write this test')
 
     def testUmlautTest(self):
         """
@@ -126,6 +118,18 @@ class QueueDialogTestCase(unittest.TestCase):
 
         """
         self.fail('Write this test')
+
+    def testTracknamesWithNoLeadingZeroInTheTrackNumber(self):
+        """
+        Track names with no leading zero in the track number are sorted
+        correctly, so that track 2 follows track 1, and not track 10
+
+        """
+        showPath = self.showPath + '/' + 'show6'
+        metadata = self.queuedialog.getMetadataFromDir(showPath)        
+        for i in range(1, 13):
+            self.assertEquals('Track %d' % i, metadata['tracklist'][i - 1])
+            self.assertEquals(showPath + '/%d.flac' % i, metadata['audioFiles'][i - 1])
 
 if __name__ == '__main__':    
     unittest.main()

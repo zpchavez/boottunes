@@ -15,7 +15,7 @@ import urllib
 import chardet
 import platform
 import audiotools
-import audiotools.tracklint as tracklint
+import tracklint
 from multiprocessing import Process
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
@@ -318,8 +318,8 @@ class QueueDialog(QDialog, Ui_QueueDialog):
                 validExtensions = ['*.flac', '*.shn', '*.m4a']                
                 qDir.setNameFilters(validExtensions)
                 
-                filePaths = self._getFilePaths(qDir)                
-                filePaths = self._getSortedFiles(filePaths)                
+                filePaths = self._getFilePaths(qDir)
+                filePaths = self._getSortedFiles(filePaths)
                 filePaths = [
                     self._qStringToStr(filePath) for filePath in filePaths
                 ]
@@ -365,7 +365,7 @@ class QueueDialog(QDialog, Ui_QueueDialog):
                     audioFile = audiotools.open(filePaths[0])
                     isBroken = isinstance(
                         audioFile,
-                        audiotools.tracklint.BrokenFlacAudio
+                        tracklint.BrokenFlacAudio
                     )
                     if isBroken:
                         if self.loadingMultipleShows:
@@ -404,7 +404,7 @@ class QueueDialog(QDialog, Ui_QueueDialog):
                         os.path.basename(filePaths[0]) +
                         " is an unsupported file: "
                     )
-                
+                                
                 nonParsedMetadata['cover'] = CoverArtRetriever \
                     .getCoverImageChoices(nonParsedMetadata)[0][0]
 
@@ -413,6 +413,7 @@ class QueueDialog(QDialog, Ui_QueueDialog):
                 return metadata
 
             except IOError as e:
+                print e
                 raise QueueDialogError(
                     "Could not read file: %s<br /><br />%s" % \
                     (txtFile, e.args[1])
@@ -468,17 +469,19 @@ class QueueDialog(QDialog, Ui_QueueDialog):
         [sortedFiles.append('') for x in range(len(filePaths))]
         foundTrackNumbers = []
         for index, file in enumerate(filePaths):
+            base = os.path.basename(self._qStringToStr(file))
+            path = os.path.dirname(self._qStringToStr(file))            
             match = re.search(
                 '^(\d{1,2})([^\d].*)?$',
-                file,
+                base,
                 re.IGNORECASE
-            )
+            )            
             if not match or match.group(1) in foundTrackNumbers:
                 sortedFiles = filePaths
                 break
             trackNum = int(match.group(1)) - 1
             if trackNum < len(sortedFiles):
-                sortedFiles[int(match.group(1)) - 1] = file
+                sortedFiles[int(match.group(1)) - 1] = QString(file)
                 foundTrackNumbers.append(match.group(1))
         return sortedFiles
 
@@ -906,7 +909,7 @@ class FixBadFlacsThread(QThread):
         try:            
             for index, audioFile in enumerate(self.metadata['audioFiles']):                
                 audioObj = audiotools.open(audioFile)                
-                if isinstance(audioObj, audiotools.tracklint.BrokenFlacAudio):
+                if isinstance(audioObj, tracklint.BrokenFlacAudio):
                     if platform.system() == 'Darwin':
                         self.process = Process(
                             target=self.fixProcess,
