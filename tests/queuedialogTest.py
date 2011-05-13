@@ -1,8 +1,10 @@
+# coding=mac-roman
 import os.path
 import unittest
 import os
 import sys
 import datetime
+import shutil
 from PyQt4.QtGui import *
 from PyQt4.QtCore import *
 from dialogs.queuedialog import *
@@ -11,7 +13,7 @@ from settings import getSettings
 class QueueDialogTestCase(unittest.TestCase):
 
     testPath = unicode(QDir.fromNativeSeparators(os.path.dirname(__file__)))
-    showPath = testPath + '/' + 'test-shows'
+    showPath = testPath + u'/' + u'test-shows'
 
     def setUp(self):
         self.app = QApplication(sys.argv)
@@ -117,7 +119,15 @@ class QueueDialogTestCase(unittest.TestCase):
         Umlauts in path names handled without error.
 
         """
-        self.fail('Write this test')
+        srcPath  = self.showPath + u'/show4/1.flac'
+        destPath = self.showPath + u'/show5/ümlaüt.flac'
+        shutil.copy(srcPath, destPath)
+        metadata = self.queuedialog.getMetadataFromDir(self.showPath + '/show5')
+        # Just need to make sure that the saved string can be passed
+        # to functions and work without error.
+        self.assertEquals(os.path.exists(metadata['audioFiles'][0]), True)
+        os.unlink(metadata['audioFiles'][0])
+        self.assertEquals(os.path.exists(metadata['audioFiles'][0]), False)
 
     def testTracknamesWithNoLeadingZeroInTheTrackNumber(self):
         """

@@ -1,0 +1,11 @@
+The Foo Bars
+1970-07-07
+The Venue
+London
+
+Disc 1
+
+01 ümlaüt
+
+The file for this test is created within the test and ignored by SVN because of issues
+with converting a file with a non-ASCII name to the repository.
