@@ -173,7 +173,7 @@ class QueueDialog(QDialog, Ui_QueueDialog):
             if id3RepairInProgress:
                 # Do nothing.  Confirm Metadata dialog will be opened later.
                 pass
-            else:
+            else:                
                 ConfirmMetadataDialog(metadata, self).exec_()
 
     def openConfirmMetadata(self, item):
@@ -374,7 +374,7 @@ class QueueDialog(QDialog, Ui_QueueDialog):
                                 'Load this show alone to fix.'
                             )
                         else:
-                            metadata.update(nonParsedMetadata)                            
+                            metadata.update(nonParsedMetadata)
                             self.fixBadFlacFiles(metadata)
                             if self.processThread.failed:
                                 raise QueueDialogError(
@@ -412,8 +412,7 @@ class QueueDialog(QDialog, Ui_QueueDialog):
                 
                 return metadata
 
-            except IOError as e:
-                print e
+            except IOError as e:                
                 raise QueueDialogError(
                     "Could not read file: %s<br /><br />%s" % \
                     (txtFile, e.args[1])
@@ -560,7 +559,7 @@ class QueueDialog(QDialog, Ui_QueueDialog):
             'valid': True
         }
         listItem.setData(32, path)
-
+        
         # If title is set, use that, otherwise follow the albumTitleFormat
         # in settings
         if 'title' in metadata and metadata['title'] != '':
@@ -571,28 +570,29 @@ class QueueDialog(QDialog, Ui_QueueDialog):
             albumTitle = getSettings()['albumTitleFormat']
             for placeHolder in ['artist', 'venue', 'location', 'date']:
                 match = re.search('\[' + placeHolder + '\]', albumTitle)
-                if match:
-                    if placeHolder == 'date' and metadata['date'] != None:
-                        replacement = metadata[placeHolder].strftime(
-                            getSettings()['dateFormat']
-                        )
-                    else:
-                        placeHolder = "preferredArtist" \
-                            if placeHolder == 'artist' \
-                            else placeHolder
-                        replacement = metadata[placeHolder]
+                if not match:
+                    continue
+                if placeHolder == 'date' and metadata['date'] != None:
+                    replacement = metadata[placeHolder].strftime(
+                        getSettings()['dateFormat']
+                    )
+                else:
+                    placeHolder = "preferredArtist" \
+                        if placeHolder == 'artist' \
+                        else placeHolder
+                    replacement = metadata[placeHolder]
 
-                    if replacement == '' or replacement == None:
-                        self.queueItemData[path]['valid'] = False
-                        albumTitle = albumTitle.replace(
-                            '[' + placeHolder + ']',
-                            '[missing ' + placeHolder + ']'
-                        )
-                    else:
-                        albumTitle = albumTitle.replace(
-                            '[' + placeHolder + ']',
-                            replacement
-                        )
+                if replacement == '' or replacement == None:
+                    self.queueItemData[path]['valid'] = False
+                    albumTitle = albumTitle.replace(
+                        '[' + placeHolder + ']',
+                        '[missing ' + placeHolder + ']'
+                    )
+                else:
+                    albumTitle = albumTitle.replace(
+                        '[' + placeHolder + ']',
+                        replacement
+                    )
 
         if not artistName:
             artistName = '[missing artist]'
@@ -610,7 +610,7 @@ class QueueDialog(QDialog, Ui_QueueDialog):
             else:                
                 listItem.setBackground(QBrush(QColor(255, 255, 255)))
 
-        listItem.setText(artistName + ' - ' + displayedTitle)
+        listItem.setText(artistName + ' - ' + displayedTitle)        
         metadata['albumTitle'] = albumTitle
 
     def addToITunes(self):
@@ -810,7 +810,7 @@ class QueueDialog(QDialog, Ui_QueueDialog):
         """
         Called on completion of FixBadFlacsThread.
         
-        """
+        """        
         ConfirmMetadataDialog(self.metadata, self).exec_()
 
     def removeCompletedRecordings(self):
@@ -921,9 +921,11 @@ class FixBadFlacsThread(QThread):
                     else:
                         self.fixProcess(index, audioObj)
                     self.metadata['audioFiles'][index] = (
-                        self.metadata['tempDir'].filePath(
-                            os.path.basename(
-                                self.metadata['audioFiles'][index]
+                        self.parent()._qStringToStr(
+                            self.metadata['tempDir'].filePath(
+                                os.path.basename(
+                                    self.metadata['audioFiles'][index]
+                                )
                             )
                         )
                     )
