@@ -1,4 +1,4 @@
-# coding=mac-roman
+# coding=utf-8
 import os.path
 import unittest
 import os
@@ -120,7 +120,7 @@ class QueueDialogTestCase(unittest.TestCase):
 
         """
         srcPath  = self.showPath + u'/show4/1.flac'
-        destPath = self.showPath + u'/show5/ümlaüt.flac'
+        destPath = self.showPath + u'/show5/√ºmla√ºt.flac'
         shutil.copy(srcPath, destPath)
         metadata = self.queuedialog.getMetadataFromDir(self.showPath + '/show5')
         # Just need to make sure that the saved string can be passed
