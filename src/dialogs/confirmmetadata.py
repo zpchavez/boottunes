@@ -10,6 +10,7 @@ import difflib
 import audiotools
 import pyaudio.pyaudio as pyaudio
 import data
+import platform
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 from settings import getSettings
@@ -147,7 +148,13 @@ class ConfirmMetadataDialog(QDialog, Ui_ConfirmMetadataDialog):
         item.setIcon(self.stopButtonIcon)
         self.tracklistTableWidget.setVerticalHeaderItem(rowClicked, item)
 
-        audiofileObj = audiotools.open(self.metadata['audioFiles'][rowClicked])
+        encoding = 'utf-8' \
+            if platform.system() == 'Darwin' \
+            else 'mbcs'
+
+        audiofileObj = audiotools.open(
+            self.metadata['audioFiles'][rowClicked].encode(encoding)
+        )
 
         self.pyaudioObj = pyaudio.PyAudio()
 
