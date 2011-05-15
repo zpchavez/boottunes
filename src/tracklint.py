@@ -403,8 +403,8 @@ class BrokenFlacAudio(audiotools.FlacAudio):
 
         return audiotools.open(self.filename)
 
-    # Same as fix_id3 except that it saves new files to targetDir, rather than rewriting the original.
-    def fix_id3_preserve_originals(self, targetDir):
+    # Same as fix_id3 except that it saves new files to tempFilePath, rather than rewriting the original.
+    def fix_id3_preserve_originals(self, tempFilePath):
         f = file(self.filename,'rb')
 
         #figure out where the start and end points of the FLAC file are
@@ -424,15 +424,14 @@ class BrokenFlacAudio(audiotools.FlacAudio):
         reader = audiotools.__capped_stream_reader__(f,flac_end - flac_start)
         audiotools.transfer_data(reader.read,temp.write)
 
-        #rewrite the original FLAC with our temporary data
-        tempFilename =  targetDir + '/' + os.path.basename(self.filename)
+        #rewrite the original FLAC with our temporary data        
         temp.seek(0,0)
         f.close()        
-        f = file(tempFilename,'wb')
+        f = file(tempFilePath,'wb')
         audiotools.transfer_data(temp.read,f.write)
         temp.close()
         f.close()        
-        returnValue = audiotools.open(tempFilename)    
+        returnValue = audiotools.open(tempFilePath)
         return returnValue
 
 class DisorderedFlacAudio(audiotools.FlacAudio):

@@ -910,25 +910,20 @@ class FixBadFlacsThread(QThread):
             for index, audioFile in enumerate(self.metadata['audioFiles']):                
                 audioObj = audiotools.open(audioFile)                
                 if isinstance(audioObj, tracklint.BrokenFlacAudio):
+                    tempFilePath = self.parent()._qStringToStr(
+                        self.metadata['tempDir'].absolutePath()
+                    ) + str(index) + '.flac'
                     if platform.system() == 'Darwin':
                         self.process = Process(
                             target=self.fixProcess,
-                            args=(index, audioObj)
+                            args=(tempFilePath, audioObj)
                         )                        
                         self.process.start()                        
                         while self.process.is_alive() and not self.isStopped():
                             pass                        
                     else:
-                        self.fixProcess(index, audioObj)
-                    self.metadata['audioFiles'][index] = (
-                        self.parent()._qStringToStr(
-                            self.metadata['tempDir'].filePath(
-                                os.path.basename(
-                                    self.metadata['audioFiles'][index]
-                                )
-                            )
-                        )
-                    )
+                        self.fixProcess(tempFilePath, audioObj)
+                    self.metadata['audioFiles'][index] = (tempFilePath)
                 if self.isStopped():
                     return
                 self.emit(
@@ -945,10 +940,8 @@ class FixBadFlacsThread(QThread):
             self.completed = True
             self.stop()
 
-    def fixProcess(self, index, audioObj):
-        audioObj.fix_id3_preserve_originals(
-            self.metadata['tempDir'].absolutePath()
-        )
+    def fixProcess(self, tempFilePath, audioObj):
+        audioObj.fix_id3_preserve_originals(tempFilePath)
         
     def stop(self):
         self.stopped = True
