@@ -186,7 +186,7 @@ class QueueDialog(QDialog, Ui_QueueDialog):
                     getSettings().removeCompleted(metadata['hash'])
                 else:
                     return
-            
+
             ConfirmMetadataDialog(metadata, self).exec_()
 
     def openConfirmMetadata(self, item):
@@ -870,7 +870,7 @@ class QueueDialog(QDialog, Ui_QueueDialog):
             return True
         return QDialog.event(self, event)
 
-    def fixBadFlacFiles(self, metadata):        
+    def fixBadFlacFiles(self, metadata):
         self.progressBarLabel = progressBarLabel = QLabel()
         self.progressDialog = progressDialog = QProgressDialog(
             "Loading",
@@ -924,13 +924,13 @@ class FixBadFlacsThread(QThread):
         self.completed = False
 
     def run(self):
-        try:            
+        try:
             for index, audioFile in enumerate(self.metadata['audioFiles']):                
                 audioObj = audiotools.open(audioFile)                
                 if isinstance(audioObj, tracklint.BrokenFlacAudio):
-                    tempFilePath = self.parent()._qStringToUnicode(
+                    tempFilePath = unicode(
                         self.metadata['tempDir'].absolutePath()
-                    ) + '/' + str(index) + '.flac'
+                    ) + u'/%d.flac' % index
                     if platform.system() == 'Darwin':
                         self.process = Process(
                             target=self.fixProcess,
