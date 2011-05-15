@@ -127,7 +127,11 @@ class Settings:
 
         if artist in self.artistNames:
             id = self.artistNames[artist]
-            defaults = self.artistDefaults[id]
+            try:
+                defaults = self.artistDefaults[id]
+            except KeyError:
+                # defaults file must have lost data somehow.
+                return None
             for defaultKey in defaultKeys:
                 if defaultKey not in defaults:
                     defaults[defaultKey] = ''
@@ -155,7 +159,12 @@ class Settings:
         if name in self.artistNames:
             id = self.artistNames[name]
             submittedPreferredName = defaults['preferred_name']
-            existingPreferredName = self.artistDefaults[id]['preferred_name']
+            try:
+                existingPreferredName = self.artistDefaults[id]['preferred_name']
+            except KeyError:                
+                # File data must have been lost.
+                self.artistDefaults[id] = {'preferred_name': submittedPreferredName}
+                existingPreferredName = submittedPreferredName
 
             if name == existingPreferredName:
                 self.artistDefaults[id] = defaults
