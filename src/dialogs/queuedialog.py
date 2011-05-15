@@ -928,7 +928,7 @@ class FixBadFlacsThread(QThread):
                 if isinstance(audioObj, tracklint.BrokenFlacAudio):
                     tempFilePath = self.parent()._qStringToStr(
                         self.metadata['tempDir'].absolutePath()
-                    ) + str(index) + '.flac'
+                    ) + '/' + str(index) + '.flac'
                     if platform.system() == 'Darwin':
                         self.process = Process(
                             target=self.fixProcess,
