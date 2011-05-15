@@ -34,7 +34,7 @@ class TracklintFixableError(Exception): pass
 
 class QueueDialog(QDialog, Ui_QueueDialog):
 
-    fileNameEncoding = 'utf_8' if platform.system() == 'Darwin' else 'latin_1'
+    fileNameEncoding = 'utf-8' if platform.system() == 'Darwin' else 'latin_1'
 
     def __init__(self):
         super(QueueDialog, self).__init__()
@@ -300,7 +300,7 @@ class QueueDialog(QDialog, Ui_QueueDialog):
         # files, keep trying.
         for index, txtFile in enumerate(qDir.entryList()):
             isTheFinalTxt = (index == len(qDir.entryList()) - 1)            
-            textFilePath = self._qStringToStr(qDir.filePath(txtFile))
+            textFilePath = unicode(qDir.filePath(txtFile))
             try:                
                 # Open file with open, detect the encoding, close it and open
                 # again with codec.open
@@ -309,7 +309,7 @@ class QueueDialog(QDialog, Ui_QueueDialog):
                 fileHandle.close()                
                 # Try UTF-8 first. If there's an error, try the chardet
                 # detected encoding. This seems to give the best results.
-                fileHandle = codecs.open(textFilePath, 'r', 'utf_8')
+                fileHandle = codecs.open(textFilePath, 'r', 'utf-8')
                 try:
                     fileHandle.read()
                     fileHandle.seek(0)
@@ -334,7 +334,7 @@ class QueueDialog(QDialog, Ui_QueueDialog):
                 filePaths = self._getFilePaths(qDir)
                 filePaths = self._getSortedFiles(filePaths)
                 filePaths = [
-                    self._qStringToStr(filePath) for filePath in filePaths
+                    unicode(filePath) for filePath in filePaths
                 ]
                 
                 if len(filePaths) == 0:
@@ -359,12 +359,12 @@ class QueueDialog(QDialog, Ui_QueueDialog):
                 del metadata['tracklist'][len(filePaths):]
                 
                 nonParsedMetadata = {}                
-
+                
                 nonParsedMetadata['audioFiles'] = filePaths                
                 nonParsedMetadata['dir'] = qDir
                 # Hash used for identicons and temp directory names
                 nonParsedMetadata['hash'] = hashlib.md5(metadata['comments'] \
-                    .encode('utf_8')).hexdigest()
+                    .encode('utf-8')).hexdigest()
                 # The dir where all temp files for this show will be stored
                 nonParsedMetadata['tempDir'] = QDir(
                     getSettings().settingsDir + '/' + nonParsedMetadata['hash']
@@ -484,13 +484,13 @@ class QueueDialog(QDialog, Ui_QueueDialog):
         [sortedFiles.append('') for x in range(len(filePaths))]
         foundTrackNumbers = []
         for index, file in enumerate(filePaths):
-            base = os.path.basename(self._qStringToStr(file))
-            path = os.path.dirname(self._qStringToStr(file))            
+            base = os.path.basename(unicode(file))
+            path = os.path.dirname(unicode(file))
             match = re.search(
                 '^(\d{1,2})([^\d].*)?$',
                 base,
                 re.IGNORECASE
-            )            
+            )
             if not match or match.group(1) in foundTrackNumbers:
                 sortedFiles = filePaths
                 break
@@ -499,17 +499,6 @@ class QueueDialog(QDialog, Ui_QueueDialog):
                 sortedFiles[int(match.group(1)) - 1] = QString(file)
                 foundTrackNumbers.append(match.group(1))
         return sortedFiles
-
-    def _qStringToStr(self, qString):
-        """
-        Convert a QString to a string.        
-
-        @param qString: QString
-        @rtype: str
-
-        """
-        return str(qString.toUtf8())
-
 
     def removeSelectedItem(self):
         """
@@ -554,7 +543,7 @@ class QueueDialog(QDialog, Ui_QueueDialog):
             if 'defaults' in metadata \
             else metadata['artist']
         if isinstance(artistName, str):
-            artistName = artistName.decode('utf_8')
+            artistName = artistName.decode('utf=8')
 
         if path in self.queueItemData:
             listItem = self.queueItemData[path]['item']
@@ -669,7 +658,7 @@ class QueueDialog(QDialog, Ui_QueueDialog):
             for x in range(self.validRecordings.count(None))
         ]
         
-        self.failedTracks    = []
+        self.failedTracks = []
 
         if len(self.validRecordings) == 0:
             MessageBox.warning(self, 'Notice', 'Nothing to add')
@@ -681,7 +670,10 @@ class QueueDialog(QDialog, Ui_QueueDialog):
             audioFiles = validRecording['metadata']['audioFiles']            
             for index, audioFile in enumerate(audioFiles):
                 try:
-                    audiofileObj = audiotools.open(audioFile)
+                    encoding = 'utf-8' \
+                        if platform.system() == 'Darwin' \
+                        else 'mbcs'
+                    audiofileObj = audiotools.open(audioFile.encode(encoding))
                 except audiotools.UnsupportedFile:
                     MessageBox.critical(
                         self,
@@ -936,7 +928,7 @@ class FixBadFlacsThread(QThread):
             for index, audioFile in enumerate(self.metadata['audioFiles']):                
                 audioObj = audiotools.open(audioFile)                
                 if isinstance(audioObj, tracklint.BrokenFlacAudio):
-                    tempFilePath = self.parent()._qStringToStr(
+                    tempFilePath = self.parent()._qStringToUnicode(
                         self.metadata['tempDir'].absolutePath()
                     ) + '/' + str(index) + '.flac'
                     if platform.system() == 'Darwin':
@@ -1021,7 +1013,7 @@ class ConvertFilesThread(QThread):
 
                 if 'defaults' in metadata:
                     artistName = metadata['defaults']['preferred_name'] \
-                        .decode('utf_8')
+                        .decode('utf-8')
                     genre = metadata['defaults']['genre']
                 else:
                     artistName = metadata['artist']
@@ -1073,7 +1065,7 @@ class ConvertFilesThread(QThread):
                 else:
                     self.encodeProcess(*args)                
                 if not os.path.exists(targetFile):                    
-                    parent.failedTracks.append(self.currentFile)                
+                    parent.failedTracks.append(self.currentFile)
 
                 if self.isStopped():
                     return
