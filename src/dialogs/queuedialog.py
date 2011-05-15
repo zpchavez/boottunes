@@ -7,11 +7,9 @@ http://www.gnu.org/licenses/gpl-2.0.html
 """
 import re
 import os
-import sys
 import shutil
 import codecs
 import hashlib
-import urllib
 import chardet
 import platform
 import audiotools
@@ -33,9 +31,6 @@ class LoadCanceledException(Exception): pass
 class TracklintFixableError(Exception): pass
 
 class QueueDialog(QDialog, Ui_QueueDialog):
-
-    fileNameEncoding = 'utf-8' if platform.system() == 'Darwin' else 'latin_1'
-
     def __init__(self):
         super(QueueDialog, self).__init__()
         self.setupUi(self)
