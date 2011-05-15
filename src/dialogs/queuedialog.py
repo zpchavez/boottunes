@@ -80,6 +80,24 @@ class QueueDialog(QDialog, Ui_QueueDialog):
         )
         setattr(self.queueListWidget.__class__, 'dropEvent', dropEvent)
 
+    def convertAgainPrompt(self):
+        """
+        Display a message saying that the recording has already been
+        converted and does the user wish to convert it again.  Return
+        the response as a bool.
+
+        @rtype: bool
+
+        """
+        msgBox = QMessageBox(self)
+        msgBox.setWindowTitle('BootTunes')
+        msgBox.setText('This recording has already been converted.')
+        msgBox.setInformativeText('Do you want to convert it again?')
+        msgBox.setStandardButtons(QMessageBox.No | QMessageBox.Yes)
+        msgBox.setDefaultButton(QMessageBox.Yes)
+        choice = msgBox.exec_()
+        return choice == QMessageBox.Yes
+
     def openFileDialog(self):
         """
         Open file dialog and handle the directory selected.
@@ -153,28 +171,23 @@ class QueueDialog(QDialog, Ui_QueueDialog):
                     self.addToQueue(metadatum)
             self.queueListWidget.sortItems()
         else:
-            if getSettings().isCompleted(metadata['hash']):
-                msgBox = QMessageBox(self)
-                msgBox.setWindowTitle('BootTunes')
-                msgBox.setText('This recording has already been converted.')
-                msgBox.setInformativeText('Do you want to convert it again?')
-                msgBox.setStandardButtons(QMessageBox.No | QMessageBox.Yes)
-                msgBox.setDefaultButton(QMessageBox.Yes)
-                choice = msgBox.exec_()
-                if choice == QMessageBox.Yes:
-                    getSettings().removeCompleted(metadata['hash'])
-                else:
-                    return
-
             id3RepairInProgress = (
                 hasattr(self, 'processThread')
                 and not self.processThread.isStopped()
             )
+
             if id3RepairInProgress:
-                # Do nothing.  Confirm Metadata dialog will be opened later.
-                pass
-            else:                
-                ConfirmMetadataDialog(metadata, self).exec_()
+                return
+
+            isCompleted = getSettings().isCompleted(metadata['hash'])
+            
+            if isCompleted:
+                if self.convertAgainPrompt():
+                    getSettings().removeCompleted(metadata['hash'])
+                else:
+                    return
+            
+            ConfirmMetadataDialog(metadata, self).exec_()
 
     def openConfirmMetadata(self, item):
         """
@@ -375,6 +388,9 @@ class QueueDialog(QDialog, Ui_QueueDialog):
                             )
                         else:
                             metadata.update(nonParsedMetadata)
+                            isCompleted = getSettings().isCompleted(metadata['hash'])
+                            if isCompleted and not self.convertAgainPrompt():
+                                return
                             self.fixBadFlacFiles(metadata)
                             if self.processThread.failed:
                                 raise QueueDialogError(
@@ -492,7 +508,7 @@ class QueueDialog(QDialog, Ui_QueueDialog):
         @rtype: str
 
         """
-        return str(qString.toLocal8Bit())
+        return str(qString.toUtf8())
 
 
     def removeSelectedItem(self):
@@ -661,7 +677,7 @@ class QueueDialog(QDialog, Ui_QueueDialog):
         # Prepare a list of PcmReader objects
         for validRecording in self.validRecordings:
             validRecording['pcmReaders'] = []            
-            audioFiles = validRecording['metadata']['audioFiles']
+            audioFiles = validRecording['metadata']['audioFiles']            
             for index, audioFile in enumerate(audioFiles):
                 try:
                     audiofileObj = audiotools.open(audioFile)
