@@ -653,8 +653,8 @@ class QueueDialog(QDialog, Ui_QueueDialog):
 
         # Count all tracks for the progress bar and load recording
         # data into self.validRecordings in the order that the items
-        # appear in the queue.
-        trackCount = 0
+        # appear in the queue.        
+        self.trackCount = 0
         [
             self.validRecordings.append(None)
             for x in range(len(self.queueItemData))
@@ -663,12 +663,13 @@ class QueueDialog(QDialog, Ui_QueueDialog):
             if data['valid'] == True:
                 rowForItemInQueue = self.queueListWidget.row(data['item'])
                 self.validRecordings[rowForItemInQueue] = data.copy()
-                trackCount += len(data['metadata']['tracklist'])
-                self.trackCount = trackCount
+                self.trackCount += len(data['metadata']['tracklist'])
         [
             self.validRecordings.remove(None)
             for x in range(self.validRecordings.count(None))
         ]
+        
+        self.failedTracks    = []
 
         if len(self.validRecordings) == 0:
             MessageBox.warning(self, 'Notice', 'Nothing to add')
@@ -736,7 +737,7 @@ class QueueDialog(QDialog, Ui_QueueDialog):
             "Loading",
             "Cancel",
             1,
-            trackCount + 1,
+            self.trackCount + 1,
             self
         )
         self.connect(
@@ -803,22 +804,31 @@ class QueueDialog(QDialog, Ui_QueueDialog):
         """
         Called on completion of ConvertFilesThread.
         
-        """
+        """        
         if self.processThread.completed:
             soundPath = data.path + '/' + 'media' + '/' + 'complete.wav'
             QSound.play(soundPath)
+            tracksCompleted = self.trackCount - len(self.failedTracks)
+            recordingsCount = len(self.validRecordings)
             # Make the plurality of the words match the counts
             # in the conversion summary message
-            trackStr = ' track' if self.trackCount == 1 else ' tracks'
-            recordingStr = ' recording' \
+            trackStr = 'track' if tracksCompleted == 1 else 'tracks'
+            recordingStr = 'recording' \
                 if len(self.validRecordings) == 1 \
-                else ' recordings'
+                else 'recordings'
+            message = (
+                'Conversion complete\n\nConverted %d %s from %d %s.' %
+                (tracksCompleted, trackStr, recordingsCount, recordingStr)
+            )            
+            if self.failedTracks:
+                message += (
+                    '\n\nThe followed tracks could not be converted:\n\n %s' %
+                    '\n'.join(self.failedTracks)
+                )
             MessageBox.information(
                 self,
                 'Complete',
-                'Conversion complete\n\nConverted ' + \
-                str(self.trackCount) + trackStr + ' from ' + \
-                str(len(self.validRecordings)) + recordingStr
+                message
             )
             self.removeCompletedRecordings()
 
@@ -949,8 +959,7 @@ class FixBadFlacsThread(QThread):
                 )
             self.parent().metadata = self.metadata
             self.emit(SIGNAL("success()"))
-        except Exception as e:
-            self.failed = True
+        except Exception as e:            
             raise
         finally:
             self.completed = True
@@ -981,10 +990,11 @@ class ConvertFilesThread(QThread):
         self.lock = lock
         self.stopped = False
         self.mutex = QMutex()
-        self.completed = False
+        self.completed = False        
 
     def run(self):
-        try:            
+        try:
+            failed = []
             parent = self.parent()
             progressCounter = 0
             while progressCounter < parent.trackCount and not self.isStopped():
@@ -1043,30 +1053,27 @@ class ConvertFilesThread(QThread):
                 sourcePcm = currentRecording['pcmReaders'][parent.currentTrack]
                 targetFile = tempDirPath + '/' \
                     + unicode(parent.currentTrack) + u'.m4a'
-
-                # If on Mac, run as a separate process
+                
+                args = [
+                    targetFile,
+                    sourcePcm,
+                    alacMetadata,
+                    genre,
+                    imageData,                    
+                ]
+                # If on Mac, run as a separate process            
                 if platform.system() == 'Darwin':
                     self.process = Process(
                         target=self.encodeProcess,
-                        args=(
-                            targetFile,
-                            sourcePcm,
-                            alacMetadata,
-                            genre,
-                            imageData
-                        )
+                        args=(args)
                     )
                     self.process.start()
                     while self.process.is_alive() and not self.isStopped():
-                        pass
+                        pass                    
                 else:
-                    self.encodeProcess(
-                        targetFile,
-                        sourcePcm,
-                        alacMetadata,
-                        genre,
-                        imageData
-                    )
+                    self.encodeProcess(*args)                
+                if not os.path.exists(targetFile):                    
+                    parent.failedTracks.append(self.currentFile)                
 
                 if self.isStopped():
                     return
@@ -1103,13 +1110,14 @@ class ConvertFilesThread(QThread):
                 'Finishing'
             )
             self.emit(SIGNAL("success()"))
-        except Exception as e:            
+        except Exception as e:
+            self.failed = True
             self.emit(
                 SIGNAL("error(QString)"),
                 str(e)
             )                        
             raise # Re-raise so that it gets logged
-        finally:            
+        finally:
             self.completed = True            
             self.stop()
 
@@ -1122,31 +1130,37 @@ class ConvertFilesThread(QThread):
         @type sourcePcm: audiotool.PCMReader
         @type alacMetadata: audiotools.MetaData
         @type genre: unicode
-        @type imageData: str
+        @type imageData: str        
         
         """
-        if re.match('^m4a$', self.extension, re.IGNORECASE):
-            shutil.copyfile(self.currentFile, targetFile)
-            alacFile = audiotools.open(targetFile)
-        else:
-            alacFile = audiotools.ALACAudio.from_pcm(targetFile, sourcePcm)
-        alacFile.set_metadata(alacMetadata)
-        metadata = alacFile.get_metadata()
-        # Set the "part of a compilation" flag to false
-        metadata['cpil'] = metadata.text_atom(
-            'data',
-            '\x00\x00\x00\x15\x00\x00\x00\x00\x00'
-        )
-        metadata['\xa9gen'] = metadata.text_atom('\xa9gen', genre)
-        alacFile.set_metadata(metadata)
-        # Separately attempt to set the cover art,
-        # since a MemoryError may occur in large files
         try:
-            if imageData is not None:
-                metadata.add_image(audiotools.Image.new(imageData, 'cover', 0))
-            alacFile.set_metadata(metadata)
-        except MemoryError:
+            if re.match('^m4a$', self.extension, re.IGNORECASE):
+                shutil.copyfile(self.currentFile, targetFile)
+                alacFile = audiotools.open(targetFile)
+            else:
+                alacFile = audiotools.ALACAudio.from_pcm(targetFile, sourcePcm)
+        except:
             pass
+        else:
+            alacFile.set_metadata(alacMetadata)
+            metadata = alacFile.get_metadata()
+            # Set the "part of a compilation" flag to false
+            metadata['cpil'] = metadata.text_atom(
+                'data',
+                '\x00\x00\x00\x15\x00\x00\x00\x00\x00'
+            )
+            metadata['\xa9gen'] = metadata.text_atom('\xa9gen', genre)
+            alacFile.set_metadata(metadata)
+            # Separately attempt to set the cover art,
+            # since a MemoryError may occur in large files
+            try:
+                if imageData is not None:
+                    metadata.add_image(
+                        audiotools.Image.new(imageData, 'cover', 0)
+                    )
+                alacFile.set_metadata(metadata)
+            except MemoryError:
+                pass
 
     def stop(self):
         with QMutexLocker(self.mutex):
