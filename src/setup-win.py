@@ -11,7 +11,7 @@ os.system("rmdir dist /S /Q")
 os.system("rmdir build /S /Q")
 
 NAME = 'BootTunes'
-VERSION = '0.2.4'
+VERSION = '0.2.5'
 
 APP = ['boottunes.pyw']
 DATA_FILES = [('data/media', [
