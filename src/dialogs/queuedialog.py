@@ -1095,7 +1095,6 @@ class ConvertFilesThread(QThread):
                 progressCounter,
                 'Finishing'
             )
-            self.emit(SIGNAL("success()"))
         except Exception as e:
             self.failed = True
             self.emit(
@@ -1104,7 +1103,8 @@ class ConvertFilesThread(QThread):
             )                        
             raise # Re-raise so that it gets logged
         finally:
-            self.completed = True            
+            self.completed = True
+            self.emit(SIGNAL("success()"))
             self.stop()
 
     def encodeProcess(self, targetFile, sourcePcm,
