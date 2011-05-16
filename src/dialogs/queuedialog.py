@@ -12,6 +12,7 @@ import codecs
 import hashlib
 import chardet
 import platform
+import sys
 import audiotools
 import tracklint
 from multiprocessing import Process
@@ -665,9 +666,7 @@ class QueueDialog(QDialog, Ui_QueueDialog):
             audioFiles = validRecording['metadata']['audioFiles']            
             for index, audioFile in enumerate(audioFiles):
                 try:
-                    encoding = 'utf-8' \
-                        if platform.system() == 'Darwin' \
-                        else 'mbcs'
+                    encoding = sys.getfilesystemencoding()
                     audiofileObj = audiotools.open(audioFile.encode(encoding))
                 except audiotools.UnsupportedFile:
                     MessageBox.critical(
