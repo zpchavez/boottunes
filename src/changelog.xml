@@ -1,20 +1,22 @@
 <changelog>
     <changes version="0.2.5">
-        <bugfix>
-            Files that could not be converted now listed after conversion
-            process.
-        </bugfix>
-        <bugfix>
-            Improved handling of non-ASCII filenames.
-        </bugfix>
-        <bugfix>
-            Fixed bug where the "contains untitled tracks" message would
-            be included in the album title.
-        </bugfix>
-        <bugfix>
-            Fixed bug where the comments and title override fields would
-            lose the user-entered values when re-opened for editing.
-        </bugfix>
+        <bugfixes>
+            <bugfix>
+                Files that could not be converted now listed after conversion
+                process.
+            </bugfix>
+            <bugfix>
+                Improved handling of non-ASCII filenames.
+            </bugfix>
+            <bugfix>
+                Fixed bug where the "contains untitled tracks" message would
+                be included in the album title.
+            </bugfix>
+            <bugfix>
+                Fixed bug where the comments and title override fields would
+                lose the user-entered values when re-opened for editing.
+            </bugfix>
+        </bugfixes>
     </changes>
     <changes version="0.2.4">
         <bugfixes>
