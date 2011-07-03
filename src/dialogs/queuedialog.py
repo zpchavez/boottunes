@@ -158,8 +158,9 @@ class QueueDialog(QDialog, Ui_QueueDialog):
                 "Add To Queue Error",
                 e.args[0]
             )
-        except LoadCanceledException:
-            pass
+            return
+        except LoadCanceledException:            
+            return
 
         if isinstance(metadata, tuple):
             for metadatum in metadata:
