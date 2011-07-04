@@ -17,8 +17,15 @@ class Pydenticon:
 
     WHITE = (255, 255, 255)
 
-    def __init__(self, input, size = 128):
-        self.hash = md5(input).hexdigest()
+    def __init__(self, input = 'default', size = 128, hash = None):
+        """
+        Use the input param to specify a string used to create a hash,
+        or supply a hash directly with the hash param.
+
+        """
+        if not hash:
+            hash = md5(input).hexdigest()
+        self.hash = hash
         self.size = size
 
     def as_string(self):
