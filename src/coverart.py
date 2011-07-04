@@ -3,8 +3,8 @@ Copyright (C) 2010 Zachary Chavez
 BootTunes is licensed under the GPLv2.
 http://www.gnu.org/licenses/gpl-2.0.html
 """
-import identicon
-import visicon
+from pydenticon import Pydenticon
+from visicon import Visicon
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 from settings import getSettings
@@ -44,14 +44,11 @@ class CoverArtRetriever():
 
         # Create identicon and visicon
         hash = metadata['hash']
-        identiconImage = identicon.render_identicon(
-            int(hash, 16),
-            128
-        )
+        identicon = Pydenticon(hash=hash, size=384)
         identiconPath = unicode(tempDirPath + '/' + 'identicon.png')
-        identiconImage.save(identiconPath, 'PNG')
+        identicon.save(identiconPath)
         
-        visiconImage = visicon.Visicon(hash, 'seed', size=384)
+        visiconImage = Visicon(hash, 'seed', size=384)
         visiconPath = unicode(tempDirPath + '/' + 'visicon.png')
         visiconImage.draw_image().save(visiconPath, 'PNG')
 

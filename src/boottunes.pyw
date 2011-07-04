@@ -70,7 +70,7 @@ class MainWindow(QMainWindow):
             <a href="http://people.csail.mit.edu/hubert/pyaudio/">PyAudio</a> and
             <a href="http://http://www.portaudio.com/">PortAudio</a> <br /><br />
             <a href="http://www.riverbankcomputing.co.uk/software/pyqt/intro">PyQt</a> <br /><br />
-            <a href="http://github.com/jsocol/identicon">Identicon</a> <br /><br />
+            <a href="http://sourceforge.net/projects/identicons/">PHP Identicon</a> <br /><br />            
             <a href="http://code.google.com/p/visicon">Visicon</a> <br /><br />
             <a href="http://www.pythonware.com/products/pil/">The Python Imaging Library (PIL)</a> <br />
             &copy; 1997-2006 by Secret Labs AB <br />
