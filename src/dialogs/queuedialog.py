@@ -809,7 +809,7 @@ class QueueDialog(QDialog, Ui_QueueDialog):
             )            
             if self.failedTracks:
                 message += (
-                    '\n\nThe followed tracks could not be converted:\n\n %s' %
+                    '\n\nThe following tracks could not be converted:\n\n %s' %
                     '\n'.join(self.failedTracks)
                 )
             MessageBox.information(
