@@ -51,11 +51,15 @@ class QueueDialogTestCase(unittest.TestCase):
             metadata['comments']
         )
         self.assertEquals('London, UK', metadata['location'])
-        self.assertEquals(expectedTempPath, metadata['tempDir'].absolutePath())
-        self.assertEquals(['Track 1', 'Track 2', 'Track 3'], metadata['tracklist'])
+        self.assertEquals(expectedTempPath, metadata['tempDir'] \
+            .absolutePath())
+        self.assertEquals(
+            ['Track 1', 'Track 2', 'Track 3'],
+            metadata['tracklist']
+        )
         self.assertEquals(showPath, metadata['dir'].absolutePath())
 
-    def testGetMetadataFromDirWorksWhenAudioFilesAreSplitUpInSeparateSubFolders(self):
+    def testGetMetadataFromDirWorksWhenAudioFilesAreSplitUpInDiffFolders(self):
         showPath = self.showPath + '/' + 'show2'
         metadata = self.queuedialog.getMetadataFromDir(showPath)
 
@@ -78,11 +82,18 @@ class QueueDialogTestCase(unittest.TestCase):
         )
         self.assertEquals('London, UK', metadata['location'])
         self.assertEquals(expectedTempPath, metadata['tempDir'].absolutePath())
-        self.assertEquals(['Track 1', 'Track 2', 'Track 3', 'Track 4'], metadata['tracklist'])
+        self.assertEquals(
+            ['Track 1', 'Track 2', 'Track 3', 'Track 4'],
+            metadata['tracklist']
+        )
         self.assertEquals(showPath, metadata['dir'].absolutePath())
 
-    def testIfMoreTracksCountedInTextFileThanThereAreAudioFilesIgnoreTheApparentExtraTracks(self):
-        # The extra tracks are probably something else being listed in the text file
+    def testIfMoreTracksInTextFileThanAudioFilesIgnoreExtras(self):
+        """
+        The extra tracks are probably something else
+        being listed in the text file.
+
+        """
         showPath = self.showPath + '/' + 'show3'
         metadata = self.queuedialog.getMetadataFromDir(showPath)
 
@@ -100,18 +111,22 @@ class QueueDialogTestCase(unittest.TestCase):
 
         self.assertEquals('London, UK', metadata['location'])
         self.assertEquals(expectedTempPath, metadata['tempDir'].absolutePath())
-        self.assertEquals(['Track 1', 'Track 2', 'Track 3'], metadata['tracklist'])
+        self.assertEquals(
+            ['Track 1', 'Track 2', 'Track 3'],
+            metadata['tracklist']
+        )
         self.assertEquals(showPath, metadata['dir'].absolutePath())
 
-    def testIfThereAreMoreAudioFilesThanThereAreTracksInTheTextFileLaterTracksAreEmptyStrings(self):
+    def testIfMoreAudioFilesThanTracksInTheTxtFileFillWithEmptyStrings(self):
         showPath = self.showPath + '/' + 'show4'
         metadata = self.queuedialog.getMetadataFromDir(showPath)
         self.assertEquals(3, len(metadata['tracklist']))
         self.assertEquals('', metadata['tracklist'][2])
 
 
-    def testGetMetadataFromDirAndSubDirsGetsMetadataForAllValidShowsInSubDirectoriesWithinTheTargetDir(self):
-        metadataTuple = self.queuedialog.getMetadataFromDirAndSubDirs(self.showPath)
+    def testGetMetadataFromDirAndSubDirsFindsAllShowsInSubDirs(self):
+        metadataTuple = self.queuedialog \
+                            .getMetadataFromDirAndSubDirs(self.showPath)
         self.assertTrue(isinstance(metadataTuple, tuple))
 
     def testUmlautTest(self):
@@ -122,7 +137,9 @@ class QueueDialogTestCase(unittest.TestCase):
         srcPath  = self.showPath + u'/show4/1.flac'
         destPath = self.showPath + u'/show5/ümlaüt.flac'
         shutil.copy(srcPath, destPath)
-        metadata = self.queuedialog.getMetadataFromDir(self.showPath + '/show5')
+        metadata = self.queuedialog.getMetadataFromDir(
+            self.showPath + '/show5'
+        )
         # Just need to make sure that the saved string can be passed
         # to functions and work without error.
         self.assertEquals(os.path.exists(metadata['audioFiles'][0]), True)
@@ -139,7 +156,49 @@ class QueueDialogTestCase(unittest.TestCase):
         metadata = self.queuedialog.getMetadataFromDir(showPath)        
         for i in range(1, 13):
             self.assertEquals('Track %d' % i, metadata['tracklist'][i - 1])
-            self.assertEquals(showPath + '/%d.flac' % i, metadata['audioFiles'][i - 1])
+            self.assertEquals(
+                showPath + '/%d.flac' % i,
+                metadata['audioFiles'][i - 1]
+            )
+    
+    def testFailedMd5ChecksInMd5FileForASingleShow(self):
+        """
+        If a seperate .md5 file exists containing md5 hashes, its contents
+        will be checked against the hashes of the audio files.  If any
+        hashes don't match, the file paths will be noted in the metadata dict.
+
+        """
+        showPath = self.showPath + '/' + 'show7'
+        metadata = self.queuedialog.getMetadataFromDir(showPath)        
+        self.assertEquals(
+            metadata['md5_mismatches'],
+            [showPath + '/3.flac']
+        )
+
+    def testFailedMd5ChecksInInfoFileForASingleShow(self):
+        """
+        MD5s are also checked if they are contained in the info text file.
+
+        """
+        # @todo Finish test
+#        item = self.queuedialog.queueListWidget.item(0)
+#        self.assertTrue(
+#            item.text().find(
+#                '[md5 mismatch: may contain corrupted files]'
+#            ) != -1
+#        )
+#        qColor = item.background().color()
+#        assertEquals(qColor.red(), 255)
+#        assertEquals(qColor.green(), 255)
+#        assertEquals(qColor.blue(), 0)
+
+    def testFailedMd5ChecksForMultipleShows(self):
+        """
+        For multiple shows no dialog box appears, but tracks with hash
+        mismatches appear in yellow.
+
+        """
+        pass
 
 if __name__ == '__main__':    
     unittest.main()

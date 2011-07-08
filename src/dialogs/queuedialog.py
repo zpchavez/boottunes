@@ -270,6 +270,16 @@ class QueueDialog(QDialog, Ui_QueueDialog):
                 raise QueueDialogError("No valid recordings found")
             return tuple(metadataList)
 
+    def _parseForMd5s(self, txt):
+        """
+        Return a list of all the MD5 hashes found in the specified file.
+
+        @type txt: unicode
+        @param txt: The text to parse for MD5s
+
+        """
+        return re.findall('[0-9a-f]{32}', txt, re.IGNORECASE)
+
     def getMetadataFromDir(self, dirName):
         """
         Search dirName for a txt file and supported audio files.  If found,
@@ -284,8 +294,22 @@ class QueueDialog(QDialog, Ui_QueueDialog):
         @raise QueueDialogError: For various errors.  Error message contained
         in first argument.
 
-        """
+        """        
         qDir = QDir(dirName)
+        # Check for .md5 file
+        qDir.setNameFilters(['*.md5'])
+        if qDir.entryList():
+            try:
+                filePath = qDir.absolutePath() + '/' + qDir.entryList()[0]
+                fileHandle = open(filePath, 'r')
+                txt = fileHandle.read()                
+                md5s = self._parseForMd5s(txt)                
+            except:
+                # Getting hashes isn't essential, so just carry on.
+                md5s = None
+        else:
+            md5s = None
+
         qDir.setNameFilters(['*.txt'])
         if not qDir.entryList():
             raise QueueDialogError(
@@ -301,7 +325,7 @@ class QueueDialog(QDialog, Ui_QueueDialog):
             try:                
                 # Open file with open, detect the encoding, close it and open
                 # again with codec.open
-                fileHandle = open(textFilePath, 'r')                
+                fileHandle = open(textFilePath, 'r')
                 encoding = chardet.detect(fileHandle.read())['encoding']
                 fileHandle.close()                
                 # Try UTF-8 first. If there's an error, try the chardet
@@ -313,7 +337,8 @@ class QueueDialog(QDialog, Ui_QueueDialog):
                 except UnicodeDecodeError:
                     fileHandle = codecs.open(textFilePath, 'r', encoding)
 
-                metadata = TxtParser(fileHandle.read()).parseTxt()                
+                txt      = fileHandle.read()
+                metadata = TxtParser(txt).parseTxt()
 
                 fileHandle.close()
 
@@ -355,9 +380,9 @@ class QueueDialog(QDialog, Ui_QueueDialog):
                 # assume the extra tracks are an error
                 del metadata['tracklist'][len(filePaths):]
                 
-                nonParsedMetadata = {}                
+                nonParsedMetadata = {}
                 
-                nonParsedMetadata['audioFiles'] = filePaths                
+                nonParsedMetadata['audioFiles'] = filePaths
                 nonParsedMetadata['dir'] = qDir
                 # Hash used for identicons and temp directory names
                 nonParsedMetadata['hash'] = hashlib.md5(metadata['comments'] \
@@ -370,7 +395,24 @@ class QueueDialog(QDialog, Ui_QueueDialog):
                     nonParsedMetadata['tempDir'].mkpath(
                         nonParsedMetadata['tempDir'].absolutePath()
                     )
-                
+                # Check for MD5 mismatches
+                nonParsedMetadata['md5_mismatches'] = []
+                if not md5s:
+                    md5s = self._parseForMd5s(txt)
+                for index, expected in enumerate(md5s):
+                    if len(nonParsedMetadata['audioFiles']) < (index + 1):
+                        break
+                    audioFileAtIndex = nonParsedMetadata['audioFiles'][index]
+                    fileContent = open(
+                        audioFileAtIndex,
+                        'rb'
+                    ).read()
+                    actual = hashlib.md5(fileContent).hexdigest()                    
+                    if expected != actual:                        
+                        nonParsedMetadata['md5_mismatches'].append(
+                            audioFileAtIndex
+                        )
+
                 try:
                     audioFile = audiotools.open(filePaths[0])
                     isBroken = isinstance(
@@ -385,7 +427,9 @@ class QueueDialog(QDialog, Ui_QueueDialog):
                             )
                         else:
                             metadata.update(nonParsedMetadata)
-                            isCompleted = getSettings().isCompleted(metadata['hash'])
+                            isCompleted = getSettings().isCompleted(
+                                metadata['hash']
+                            )
                             if isCompleted and not self.convertAgainPrompt():
                                 return
                             self.fixBadFlacFiles(metadata)
@@ -422,7 +466,7 @@ class QueueDialog(QDialog, Ui_QueueDialog):
                     .getCoverImageChoices(nonParsedMetadata)[0][0]
 
                 metadata.update(nonParsedMetadata)                
-                
+
                 return metadata
 
             except IOError as e:                

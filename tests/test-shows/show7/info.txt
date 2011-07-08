@@ -1,0 +1,11 @@
+The Foo Bars
+1970-07-07
+The Venue
+London
+
+This show has one unmatching MD5 hash, listed in a .md5 fi
+Disc 1
+
+01 Track 1
+02 Track 2
+03 Track 3
