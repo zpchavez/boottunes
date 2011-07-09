@@ -521,25 +521,18 @@ class QueueDialog(QDialog, Ui_QueueDialog):
         @return: the sorted list
 
         """
-        sortedFiles = []
-        [sortedFiles.append('') for x in range(len(filePaths))]
-        foundTrackNumbers = []
+        sortedFilePaths = []
+        sortDict = {} # Will be sorted by the keys
         for index, file in enumerate(filePaths):
             base = os.path.basename(unicode(file))
             path = os.path.dirname(unicode(file))
-            match = re.search(
-                '^(\d{1,2})([^\d].*)?$',
-                base,
-                re.IGNORECASE
-            )
-            if not match or match.group(1) in foundTrackNumbers:
-                sortedFiles = filePaths
-                break
-            trackNum = int(match.group(1)) - 1
-            if trackNum < len(sortedFiles):
-                sortedFiles[int(match.group(1)) - 1] = QString(file)
-                foundTrackNumbers.append(match.group(1))
-        return sortedFiles
+            if re.match('\d{1}\D', base):
+                sortDict[unicode(path + '/0' + base)] = file
+            else:
+                sortDict[unicode(file)] = file
+        for key in sorted(sortDict.iterkeys()):
+            sortedFilePaths.append(sortDict[key])
+        return sortedFilePaths
 
     def removeSelectedItem(self):
         """

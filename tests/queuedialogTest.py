@@ -160,7 +160,16 @@ class QueueDialogTestCase(unittest.TestCase):
                 showPath + '/%d.flac' % i,
                 metadata['audioFiles'][i - 1]
             )
-    
+
+    def testTrackNumberedAsTrackZeroIsSortedCorrectly(self):
+        """
+        A regression test.
+
+        """
+        tracklist = ['00.Zeroth', '01.First', '02.Second', '03.Third']
+        sorted = self.queuedialog._getSortedFiles(tracklist)
+        self.assertEquals(sorted, tracklist)
+
     def testFailedMd5ChecksInMd5FileForASingleShow(self):
         """
         If a seperate .md5 file exists containing md5 hashes, its contents
@@ -169,28 +178,11 @@ class QueueDialogTestCase(unittest.TestCase):
 
         """
         showPath = self.showPath + '/' + 'show7'
-        metadata = self.queuedialog.getMetadataFromDir(showPath)        
+        metadata = self.queuedialog.getMetadataFromDir(showPath)
         self.assertEquals(
             metadata['md5_mismatches'],
             [showPath + '/3.flac']
         )
-
-    def testFailedMd5ChecksInInfoFileForASingleShow(self):
-        """
-        MD5s are also checked if they are contained in the info text file.
-
-        """
-        # @todo Finish test
-#        item = self.queuedialog.queueListWidget.item(0)
-#        self.assertTrue(
-#            item.text().find(
-#                '[md5 mismatch: may contain corrupted files]'
-#            ) != -1
-#        )
-#        qColor = item.background().color()
-#        assertEquals(qColor.red(), 255)
-#        assertEquals(qColor.green(), 255)
-#        assertEquals(qColor.blue(), 0)
 
     def testFailedMd5ChecksForMultipleShows(self):
         """
