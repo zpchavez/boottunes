@@ -69,13 +69,23 @@ class ConfirmMetadataDialog(QDialog, Ui_ConfirmMetadataDialog):
         )
 
         for track, title in enumerate(metadata['tracklist']):
-            item = QTableWidgetItem(str(track + 1))
-            item.setIcon(self.playButtonIcon)
-            self.tracklistTableWidget.setVerticalHeaderItem(track, item)
+            playItem = QTableWidgetItem(str(track + 1))
+            playItem.setIcon(self.playButtonIcon)
+            self.tracklistTableWidget.setVerticalHeaderItem(track, playItem)
+            nameItem = QTableWidgetItem(title)
+            if metadata['audioFiles'][track] in metadata['md5_mismatches']:
+                nameItem.setBackground(
+                    QBrush(
+                        QColor(255, 255, 0)
+                    )
+                )
+                nameItem.setToolTip(
+                    'MD5 hash does not match.  File may be corrupted.'
+                )
             self.tracklistTableWidget.setItem(
                 track,
                 0,
-                QTableWidgetItem(title)
+                nameItem
             )
         self.commentsTextEdit.setText(metadata['comments'])
 
