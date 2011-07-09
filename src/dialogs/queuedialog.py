@@ -32,6 +32,12 @@ class LoadCanceledException(Exception): pass
 class TracklintFixableError(Exception): pass
 
 class QueueDialog(QDialog, Ui_QueueDialog):
+    """
+    The main dialog of the app, showing the queue of selected shows
+    to import.
+
+    """
+
     def __init__(self):
         super(QueueDialog, self).__init__()
         self.setupUi(self)
@@ -57,7 +63,7 @@ class QueueDialog(QDialog, Ui_QueueDialog):
                 dirList = [
                     url.toString().replace(regex, '') \
                     for url in event.mimeData().urls()
-                ]                                
+                ]
                 if len(dirList) == 0:
                     event.ignore()
                 else:
@@ -280,6 +286,34 @@ class QueueDialog(QDialog, Ui_QueueDialog):
         """
         return re.findall('[0-9a-f]{32}', txt, re.IGNORECASE)
 
+    def _openFileOfUnknownEncoding(self, filePath):
+        """
+        Open a file whose encoding is unknown, assuming UTF-8 at first
+        and attempting to detect the encoding if that fails.  Return
+        the file handle.
+
+        @type filePath: unicode
+        @param filePath: The path to the text file.
+
+        @rtype: file
+        @return: The file handle.
+
+        """
+        # Open file with open, detect the encoding, close it and open
+        # again with codec.open
+        fileHandle = open(filePath, 'r')
+        encoding = chardet.detect(fileHandle.read())['encoding']
+        fileHandle.close()
+        # Try UTF-8 first. If there's an error, try the chardet
+        # detected encoding. This seems to give the best results.
+        fileHandle = codecs.open(filePath, 'r', 'utf-8')
+        try:
+            fileHandle.read()
+            fileHandle.seek(0)
+        except UnicodeDecodeError:
+            fileHandle = codecs.open(filePath, 'r', encoding)
+        return fileHandle
+
     def getMetadataFromDir(self, dirName):
         """
         Search dirName for a txt file and supported audio files.  If found,
@@ -294,21 +328,24 @@ class QueueDialog(QDialog, Ui_QueueDialog):
         @raise QueueDialogError: For various errors.  Error message contained
         in first argument.
 
-        """        
+        """
         qDir = QDir(dirName)
         # Check for .md5 file
         qDir.setNameFilters(['*.md5'])
         if qDir.entryList():
-            try:
-                filePath = qDir.absolutePath() + '/' + qDir.entryList()[0]
-                fileHandle = open(filePath, 'r')
+            filePath = qDir.absolutePath() + '/' + qDir.entryList()[0]
+            try:                
+                fileHandle = self._openFileOfUnknownEncoding(filePath)                
                 txt = fileHandle.read()                
-                md5s = self._parseForMd5s(txt)                
-            except:
+                md5s = self._parseForMd5s(txt)
+            except Exception as e:
                 # Getting hashes isn't essential, so just carry on.
-                md5s = None
+                md5s = []
+            finally:
+                if 'fileHandle' in locals():
+                    fileHandle.close()
         else:
-            md5s = None
+            md5s = []
 
         qDir.setNameFilters(['*.txt'])
         if not qDir.entryList():
@@ -323,19 +360,7 @@ class QueueDialog(QDialog, Ui_QueueDialog):
             isTheFinalTxt = (index == len(qDir.entryList()) - 1)            
             textFilePath = unicode(qDir.filePath(txtFile))
             try:                
-                # Open file with open, detect the encoding, close it and open
-                # again with codec.open
-                fileHandle = open(textFilePath, 'r')
-                encoding = chardet.detect(fileHandle.read())['encoding']
-                fileHandle.close()                
-                # Try UTF-8 first. If there's an error, try the chardet
-                # detected encoding. This seems to give the best results.
-                fileHandle = codecs.open(textFilePath, 'r', 'utf-8')
-                try:
-                    fileHandle.read()
-                    fileHandle.seek(0)
-                except UnicodeDecodeError:
-                    fileHandle = codecs.open(textFilePath, 'r', encoding)
+                fileHandle = self._openFileOfUnknownEncoding(textFilePath)
 
                 txt      = fileHandle.read()
                 metadata = TxtParser(txt).parseTxt()
@@ -353,8 +378,8 @@ class QueueDialog(QDialog, Ui_QueueDialog):
                 validExtensions = ['*.flac', '*.shn', '*.m4a']                
                 qDir.setNameFilters(validExtensions)
                 
-                filePaths = self._getFilePaths(qDir)
-                filePaths = self._getSortedFiles(filePaths)
+                filePaths = self._getFilePaths(qDir)                
+                filePaths = self._getSortedFiles(filePaths)                
                 filePaths = [
                     unicode(filePath) for filePath in filePaths
                 ]
@@ -395,20 +420,21 @@ class QueueDialog(QDialog, Ui_QueueDialog):
                     nonParsedMetadata['tempDir'].mkpath(
                         nonParsedMetadata['tempDir'].absolutePath()
                     )
+
                 # Check for MD5 mismatches
                 nonParsedMetadata['md5_mismatches'] = []
-                if not md5s:
-                    md5s = self._parseForMd5s(txt)
                 for index, expected in enumerate(md5s):
                     if len(nonParsedMetadata['audioFiles']) < (index + 1):
                         break
                     audioFileAtIndex = nonParsedMetadata['audioFiles'][index]
-                    fileContent = open(
+                    handle = open(
                         audioFileAtIndex,
                         'rb'
-                    ).read()
-                    actual = hashlib.md5(fileContent).hexdigest()                    
-                    if expected != actual:                        
+                    )
+                    fileContent = handle.read()
+                    handle.close
+                    actual = hashlib.md5(fileContent).hexdigest()
+                    if expected.lower() != actual.lower():
                         nonParsedMetadata['md5_mismatches'].append(
                             audioFileAtIndex
                         )
@@ -529,7 +555,7 @@ class QueueDialog(QDialog, Ui_QueueDialog):
             if re.match('\d{1}\D', base):
                 sortDict[unicode(path + '/0' + base)] = file
             else:
-                sortDict[unicode(file)] = file
+                sortDict[unicode(file)] = file        
         for key in sorted(sortDict.iterkeys()):
             sortedFilePaths.append(sortDict[key])
         return sortedFilePaths
@@ -645,6 +671,11 @@ class QueueDialog(QDialog, Ui_QueueDialog):
             listItem.setForeground(QBrush(QColor(0, 0, 0)))
             if '' in set(metadata['tracklist']):
                 displayedTitle += ' [contains untitled tracks]'
+                listItem.setBackground(QBrush(QColor(255, 255, 0)))
+            elif metadata['md5_mismatches'] != []:
+                displayedTitle += (
+                    ' [MD5 mismatch.  May contain corrupted files.]'
+                )
                 listItem.setBackground(QBrush(QColor(255, 255, 0)))
             else:                
                 listItem.setBackground(QBrush(QColor(255, 255, 255)))

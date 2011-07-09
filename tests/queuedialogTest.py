@@ -186,11 +186,27 @@ class QueueDialogTestCase(unittest.TestCase):
 
     def testFailedMd5ChecksForMultipleShows(self):
         """
-        For multiple shows no dialog box appears, but tracks with hash
-        mismatches appear in yellow.
+        For multiple shows, shows with tracks with hash mismatches
+        appear in the queue with a yellow background and include the text
+        'MD5 mismatch'
 
         """
-        pass
+        show1Path = self.showPath + '/' + 'show7'
+        show2Path = self.showPath + '/' + 'show1'
+        metadata = self.queuedialog.loadDirContents([show1Path, show2Path])
+        queue = self.queuedialog.queueListWidget
+        bgColor1 = queue.item(0).background().color()
+        bgColor2 = queue.item(1).background().color()
+        self.assertEquals(bgColor1.red(), 255)
+        self.assertEquals(bgColor1.green(), 255)
+        self.assertEquals(bgColor1.blue(), 255)        
+        self.assertEquals(bgColor2.red(), 255)
+        self.assertEquals(bgColor2.green(), 255)
+        self.assertEquals(bgColor2.blue(), 0)
+        text1 = unicode(queue.item(0).text())
+        text2 = unicode(queue.item(1).text())
+        self.assertEquals(text1.find('MD5 mismatch'), -1)
+        self.assertNotEquals(text2.find('MD5 mismatch'), -1)
 
 if __name__ == '__main__':    
     unittest.main()
