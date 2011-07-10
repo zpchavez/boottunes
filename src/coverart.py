@@ -12,18 +12,23 @@ from settings import getSettings
 class CoverArtRetriever():
 
     @staticmethod
-    def getCoverImageChoices(metadata):
+    def getCoverImageChoices(metadata, no_pixmap=False):
         """
         Get the filenames of possible cover art found in the specified
         directory.  The default cover, as determined by settings, will appear
         first.  Results are a tuple of tuples, the first element of which is
         the filename, the second element of which is a QPixmap.
 
+        If no_pixmap is set to True, will return a tuple of filenames only.
+
         @type  dir: QDir
         @param dir: The directory of the recording
 
         @type  metadata: dict
         @param metadata: Metadata for the recording
+
+        @type no_pixmap: boolean
+        @param no_pixmap: If True, will return a tuple of filenames only.
 
         @rtype:  tuple
         @return: A tuple
@@ -66,33 +71,54 @@ class CoverArtRetriever():
             u'No Cover Art'
         ]
 
-        pixMapList = [
-            QPixmap(optionsList[0]),
-            QPixmap(optionsList[1]),
-            None
-        ]
+        if no_pixmap:
+            # A dummy list, to save from having to use a bunch of ifs
+            pixMapList = [None, None, None]
+        else:
+            pixMapList = [
+                QPixmap(optionsList[0]),
+                QPixmap(optionsList[1]),
+                None
+            ]
 
         # Reverse order if Visicon is the preferred
         if getSettings()['defaultArt'] in ['Visicon', 'Image File => Visicon']:
             optionsList.insert(0, optionsList.pop(1))
             pixMapList.insert(0, pixMapList.pop(1))
-        elif getSettings()['defaultArt'] in ['No Cover Art', 'Image File => No Cover Art']:
+        elif getSettings()['defaultArt'] in ['No Cover Art',
+                                             'Image File => No Cover Art']:
             optionsList.insert(0, optionsList.pop(2))
             pixMapList.insert(0, pixMapList.pop(2))
 
         if 'Image File' in getSettings()['defaultArt']:
             for file in imageFiles:
                 if file not in ['identicon.png', 'visicon.png']:
-                    pixMapList.insert(0, QPixmap(
+                    if not no_pixmap:
+                        pixMapList.insert(
+                            0,
+                            QPixmap(unicode(dir.absolutePath() + '/' + file))
+                        )
+                    optionsList.insert(
+                        0,
                         unicode(dir.absolutePath() + '/' + file)
-                    ))
-                    optionsList.insert(0, unicode(dir.absolutePath() + '/' + file))
+                    )
         else:
             for file in imageFiles:
                 if file not in ['identicon.png','visicon.png']:
-                    pixMapList.append(QPixmap(
+                    if not no_pixmap:
+                        pixMapList.append(
+                            QPixmap(
+                                unicode(dir.absolutePath() + '/' + file)
+                            )
+                        )
+                    optionsList.append(
                         unicode(dir.absolutePath() + '/' + file)
-                    ))
-                    optionsList.append(unicode(dir.absolutePath() + '/' + file))
+                    )
 
-        return tuple([(optionsList[i], pixMapList[i]) for i in range(len(optionsList))])
+        if no_pixmap:
+            return tuple(optionsList[i] for i in range(len(optionsList)))
+        else:
+            return tuple(
+                [(optionsList[i], pixMapList[i])
+                for i in range(len(optionsList))]
+            )
