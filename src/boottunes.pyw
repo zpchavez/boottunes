@@ -165,9 +165,9 @@ if (getSettings()['sendErrorReports'] and os.path.getsize(errorLogFilePath)):
     body += '\n\n' + 'BootTunes Version: ' + __version__
     body += ('\n\n' + open(errorLogFilePath, 'r').read())    
     queryDict = {'body': body}
-    try:
-        print body
-        #urllib2.urlopen('http://zacharychavez.com/error-report.php?' + urllib.urlencode(queryDict))
+    try:        
+        urllib2.urlopen('http://zacharychavez.com/error-report.php?' +
+        urllib.urlencode(queryDict))
     except:
         pass
 
