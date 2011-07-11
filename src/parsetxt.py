@@ -250,18 +250,21 @@ class TxtParser(object):
         if hasattr(self, 'tracklist'): return self.tracklist
 
         tracklistStr = self._findTracklistString()
-        
+
         if tracklistStr == '':
             return None
 
         # Make sure the numbers count up incrementally.  Remove anything that doesn't match.
-        trackLines = tracklistStr.splitlines(True);        
+        trackLines = tracklistStr.splitlines(True);
         tracklistStr = '' # use the same name for the filtered tracklist string
         expectedTrackNum = 1
         for trackLine in trackLines:
             # Don't count if the line contains an md5 hash            
             if re.search('[0-9a-f]{32}', trackLine, re.IGNORECASE):
-                continue                        
+                continue
+            # or if the line contains the date
+            if self._findDate() and trackLine.count(self._findDate()):
+                continue            
             match = re.search('(?:(?:\d{3}-)?d\dt)?\d?(\d{1,2}).*', trackLine)
             actualTrackNum = int(match.group(1)) if match else None                        
             # Allow for common mistakes of repeating track numbers and skipping track numbers
