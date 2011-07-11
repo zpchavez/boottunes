@@ -14,6 +14,7 @@ class NewVersionDialog(QDialog, Ui_NewVersionDialog):
         super(NewVersionDialog, self).__init__(parent)
         self.setupUi(self)
         self.setWindowFlags(Qt.Window | Qt.WindowCloseButtonHint)
+        self.setMinimumSize(QSize(500, 500))
         self.messageLabel.setText('Version ' + info['version'] + ' is now available')
         self.textBrowser.setHtml(info['changes'])
         self.info = info

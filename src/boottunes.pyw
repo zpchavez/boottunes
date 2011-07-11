@@ -8,7 +8,7 @@ import os
 import tempfile
 import urllib2
 import urllib
-import json
+from xml.dom import minidom
 from PyQt4.QtGui import *
 from PyQt4.QtCore import *
 from dialogs.queuedialog import QueueDialog
@@ -80,17 +80,51 @@ class MainWindow(QMainWindow):
 
     def checkForUpdate(self):
         try:
-            jsonString = urllib2.urlopen(
-                'http://zacharychavez.com/boottunes/latest?version=' + __version__,
+            xml = urllib2.urlopen(
+                'http://boottunes.googlecode.com/svn/trunk/src/changelog.xml',
                 timeout=3
             ).read()
-            jsonDict = json.loads(jsonString)
-            if jsonDict['version'] > __version__ and jsonDict['version'] != getSettings()['skipVersion']:
-                dialog = NewVersionDialog(jsonDict, parent=self)
-                dialog.exec_()
-        except:
+            xmldoc = minidom.parseString(xml)
+            changes = xmldoc.getElementsByTagName('changes')
+            latestVersion = changes[0].attributes['version'].value            
+            if latestVersion <= __version__:
+                return
+            info = {
+                'version': latestVersion,
+                'url'    : 'http://code.google.com/p/boottunes/downloads/list',
+                'changes': ''
+            }
+            for change in changes:
+                changeVersion = change.attributes['version'].value
+                if changeVersion > __version__:
+                    info['changes'] += '<h2>Version %s</h2>' % \
+                        changeVersion
+                    if change.getElementsByTagName('bugfixes'):                        
+                        bugfixes = change.getElementsByTagName('bugfixes')[0] \
+                            .getElementsByTagName('bugfix')
+                    else:
+                        bugfixes = None
+                    if change.getElementsByTagName('features'):
+                        features = change.getElementsByTagName('features')[0] \
+                            .getElementsByTagName('feature')
+                    else:
+                        features = None
+                    if features:
+                        info['changes'] += '<h3>New Features</h3><ul>'
+                        for feature in features:
+                            info['changes'] += '<li>%s</li>' \
+                                % feature.firstChild.data
+                        info['changes'] += '</ul>'
+                    if bugfixes:
+                        info['changes'] += '<h3>Bug Fixes</h3><ul>'
+                        for bugfix in bugfixes:                            
+                            info['changes'] += '<li>%s</li>' \
+                                % bugfix.firstChild.data
+                        info['changes'] += '</ul>'                
+            dialog = NewVersionDialog(info, parent=self)
+            dialog.exec_()
+        except Exception as e:
             pass
-        
 
 class SingleInstance:
     """
