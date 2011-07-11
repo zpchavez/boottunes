@@ -60,7 +60,8 @@ class LoadShowsThread(QThread):
                     self.fail(str(e))
                     return
 
-        parent.progressDialog.setMaximum(len(dirs))
+        if hasattr(parent, 'progressDialog'):
+            parent.progressDialog.setMaximum(len(dirs))
 
         errorCount   = 0
         metadataList = []
@@ -121,7 +122,7 @@ class LoadShowsThread(QThread):
         if qDir.entryList():
             filePath = qDir.absolutePath() + '/' + qDir.entryList()[0]
             try:
-                fileHandle = parent._openFileOfUnknownEncoding(filePath)
+                fileHandle = parent.openFileOfUnknownEncoding(filePath)
                 txt = fileHandle.read()
                 md5s = self.parseForMd5s(txt)
             except UnicodeDecodeError as e:
@@ -146,7 +147,7 @@ class LoadShowsThread(QThread):
             isTheFinalTxt = (index == len(qDir.entryList()) - 1)
             textFilePath = unicode(qDir.filePath(txtFile))
             try:
-                fileHandle = parent._openFileOfUnknownEncoding(textFilePath)
+                fileHandle = parent.openFileOfUnknownEncoding(textFilePath)
 
                 txt      = fileHandle.read()
                 metadata = TxtParser(txt).parseTxt()
@@ -164,8 +165,8 @@ class LoadShowsThread(QThread):
                 validExtensions = ['*.flac', '*.shn', '*.m4a']
                 qDir.setNameFilters(validExtensions)
 
-                filePaths = parent._getFilePaths(qDir)
-                filePaths = parent._getSortedFiles(filePaths)
+                filePaths = parent.getFilePaths(qDir)
+                filePaths = parent.getSortedFiles(filePaths)
                 filePaths = [
                     unicode(filePath) for filePath in filePaths
                 ]                
@@ -215,16 +216,10 @@ class LoadShowsThread(QThread):
                         'Loading %s\n\nChecking MD5 hashes' % self.basename,
                         0
                     )
-                    if platform.system() == 'Darwin':
-                        self.process = Process(
-                            target=self.checkMd5s,
-                            args=(md5s, filePaths, tempDir)
-                        )
-                        self.process.start()
-                        while self.process.is_alive():
-                            pass
-                    else:
-                        self.checkMd5s(md5s, filePaths, tempDir)
+                    nonParsedMetadata['md5_mismatches'] = self.checkMd5s(
+                        md5s,
+                        filePaths
+                    )
 
                 try:
                     audioFile = audiotools.open(filePaths[0])
@@ -319,22 +314,16 @@ class LoadShowsThread(QThread):
         """
         audioObj.fix_id3_preserve_originals(tempFilePath)
 
-    def checkMd5s(self, md5s, filePaths, dest):
+    def checkMd5s(self, md5s, filePaths):
         """
-        Check MD5s and output a file in the show's temp directory listing
-        mismatches (since it runs as a separate process and cannot return
-        a value to the original process).  The file will be called
-        md5-mismatch.txt and contain the filePath of each mismatch, one per
-        line.
+        Check MD5s and return a list of file paths for the files whose hashes
+        don't match.
 
         @type md5s: list
         @param md5s: A list of unicode objects.
 
         @type filePaths: list
         @param filePaths: A list of QStrings.
-
-        @type dest: unicode
-        @param dest: The target location to save the mismatch file.
 
         """
         mismatches = []
@@ -351,9 +340,7 @@ class LoadShowsThread(QThread):
             actual = hashlib.md5(fileContent).hexdigest()
             if expected.lower() != actual.lower():
                 mismatches.append(audioFileAtIndex)
-        handle = open(dest + '/md5-mismatch.txt', 'w')
-        for mismatch in mismatches:
-            handle.write(mismatch + "\n")
+        return mismatches
 
     def parseForMd5s(self, txt):
         """
