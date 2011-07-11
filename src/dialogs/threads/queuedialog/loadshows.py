@@ -212,10 +212,6 @@ class LoadShowsThread(QThread):
                 nonParsedMetadata['md5_mismatches'] = []
                 tempDir = unicode(nonParsedMetadata['tempDir'].absolutePath())
                 if md5s:
-                    self.updateProgress(
-                        'Loading %s\n\nChecking MD5 hashes' % self.basename,
-                        0
-                    )
                     nonParsedMetadata['md5_mismatches'] = self.checkMd5s(
                         md5s,
                         filePaths
@@ -284,12 +280,13 @@ class LoadShowsThread(QThread):
 
         """
         parent = self.parent()        
-        self.updateProgress(
-            'Loading %s\n\nFixing malformed FLACs' % self.basename,
-        )
         for index, audioFile in enumerate(metadata['audioFiles']):
             if self.stopped:
                 return
+            self.updateProgress(
+                'Loading %s\n\nFixing malformed FLACs (%d\%d)'
+                % (self.basename, index+1, len(metadata['audioFiles'])),
+            )
             audioObj = audiotools.open(audioFile)            
             if isinstance(audioObj, tracklint.BrokenFlacAudio):
                 tempFilePath = unicode(
@@ -327,7 +324,13 @@ class LoadShowsThread(QThread):
 
         """
         mismatches = []
-        for index, expected in enumerate(md5s):
+        for index, expected in enumerate(md5s):            
+            if self.stopped:
+                return
+            self.updateProgress(
+                'Loading %s\n\nChecking MD5 hashes (%d\%d)'
+                % (self.basename, index+1, len(md5s)),
+            )
             if len(filePaths) < (index + 1):
                 break
             audioFileAtIndex = filePaths[index]
@@ -386,6 +389,8 @@ class LoadShowsThread(QThread):
         @type value: int
 
         """
+        if not hasattr(self.parent(), 'progressDialog'):
+            return
         if value is None:
             value = self.parent().progressDialog.value()
         self.emit(
