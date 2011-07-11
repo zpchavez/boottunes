@@ -222,7 +222,7 @@ class QueueDialog(QDialog, Ui_QueueDialog):
                         continue
                 self.addToQueue(metadata)
 
-    def _openFileOfUnknownEncoding(self, filePath):
+    def openFileOfUnknownEncoding(self, filePath):
         """
         Open a file whose encoding is unknown, assuming UTF-8 at first
         and attempting to detect the encoding if that fails.  Return
@@ -250,7 +250,7 @@ class QueueDialog(QDialog, Ui_QueueDialog):
             fileHandle = codecs.open(filePath, 'r', encoding)
         return fileHandle
 
-    def _getFilePaths(self, qDir):
+    def getFilePaths(self, qDir):
         """
         Get a list of QStrings for every audio file in the specified folder.
         If the audio files are split up between folders, e.g. CD1 and CD2,
@@ -276,7 +276,7 @@ class QueueDialog(QDialog, Ui_QueueDialog):
                     )
         return filePaths
 
-    def _getSortedFiles(self, filePaths):
+    def getSortedFiles(self, filePaths):
         """
         Sort files in the correct order.
 
