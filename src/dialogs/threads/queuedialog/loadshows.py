@@ -372,7 +372,12 @@ class LoadShowsThread(QThread):
         @param txt: The text to parse for MD5s
 
         """
-        return re.findall('[0-9a-f]{32}', txt, re.IGNORECASE)
+        matches = re.findall(
+            '^.*([0-9a-f]{32}).+\.(flac.*|shn.*)$',
+            txt,
+            re.IGNORECASE | re.MULTILINE
+        )
+        return [group[0] for group in matches]
 
     def stop(self):
         """
