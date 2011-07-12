@@ -12,6 +12,7 @@ import re
 import os
 import audiotools
 import platform
+import shutil
 from multiprocessing import Process
 from dialogs.threads import ReadLocker, WriteLocker
 from settings import getSettings
