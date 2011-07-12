@@ -78,7 +78,7 @@ class MainWindow(QMainWindow):
         """
         MessageBox.general(self, 'About BootTunes', aboutContent)
 
-    def checkForUpdate(self):
+    def checkForUpdate(self):        
         try:
             xml = urllib2.urlopen(
                 'http://boottunes.googlecode.com/svn/trunk/src/changelog.xml',
@@ -86,12 +86,17 @@ class MainWindow(QMainWindow):
             ).read()
             xmldoc = minidom.parseString(xml)
             changes = xmldoc.getElementsByTagName('changes')
-            latestVersion = changes[0].attributes['version'].value            
+            latestVersion = changes[0].attributes['version'].value
             if latestVersion <= __version__:
                 return
+            try:
+                url = xmldoc.getElementsByTagName('changelog')[0] \
+                    .attributes['url'].value
+            except KeyError:            
+                url = 'http://code.google.com/p/boottunes/downloads/list'            
             info = {
                 'version': latestVersion,
-                'url'    : 'http://code.google.com/p/boottunes/downloads/list',
+                'url'    : url,
                 'changes': ''
             }
             for change in changes:
