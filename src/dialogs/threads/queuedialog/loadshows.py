@@ -35,14 +35,16 @@ class LoadShowsThread(QThread):
         self.dirOrDirs = dirOrDirs
 
     def run(self):        
-        dirOrDirs = self.dirOrDirs
+        dirOrDirs = self.dirOrDirs        
         parent = self.parent()
 
         if isinstance(dirOrDirs, list):
             dirs = dirOrDirs
         else:        
             try:                
-                self.basename = os.path.basename(unicode(dirOrDirs))
+                self.basename = os.path.basename(
+                    unicode(dirOrDirs).rstrip(os.sep)
+                )
                 self.updateProgress('Loading %s' % self.basename, 1)
                 metadata = self.getMetadataFromDir(dirOrDirs)
                 self.updateProgress('Loading %s' % self.basename, 2)
@@ -66,7 +68,7 @@ class LoadShowsThread(QThread):
         errorCount   = 0
         metadataList = []
         for index, dir in enumerate(dirs):            
-            self.basename = os.path.basename(unicode(dir))
+            self.basename = os.path.basename(unicode(dir).rstrip(os.sep))
             self.updateProgress('Loading %s' % self.basename, index)
             try:
                 metadataList.append(self.getMetadataFromDir(dir))
