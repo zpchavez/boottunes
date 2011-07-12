@@ -20,10 +20,6 @@ from dialogs.settingsdialog import SettingsDialog
 from dialogs.confirmmetadata import ConfirmMetadataDialog
 from dialogs.messagebox import MessageBox
 from dialogs.threads.queuedialog import *
-from dialogs.exceptions import \
-    QueueDialogError, \
-    LoadCanceledError, \
-    TracklintFixableError
 import data
 
 
@@ -341,7 +337,7 @@ class QueueDialog(QDialog, Ui_QueueDialog):
         if defaults:
             metadata['defaults'] = defaults
 
-        path = metadata['dir'].absolutePath()
+        path = metadata['dir'].absolutePath()        
 
         artistName = metadata['defaults']['preferred_name'] \
             if 'defaults' in metadata \
@@ -350,10 +346,10 @@ class QueueDialog(QDialog, Ui_QueueDialog):
             artistName = artistName.decode('utf=8')
 
         if path in self.queueItemData:
-            listItem = self.queueItemData[path]['item']
+            listItem = self.queueItemData[path]['item']        
         else:
             listItem = QListWidgetItem()
-            self.queueListWidget.addItem(listItem)
+            self.queueListWidget.addItem(listItem)        
         if metadata['cover'] == 'No Cover Art':
             noCoverArt = QPixmap(
                 data.path + '/' + 'media' + '/' + 'no-cover.png'
@@ -366,7 +362,7 @@ class QueueDialog(QDialog, Ui_QueueDialog):
             'item': listItem,
             'metadata': metadata,
             'valid': True
-        }
+        }                
         listItem.setData(32, path)
         
         # If title is set, use that, otherwise follow the albumTitleFormat
@@ -642,7 +638,7 @@ class QueueDialog(QDialog, Ui_QueueDialog):
             if getSettings().isCompleted(recording['metadata']['hash']):
                 self.queueListWidget.takeItem(
                     self.queueListWidget.row(recording['item'])
-                )
+                )                
                 key = recording['metadata']['dir'].absolutePath()
                 del self.queueItemData[key]
 
@@ -652,7 +648,7 @@ class QueueDialog(QDialog, Ui_QueueDialog):
         in the progress bar dialog.
         
         """        
-        self.processThread.stop()        
+        self.processThread.stop()
         if platform.system() != 'Darwin':
             self.processThread.terminate()
         if (hasattr(self, 'validRecordings')):
