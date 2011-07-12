@@ -143,7 +143,7 @@ class ConvertFilesThread(QThread):
 
             self.emit(
                 SIGNAL("progress(int, QString)"),
-                progressCounter,
+                progressCounter + 1,
                 'Finishing'
             )
         except Exception as e:
