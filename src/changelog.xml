@@ -1,4 +1,19 @@
 <changelog>
+    <changes version="0.3.0">
+        <features>
+            <feature>
+                Added MD5 verification.
+            </feature>
+            <feature>
+                Replaced identicon implementation with one that produces better results.
+            </feature>
+        </features>
+        <bugfixes>
+            <bugfix>
+                Fixed bug where part of the date could be mistaken for part of the tracklist.
+            </bugfix>
+        </bugfixes>
+    </changes>
     <changes version="0.2.5">
         <bugfixes>
             <bugfix>
