@@ -18,9 +18,10 @@ class Settings:
     defaults = {'albumTitleFormat' : '[date] - [location] - [venue]',
                 'defaultFolder'    : '/',
                 'dateFormat'       : '%Y-%m-%d',
-                'defaultArt'       : 'Visicon',
+                'defaultArt'       : 'Identicon',
                 'checkForUpdates'  : True,
                 'sendErrorReports' : True,
+                'verifyMd5Hashes'  : True,
                 'skipVersion'      : ''}
 
     def __getitem__(self, key):

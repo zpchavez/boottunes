@@ -117,22 +117,11 @@ class LoadShowsThread(QThread):
         """        
         parent = self.parent()
         qDir = QDir(dirName)
-        # Check for .md5 file
-        qDir.setNameFilters(['*.md5'])
-        if qDir.entryList():
-            filePath = qDir.absolutePath() + '/' + qDir.entryList()[0]
-            try:
-                fileHandle = parent.openFileOfUnknownEncoding(filePath)
-                txt = fileHandle.read()
-                md5s = self.parseForMd5s(txt)
-            except UnicodeDecodeError as e:
-                # Getting hashes isn't essential, so just carry on.
-                md5s = []
-            finally:
-                if 'fileHandle' in locals():
-                    fileHandle.close()
+
+        if getSettings()['verifyMd5Hashes']:
+            md5s = self.getMd5s(qDir)
         else:
-            md5s = []        
+            md5s = []
 
         qDir.setNameFilters(['*.txt'])
         if not qDir.entryList():
@@ -310,6 +299,36 @@ class LoadShowsThread(QThread):
 
         """
         audioObj.fix_id3_preserve_originals(tempFilePath)
+
+    def getMd5s(self, qDir):
+        """
+        Look for a .md5 file in qDir and if find return a list of the sums
+        within.  Otherwise, return an empty list.
+
+        @type qDir: QDir
+        @param qDir: The directory containing the show.
+
+        @rtype: list
+        @returnL A list of MD5 sums.
+
+        """
+        parent = self.parent()
+        qDir.setNameFilters(['*.md5'])
+        if qDir.entryList():
+            filePath = qDir.absolutePath() + '/' + qDir.entryList()[0]
+            try:
+                fileHandle = parent.openFileOfUnknownEncoding(filePath)
+                txt = fileHandle.read()
+                md5s = self.parseForMd5s(txt)
+            except UnicodeDecodeError as e:
+                # Getting hashes isn't essential, so just carry on.
+                md5s = []
+            finally:
+                if 'fileHandle' in locals():
+                    fileHandle.close()
+        else:
+            md5s = []
+        return [md5.lower() for md5 in md5s]
 
     def checkMd5s(self, md5s, filePaths):
         """

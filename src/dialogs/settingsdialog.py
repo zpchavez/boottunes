@@ -59,6 +59,9 @@ class SettingsDialog(QDialog, Ui_SettingsDialog):
         if getSettings()['sendErrorReports']:
             self.sendErrorReportsCheckBox.setChecked(True)
 
+        if getSettings()['verifyMd5Hashes']:
+            self.verifyMd5HashesCheckBox.setChecked(True)
+
         self.addToITunesPathTextEdit.setText(getSettings()['addToITunesPath'])
 
         # Set the ComboBox values
@@ -81,6 +84,8 @@ class SettingsDialog(QDialog, Ui_SettingsDialog):
         getSettings()['checkForUpdates'] = self.checkForUpdatesCheckBox.isChecked()
         
         getSettings()['sendErrorReports'] = self.sendErrorReportsCheckBox.isChecked()
+
+        getSettings()['verifyMd5Hashes'] = self.verifyMd5HashesCheckBox.isChecked()
         
         getSettings()['addToITunesPath'] = unicode(self.addToITunesPathTextEdit.toPlainText())
 
@@ -101,6 +106,7 @@ class SettingsDialog(QDialog, Ui_SettingsDialog):
     
         self.checkForUpdatesCheckBox.setChecked(getSettings().defaults['checkForUpdates'])
         self.sendErrorReportsCheckBox.setChecked(getSettings().defaults['sendErrorReports'])
+        self.verifyMd5HashesCheckBox.setChecked(getSettings().defaults['verifyMd5Hashes'])
 
         defaultAddToITunesPath = getSettings().getDetectedAddToITunesPath()
         if defaultAddToITunesPath:
