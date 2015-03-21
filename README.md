@@ -1,8 +1,6 @@
 ## Description
 
-BootTunes makes it easy to import concert recordings downloaded from live music trading sites into iTunes.  
-It will parse metadata from the show's info text file, verify MD5 sums, convert to Apple Lossless Audio Codec, 
-generate unique album artwork, and import the results into iTunes. Available for Windows and Mac (Requires OS 10.6 or higher). 
+BootTunes makes it easy to import concert recordings downloaded from live music trading sites into iTunes. It will parse metadata from the show's info text file, verify MD5 sums, convert to Apple Lossless Audio Codec, generate unique album artwork, and import the results into iTunes. Available for Windows and Mac (Requires OS 10.6 or higher).
 
 ## Status
 
